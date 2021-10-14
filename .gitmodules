@@ -1,0 +1,6 @@
+[submodule "third_party/stb"]
+	path = third_party/stb
+	url = https://github.com/nothings/stb
+[submodule "assets"]
+	path = assets
+	url = https://github.com/nghiat/ngen_assets

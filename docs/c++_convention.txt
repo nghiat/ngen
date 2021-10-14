@@ -1,0 +1,55 @@
+*** grep is the priority for this convention
+
+* Headers use #pragma once
+  Reason: short, ubiquitous
+* Don't use namespace
+  Reason: namespace makes it harder to grep
+* Two spaces for indentation
+  Reason: consistent on all editors
+* Opening brace is on the same line, closing brace is on the next line (even with one-liner function so it helps with putting breakpoint in debugger)
+* Conditional
+  - Always use braces even one-liner if -> consistent, and you won't forget when adding more statements.
+  - else is on the same line as the closing brace of if
+* Function declaration:
+  - out -> in + out -> in
+    Reason: you can put default arguments at the end
+
+
+* Naming conventions
+- Filename: lower_case.*
+- Public macro: UPPER_CASE
+- Internal macro: UPPER_CASE_
+- Enum name: ECamelCase
+  - Enum member: EUPPER_CASE (With the enum name as prefix)
+- Public function: lower_case()
+- Public struct/class name: CamelCase
+- Internal struct/class name: CamelCase_
+- You can add ng prefix to macro, function, class/struct name to prevent collision
+- Public member function: class name abbreviation + _lower_case
+- Variable/Struct member: lower_case
+- Constant variable: c_lower_case
+- Global member: g_lower_case
+- Struct member: lower_case
+- Class member: m_lower_case
+  Reason: To differentiate class member with local variables in a member function.
+- Static member: s_lower_case
+- Prefix precedence: g -> s -> c (m is discarded if there is any other prefix)
+
+* Including conventions
+- Project headers are surrounded with "", other headers are surrounded with <>
+- Project and third-party header paths should be relative to the root folder
+- Order: Related header (Same file name)-> Project headers -> Third party headers -> C headers -> C++ headers -> Platform headers -> Conditional headers
+- Seperate each group by an empty line
+- Each group is sorted in alphabetical order
+
+* Class
+- Declaration order:
+  - public -> protected -> private
+    - Types -> Functions -> Members
+      - static -> non-static
+- No getters and setters unless they do additional logic, just set the members to public.
+  Reason: No boilerplate code.
+
+* Constructor and Destrustor
+- Both should do no real work
+- Real work should be done in *init()/*destroy()
