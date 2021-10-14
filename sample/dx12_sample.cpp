@@ -191,7 +191,7 @@ struct DX12Window : public ngWindow {
   dx12_subbuffer m_texture_subbuffer;
   ID3D12Resource* m_texture;
   dx12_descriptor m_texture_srv_descriptor;
-  U32 m_text_len = 0;
+  U32 m_visible_text_len = 0;
 
   const U32 m_normals_stride = 64 * 1024 * 1024;
 
@@ -967,15 +967,17 @@ void DX12Window::loop() {
     const float c_first_line = 400.0f;
     float x = c_x_left;
     float y = c_first_line;
-    m_text_len = strlen(text);
+    int text_len = strlen(text);
+    m_visible_text_len = 0;
     float scale = g_font.scale;
-    for (int i = 0; i < m_text_len; ++i) {
+    for (int i = 0; i < text_len; ++i) {
       const char* c = &text[i];
       if (*c == '\n') {
         y += g_font.line_space;
         x= c_x_left;
         continue;
       }
+      ++m_visible_text_len;
       const char* nc = &text[i + 1];
       codepoint_t* cp = &g_font.codepoints[*c];
       float left = x + cp->x0;
@@ -1120,7 +1122,7 @@ void DX12Window::loop() {
   m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->IASetVertexBuffers(0, 1, &m_ui_vb_view);
-  m_cmd_list->DrawInstanced(m_text_len * 6, 1, 0, 0);
+  m_cmd_list->DrawInstanced(m_visible_text_len * 6, 1, 0, 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
