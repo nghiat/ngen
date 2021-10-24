@@ -21,7 +21,7 @@
 - Internal macro: UPPER_CASE_
 - Enum name: ECamelCase
   - Enum member: EUPPER_CASE (With the enum name as prefix)
-- Public function: lower_case()
+- Functions in .h: ng_lower_case()
 - Public struct/class name: CamelCase
 - Internal struct/class name: CamelCase_
 - You can add ng prefix to macro, function, class/struct name to prevent collision
@@ -49,6 +49,7 @@
       - static -> non-static
 - No getters and setters unless they do additional logic, just set the members to public.
   Reason: No boilerplate code.
+- Functions should be set to private whenever possible.
 
 * Constructor and Destrustor
 - Both should do no real work

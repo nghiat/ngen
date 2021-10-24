@@ -44,6 +44,11 @@
 #pragma clang diagnostic ignored "-Waddress-of-temporary"
 #endif
 
+enum EEnableDepth {
+  EENABLE_DEPTH_FALSE,
+  EENABLE_DEPTH_TRUE,
+};
+
 struct codepoint_t {
   V2 uv_top_left;
   V2 uv_bottom_right;
@@ -81,6 +86,7 @@ struct final_shared_cb_t {
 };
 
 struct ui_cb_t {
+  V4 color;
   F32 width;
   F32 height;
 };
@@ -112,7 +118,8 @@ struct dx12_subbuffer {
   SIP size = 0;
 };
 
-struct DX12Window : public ngWindow {
+class DX12Window : public ngWindow {
+public:
   DX12Window(const OSChar* title, int w, int h) : ngWindow(title, w, h) {}
 
   bool init();
@@ -128,6 +135,8 @@ struct DX12Window : public ngWindow {
   ngCam m_cam;
 
   static const int sc_frame_count = 2;
+  static D3D12_RASTERIZER_DESC s_default_rasterizer_desc;
+  static D3D12_BLEND_DESC s_default_blend_desc;
   int m_frame_no;
   ID3D12Device* m_device = NULL;
   ID3D12CommandQueue* m_cmd_queue = NULL;
@@ -156,9 +165,9 @@ struct DX12Window : public ngWindow {
   dx12_subbuffer m_final_shared_cb_subbuffer;
   final_shared_cb_t m_final_shared_cb;
 
-  dx12_descriptor m_ui_cbv_descriptor;
-  dx12_subbuffer m_ui_cb_subbuffer;
-  ui_cb_t m_ui_cb;
+  dx12_descriptor m_shared_ui_cbv_descriptor;
+  dx12_subbuffer m_shared_ui_cb_subbuffer;
+  ui_cb_t m_shared_ui_cb;
 
   dx12_descriptor_heap m_dsv_heap;
   ID3D12Resource* m_depth_stencil;
@@ -169,23 +178,29 @@ struct DX12Window : public ngWindow {
   ID3D12RootSignature* m_shadow_root_sig;
   ID3D12RootSignature* m_final_root_sig;
   ID3D12RootSignature* m_ui_root_sig;
+  ID3D12RootSignature* m_console_root_sig;
   ID3DBlob* m_final_vs;
   ID3DBlob* m_final_ps;
   ID3DBlob* m_shadow_vs;
-  ID3DBlob* m_ui_vs;
-  ID3DBlob* m_ui_ps;
+  ID3DBlob* m_ui_texture_vs;
+  ID3DBlob* m_ui_texture_ps;
+  ID3DBlob* m_ui_non_texture_vs;
+  ID3DBlob* m_ui_non_texture_ps;
 
   ID3D12PipelineState* m_shadow_pso;
   ID3D12PipelineState* m_final_pso;
-  ID3D12PipelineState* m_ui_pso;
+  ID3D12PipelineState* m_ui_texture_pso;
+  ID3D12PipelineState* m_console_pso;
 
   dx12_buffer m_vertex_buffer;
   dx12_subbuffer m_vertices_subbuffer;
   dx12_subbuffer m_normals_subbuffer;
   dx12_subbuffer m_text_subbuffer;
+  dx12_subbuffer m_console_subbuffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertices_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_normals_vb_view;
-  D3D12_VERTEX_BUFFER_VIEW m_ui_vb_view;
+  D3D12_VERTEX_BUFFER_VIEW m_text_vb_view;
+  D3D12_VERTEX_BUFFER_VIEW m_console_vb_view;
   U32 m_objs_count = 0;
   U32 m_obj_vertices_nums[10] = {};
   dx12_subbuffer m_texture_subbuffer;
@@ -201,6 +216,20 @@ struct DX12Window : public ngWindow {
 
   S64 m_start_time;
   bool m_is_console_active = false;
+private:
+  void create_pso(ID3D12PipelineState** pso,
+                  ID3D12RootSignature* root_sig,
+                  ID3DBlob* vs,
+                  ID3DBlob* ps,
+                  D3D12_INPUT_ELEMENT_DESC* element_desc,
+                  int num_elements,
+                  EEnableDepth enable_depth = EENABLE_DEPTH_FALSE);
+  void create_root_sig(ID3D12RootSignature** root_sig,
+                     UINT num_root_params,
+                     const D3D12_ROOT_PARAMETER1* root_params,
+                     UINT num_static_samplers,
+                     const D3D12_STATIC_SAMPLER_DESC* static_samplers,
+                     D3D12_ROOT_SIGNATURE_FLAGS flags);
 };
 
 static bool create_descriptor_heap(dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptors_num) {
@@ -278,21 +307,6 @@ create_root_param_1_1_descriptor_table(UINT num_ranges, const D3D12_DESCRIPTOR_R
   return param;
 }
 
-static D3D12_VERSIONED_ROOT_SIGNATURE_DESC create_root_sig_desc_1_1(UINT num_root_params,
-                                                                    const D3D12_ROOT_PARAMETER1* root_params,
-                                                                    UINT num_static_samplers,
-                                                                    const D3D12_STATIC_SAMPLER_DESC* static_samplers,
-                                                                    D3D12_ROOT_SIGNATURE_FLAGS flags) {
-  D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = {};
-  desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-  desc.Desc_1_1.NumParameters = num_root_params;
-  desc.Desc_1_1.pParameters = root_params;
-  desc.Desc_1_1.NumStaticSamplers = num_static_samplers;
-  desc.Desc_1_1.pStaticSamplers = static_samplers;
-  desc.Desc_1_1.Flags = flags;
-  return desc;
-}
-
 static D3D12_RESOURCE_BARRIER create_transition_barrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) {
   D3D12_RESOURCE_BARRIER barrier = {};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -331,7 +345,7 @@ static dx12_subbuffer allocate_subbuffer(dx12_buffer* buffer, SIP size, SIP alig
   return subbuffer;
 }
 
-bool compile_shader(const OSChar* path, const char* entry, const char* target, ID3DBlob** shader) {
+static bool compile_shader(const OSChar* path, const char* entry, const char* target, ID3DBlob** shader) {
   UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
   ID3DBlob* error;
   if (D3DCompileFromFile(path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
@@ -340,6 +354,25 @@ bool compile_shader(const OSChar* path, const char* entry, const char* target, I
   }
   return true;
 }
+
+D3D12_RASTERIZER_DESC DX12Window::s_default_rasterizer_desc = {
+    .FillMode = D3D12_FILL_MODE_SOLID,
+    .CullMode = D3D12_CULL_MODE_BACK,
+    .FrontCounterClockwise = TRUE,
+    .DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
+    .DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+    .SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+    .DepthClipEnable = TRUE,
+    .MultisampleEnable = FALSE,
+    .AntialiasedLineEnable = FALSE,
+    .ForcedSampleCount = 0,
+    .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+};
+
+D3D12_BLEND_DESC DX12Window::s_default_blend_desc = {
+    .AlphaToCoverageEnable = FALSE,
+    .IndependentBlendEnable = FALSE,
+};
 
 bool DX12Window::init() {
   ngWindow::init();
@@ -364,8 +397,9 @@ bool DX12Window::init() {
   m_final_shared_cb.light_view = light_cam.m_view_mat;
   m_final_shared_cb.light_proj = perspective_m4;
 
-  m_ui_cb.width = (F32)m_width;
-  m_ui_cb.height = (F32)m_height;
+  m_shared_ui_cb.color = {173 / 255.f, 216 / 255.f, 230 / 255.f, 0.2f};
+  m_shared_ui_cb.width = (F32)m_width;
+  m_shared_ui_cb.height = (F32)m_height;
 
   UINT dxgi_factory_flags = 0;
   {
@@ -526,11 +560,11 @@ bool DX12Window::init() {
     }
 
     {
-      m_ui_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
+      m_shared_ui_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
       SIP cb_size = (sizeof(ui_cb_t) + 255) & ~255;
-      m_ui_cb_subbuffer = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
-      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_ui_cb_subbuffer.gpu_p, m_ui_cb_subbuffer.size), m_ui_cbv_descriptor.cpu_handle);
-      memcpy(m_ui_cb_subbuffer.cpu_p, &m_ui_cb, sizeof(m_ui_cb));
+      m_shared_ui_cb_subbuffer = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_shared_ui_cb_subbuffer.gpu_p, m_shared_ui_cb_subbuffer.size), m_shared_ui_cbv_descriptor.cpu_handle);
+      memcpy(m_shared_ui_cb_subbuffer.cpu_p, &m_shared_ui_cb, sizeof(m_shared_ui_cb));
     }
   }
 
@@ -544,18 +578,14 @@ bool DX12Window::init() {
       create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX),
       create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
     };
-    D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_sig_desc = create_root_sig_desc_1_1(
-        static_array_size(root_params),
-        root_params,
-        0,
-        NULL,
-        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
-    ID3DBlob* signature;
-    ID3DBlob* error;
-    DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
-    DX_CHECK_RETURN_FALSE(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_shadow_root_sig)));
+    create_root_sig(&m_shadow_root_sig,
+                    static_array_size(root_params),
+                    root_params,
+                    0,
+                    NULL,
+                    D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+                        D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+                        D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
   }
 
   {
@@ -568,29 +598,15 @@ bool DX12Window::init() {
     compile_shader(shader_path, "PSMain", "ps_5_0", &m_final_ps);
 
     path_from_exe_dir(shader_path, OS_TXT("assets/ui.hlsl"), MAX_PATH_LEN);
-    compile_shader(shader_path, "VSMain", "vs_5_0", &m_ui_vs);
-    compile_shader(shader_path, "PSMain", "ps_5_0", &m_ui_ps);
+    compile_shader(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
+    compile_shader(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
+    compile_shader(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
+    compile_shader(shader_path, "PSNonTextureMain", "ps_5_0", &m_ui_non_texture_ps);
   }
 
   {
-    D3D12_RASTERIZER_DESC rasterizer_desc = {};
-    rasterizer_desc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizer_desc.CullMode = D3D12_CULL_MODE_BACK;
-    rasterizer_desc.FrontCounterClockwise = TRUE;
-    rasterizer_desc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-    rasterizer_desc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-    rasterizer_desc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-    rasterizer_desc.DepthClipEnable = TRUE;
-    rasterizer_desc.MultisampleEnable = FALSE;
-    rasterizer_desc.AntialiasedLineEnable = FALSE;
-    rasterizer_desc.ForcedSampleCount = 0;
-    rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-    D3D12_BLEND_DESC blend_desc = {};
-    blend_desc.AlphaToCoverageEnable = FALSE;
-    blend_desc.IndependentBlendEnable = FALSE;
     for (int i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i) {
-      D3D12_RENDER_TARGET_BLEND_DESC* rt_desc = &blend_desc.RenderTarget[i];
+      D3D12_RENDER_TARGET_BLEND_DESC* rt_desc = &s_default_blend_desc.RenderTarget[i];
       *rt_desc = {};
       rt_desc->BlendEnable = TRUE;
       rt_desc->LogicOpEnable = FALSE;
@@ -604,39 +620,16 @@ bool DX12Window::init() {
       rt_desc->RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
     }
 
-    D3D12_INPUT_ELEMENT_DESC input_elem_descs[] = {
-      { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-    };
-
     {
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC shadow_pso_desc = {};
-      shadow_pso_desc.pRootSignature = m_shadow_root_sig;
-      shadow_pso_desc.VS.pShaderBytecode = m_shadow_vs->GetBufferPointer();
-      shadow_pso_desc.VS.BytecodeLength = m_shadow_vs->GetBufferSize();
-      shadow_pso_desc.BlendState = blend_desc;
-      shadow_pso_desc.SampleMask = UINT_MAX;
-      shadow_pso_desc.RasterizerState = rasterizer_desc;
-      shadow_pso_desc.DepthStencilState.DepthEnable = TRUE;
-      shadow_pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-      shadow_pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-      shadow_pso_desc.DepthStencilState.StencilEnable = FALSE;
-      shadow_pso_desc.InputLayout.pInputElementDescs = input_elem_descs;
-      shadow_pso_desc.InputLayout.NumElements = (UINT)static_array_size(input_elem_descs);
-      shadow_pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      shadow_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-      shadow_pso_desc.NumRenderTargets = 0;
-      shadow_pso_desc.SampleDesc.Count = 1;
-      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&shadow_pso_desc, IID_PPV_ARGS(&m_shadow_pso)));
+      D3D12_INPUT_ELEMENT_DESC input_elem_descs[] = {
+        { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      };
+      create_pso(&m_shadow_pso, m_shadow_root_sig, m_shadow_vs, NULL, input_elem_descs, static_array_size(input_elem_descs), EENABLE_DEPTH_TRUE);
     }
 
     for (int i = 0; i < sc_frame_count; ++i)
       DX_CHECK_RETURN_FALSE(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
     DX_CHECK_RETURN_FALSE(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
-
-    D3D12_INPUT_ELEMENT_DESC final_elem_descs[] = {
-      { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-      { "N", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-    };
 
     {
       D3D12_DESCRIPTOR_RANGE1 ranges[] = {
@@ -664,37 +657,15 @@ bool DX12Window::init() {
       sampler.RegisterSpace = 0;
       sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-      D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_sig_desc =
-          create_root_sig_desc_1_1(static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-      ID3DBlob* signature;
-      ID3DBlob* error;
-      DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
-      DX_CHECK_RETURN_FALSE(
-          m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_final_root_sig)));
+      create_root_sig(&m_final_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     }
 
     {
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC final_pso_desc = {};
-      final_pso_desc.pRootSignature = m_final_root_sig;
-      final_pso_desc.VS.pShaderBytecode = m_final_vs->GetBufferPointer();
-      final_pso_desc.VS.BytecodeLength = m_final_vs->GetBufferSize();
-      final_pso_desc.PS.pShaderBytecode = m_final_ps->GetBufferPointer();
-      final_pso_desc.PS.BytecodeLength = m_final_ps->GetBufferSize();
-      final_pso_desc.BlendState = blend_desc;
-      final_pso_desc.SampleMask = UINT_MAX;
-      final_pso_desc.RasterizerState = rasterizer_desc;
-      final_pso_desc.DepthStencilState.DepthEnable = TRUE;
-      final_pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-      final_pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-      final_pso_desc.DepthStencilState.StencilEnable = FALSE;
-      final_pso_desc.InputLayout.pInputElementDescs = final_elem_descs;
-      final_pso_desc.InputLayout.NumElements = (UINT)static_array_size(final_elem_descs);
-      final_pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      final_pso_desc.NumRenderTargets = 1;
-      final_pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-      final_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-      final_pso_desc.SampleDesc.Count = 1;
-      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&final_pso_desc, IID_PPV_ARGS(&m_final_pso)));
+      D3D12_INPUT_ELEMENT_DESC final_elem_descs[] = {
+        { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        { "N", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      };
+      create_pso(&m_final_pso, m_final_root_sig, m_final_vs, m_final_ps, final_elem_descs, static_array_size(final_elem_descs), EENABLE_DEPTH_TRUE);
     }
 
     {
@@ -721,13 +692,18 @@ bool DX12Window::init() {
       sampler.RegisterSpace = 0;
       sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-      D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_sig_desc =
-          create_root_sig_desc_1_1(static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-      ID3DBlob* signature;
-      ID3DBlob* error;
-      DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
-      DX_CHECK_RETURN_FALSE(
-          m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_ui_root_sig)));
+      create_root_sig(&m_ui_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    }
+
+    {
+      D3D12_DESCRIPTOR_RANGE1 ranges[] = {
+        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
+      };
+      D3D12_ROOT_PARAMETER1 root_params[] = {
+          create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL),
+      };
+
+      create_root_sig(&m_console_root_sig, static_array_size(root_params), root_params, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     }
 
     {
@@ -735,24 +711,14 @@ bool DX12Window::init() {
         { "V", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
         { "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2 * sizeof(F32), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       };
+      create_pso(&m_ui_texture_pso, m_ui_root_sig, m_ui_texture_vs, m_ui_texture_ps, ui_elem_descs, static_array_size(ui_elem_descs));
+    }
 
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC ui_pso_desc = {};
-      ui_pso_desc.pRootSignature = m_ui_root_sig;
-      ui_pso_desc.VS.pShaderBytecode = m_ui_vs->GetBufferPointer();
-      ui_pso_desc.VS.BytecodeLength = m_ui_vs->GetBufferSize();
-      ui_pso_desc.PS.pShaderBytecode = m_ui_ps->GetBufferPointer();
-      ui_pso_desc.PS.BytecodeLength = m_ui_ps->GetBufferSize();
-      ui_pso_desc.BlendState = blend_desc;
-      ui_pso_desc.SampleMask = UINT_MAX;
-      ui_pso_desc.RasterizerState = rasterizer_desc;
-      ui_pso_desc.DepthStencilState = {};
-      ui_pso_desc.InputLayout.pInputElementDescs = ui_elem_descs;
-      ui_pso_desc.InputLayout.NumElements = (UINT)static_array_size(ui_elem_descs);
-      ui_pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      ui_pso_desc.NumRenderTargets = 1;
-      ui_pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-      ui_pso_desc.SampleDesc.Count = 1;
-      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&ui_pso_desc, IID_PPV_ARGS(&m_ui_pso)));
+    {
+      D3D12_INPUT_ELEMENT_DESC console_elem_descs[] = {
+        { "V", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      };
+      create_pso(&m_console_pso, m_console_root_sig, m_ui_non_texture_vs, m_ui_non_texture_ps, console_elem_descs, static_array_size(console_elem_descs));
     }
   }
 
@@ -894,6 +860,7 @@ bool DX12Window::init() {
     m_vertices_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
     m_normals_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
     m_text_subbuffer = allocate_subbuffer(&m_vertex_buffer, 1024 * 1024, 16);
+    m_console_subbuffer = allocate_subbuffer(&m_vertex_buffer, 6 * sizeof(V2), 16);
     for (int i = 0; i < m_objs_count; ++i) {
       OBJLoader obj;
       OSChar full_obj_path[MAX_PATH_LEN];
@@ -916,9 +883,23 @@ bool DX12Window::init() {
     m_normals_vb_view.SizeInBytes = normals_offset;
     m_normals_vb_view.StrideInBytes = sizeof(((OBJLoader*)0)->m_normals[0]);
 
-    m_vertex_buffer.buffer->Unmap(0, NULL);
   }
 
+  {
+    V2 console_rect[6];
+    console_rect[0] = {0.0f, 0.0f};
+    console_rect[1] = {0.0f, 300.0f};
+    console_rect[2] = {(F32)m_width, 0.0f};
+    console_rect[3] = {(F32)m_width, 0.0f};
+    console_rect[4] = {0.0f, 300.0f};
+    console_rect[5] = {(F32)m_width, 300.0f};
+    memcpy(m_console_subbuffer.cpu_p, &console_rect[0], sizeof(console_rect));
+    m_console_vb_view.BufferLocation = m_console_subbuffer.gpu_p;
+    m_console_vb_view.SizeInBytes = 6 * sizeof(V2);
+    m_console_vb_view.StrideInBytes = sizeof(V2);
+  }
+
+  m_vertex_buffer.buffer->Unmap(0, NULL);
   {
     DX_CHECK_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
     ++m_fence_vals[m_frame_no];
@@ -1039,9 +1020,9 @@ void DX12Window::loop() {
     }
 
     memcpy((U8*)m_vertex_buffer.cpu_p + m_text_subbuffer.offset, &ui_data[0], ui_data.da_len() * sizeof(float));
-    m_ui_vb_view.BufferLocation = m_vertex_buffer.buffer->GetGPUVirtualAddress() + m_text_subbuffer.offset;
-    m_ui_vb_view.SizeInBytes = ui_data.da_len() * sizeof(float);
-    m_ui_vb_view.StrideInBytes = 4 * sizeof(float);
+    m_text_vb_view.BufferLocation = m_vertex_buffer.buffer->GetGPUVirtualAddress() + m_text_subbuffer.offset;
+    m_text_vb_view.SizeInBytes = ui_data.da_len() * sizeof(float);
+    m_text_vb_view.StrideInBytes = 4 * sizeof(float);
     m_vertex_buffer.buffer->Unmap(0, NULL);
   }
 
@@ -1114,15 +1095,24 @@ void DX12Window::loop() {
   m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[1].gpu_handle);
   m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
 
-  m_cmd_list->SetPipelineState(m_ui_pso);
+  m_cmd_list->SetPipelineState(m_ui_texture_pso);
   m_cmd_list->SetGraphicsRootSignature(m_ui_root_sig);
   m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_texture_srv_descriptor.gpu_handle);
-  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_ui_cbv_descriptor.gpu_handle);
+  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_shared_ui_cbv_descriptor.gpu_handle);
   m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  m_cmd_list->IASetVertexBuffers(0, 1, &m_ui_vb_view);
+  m_cmd_list->IASetVertexBuffers(0, 1, &m_text_vb_view);
   m_cmd_list->DrawInstanced(m_visible_text_len * 6, 1, 0, 0);
+
+  m_cmd_list->SetPipelineState(m_console_pso);
+  m_cmd_list->SetGraphicsRootSignature(m_console_root_sig);
+  m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
+  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shared_ui_cbv_descriptor.gpu_handle);
+  m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
+  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
+  m_cmd_list->DrawInstanced(6, 1, 0, 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
@@ -1171,6 +1161,54 @@ void DX12Window::wait_for_gpu() {
 
   // Increment the fence value for the current frame.
   ++m_fence_vals[m_frame_no];
+}
+
+void DX12Window::create_pso(ID3D12PipelineState** pso, ID3D12RootSignature* root_sig, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_ELEMENT_DESC* element_desc, int num_elements, EEnableDepth enable_depth) {
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
+  pso_desc.pRootSignature = root_sig;
+  pso_desc.VS.pShaderBytecode = vs->GetBufferPointer();
+  pso_desc.VS.BytecodeLength = vs->GetBufferSize();
+  if (ps) {
+    pso_desc.PS.pShaderBytecode = ps->GetBufferPointer();
+    pso_desc.PS.BytecodeLength = ps->GetBufferSize();
+  }
+  pso_desc.BlendState = s_default_blend_desc;
+  pso_desc.SampleMask = UINT_MAX;
+  pso_desc.RasterizerState = s_default_rasterizer_desc;
+  pso_desc.DepthStencilState = {};
+  pso_desc.InputLayout.pInputElementDescs = element_desc;
+  pso_desc.InputLayout.NumElements = num_elements;
+  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+  pso_desc.NumRenderTargets = 1;
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+  pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  pso_desc.SampleDesc.Count = 1;
+  if (enable_depth == EENABLE_DEPTH_TRUE) {
+      pso_desc.DepthStencilState.DepthEnable = TRUE;
+      pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+      pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+      pso_desc.DepthStencilState.StencilEnable = FALSE;
+  }
+  DX_CHECK_RETURN(m_device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(pso)));
+}
+
+void DX12Window::create_root_sig(ID3D12RootSignature** root_sig,
+                                 UINT num_root_params,
+                                 const D3D12_ROOT_PARAMETER1* root_params,
+                                 UINT num_static_samplers,
+                                 const D3D12_STATIC_SAMPLER_DESC* static_samplers,
+                                 D3D12_ROOT_SIGNATURE_FLAGS flags) {
+  D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = {};
+  desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+  desc.Desc_1_1.NumParameters = num_root_params;
+  desc.Desc_1_1.pParameters = root_params;
+  desc.Desc_1_1.NumStaticSamplers = num_static_samplers;
+  desc.Desc_1_1.pStaticSamplers = static_samplers;
+  desc.Desc_1_1.Flags = flags;
+  ID3DBlob* signature;
+  ID3DBlob* error;
+  DX_CHECK_RETURN(D3D12SerializeVersionedRootSignature(&desc, &signature, &error));
+  DX_CHECK_RETURN(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(root_sig)));
 }
 
 int main() {
