@@ -8,4 +8,4 @@
 
 #include "core/os_string.h"
 
-bool core_init(const OSChar* log_path);
+bool core_init(const Os_char* log_path);

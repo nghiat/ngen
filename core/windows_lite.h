@@ -8,20 +8,20 @@
 
 #include "core/os.h"
 
-#if OS_WIN()
+#if M_os_is_win()
 
-#  define FORWARD_DECLARE_HANDLE(name) \
-    struct name##__;                      \
+#define M_forward_declare_handle_(name) \
+    struct name##__;                  \
     typedef struct name##__* name
 
-FORWARD_DECLARE_HANDLE(HDC);
-FORWARD_DECLARE_HANDLE(HGLRC);
-FORWARD_DECLARE_HANDLE(HINSTANCE);
-FORWARD_DECLARE_HANDLE(HWND);
+M_forward_declare_handle_(HDC);
+M_forward_declare_handle_(HGLRC);
+M_forward_declare_handle_(HINSTANCE);
+M_forward_declare_handle_(HWND);
 
-#  undef FORWARD_DECLARE_HANDLE
+#undef M_forward_declare_handle_
 
 typedef void* HANDLE;
 typedef HINSTANCE HMODULE;
 
-#endif // OS_WIN()
+#endif // M_os_is_win()

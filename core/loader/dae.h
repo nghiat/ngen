@@ -10,13 +10,12 @@
 #include "core/math/vec4.h"
 #include "core/os_string.h"
 
-struct ngAllocator;
+struct Allocator;
 
-class DAELoader {
+class Dae_loader {
 public:
-  bool dae_init(ngAllocator* allocator, const OSChar* path);
+  bool dae_init(Allocator* allocator, const Os_char* path);
   void dae_destroy();
 
-private:
-  DynamicArray<V4> m_vertices;
+  Dynamic_array<V4> m_vertices;
 };

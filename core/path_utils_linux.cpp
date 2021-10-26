@@ -15,16 +15,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-extern OSChar g_exe_path[MAX_PATH_LEN];
-extern OSChar g_exe_dir[MAX_PATH_LEN];
+extern Os_char g_exe_path_[M_max_path_len];
+extern Os_char g_exe_dir_[M_max_path_len];
 
 bool path_utils_init() {
-  char exe_path[MAX_PATH_LEN];
-  ssize_t len = readlink("/proc/self/exe", g_exe_path, MAX_PATH_LEN);
+  char exe_path[M_max_path_len];
+  ssize_t len = readlink("/proc/self/exe", g_exe_path_, M_max_path_len);
   for (ssize_t i = len - 1; i >= 0; --i) {
-    if (g_exe_path[i] == '/') {
-      memcpy(g_exe_dir, g_exe_path, i + 2);
-      g_exe_dir[i + 1] = 0;
+    if (g_exe_path_[i] == '/') {
+      memcpy(g_exe_dir_, g_exe_path_, i + 2);
+      g_exe_dir_[i + 1] = 0;
       break;
     }
   }

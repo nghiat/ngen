@@ -8,18 +8,18 @@
 
 #include "core/log.h"
 
-AllocHeader* get_allocation_header(void* p) {
-  return (AllocHeader*)p - 1;
+Alloc_header_* get_allocation_header_(void* p) {
+  return (Alloc_header_*)p - 1;
 }
 
-U8* align_forward(U8* p, SIP alignment) {
+U8* align_forward_(U8* p, Sip alignment) {
   if (alignment == 1)
     return p;
   return (U8*)(((size_t)p + alignment - 1) & ~(size_t)(alignment - 1));
 }
 
-bool check_aligned_alloc(SIP size, SIP alignment) {
-  CHECK_RETURN_VAL(size && alignment, false);
+bool check_aligned_alloc_(Sip size, Sip alignment) {
+  M_check_return_val(size && alignment, false);
 
   // alignment has to be power of two.
   if (alignment & (alignment - 1)) {
@@ -28,11 +28,11 @@ bool check_aligned_alloc(SIP size, SIP alignment) {
   return true;
 }
 
-bool check_p_in_dev(void* p) {
-  CHECK_RETURN_VAL(p, false);
+bool check_p_in_dev_(void* p) {
+  M_check_return_val(p, false);
 
-#if IS_DEV()
-  AllocHeader* header = get_allocation_header(p);
+#if M_is_dev()
+  Alloc_header_* header = get_allocation_header_(p);
   if (header->p != p) {
     return false;
   }

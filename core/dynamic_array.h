@@ -8,25 +8,25 @@
 
 #include "core/ng_types.h"
 
-class ngAllocator;
+class Allocator;
 
 template <typename T>
-class DynamicArray {
+class Dynamic_array {
 public:
-  bool da_init(ngAllocator* allocator);
+  bool da_init(Allocator* allocator);
   void da_destroy();
-  SIP da_len() const;
-  void da_reserve(SIP num);
-  void da_resize(SIP num);
-  void da_remove_range(SIP pos, SIP length);
-  void da_remove_at(SIP pos);
-  void da_insert_at(SIP index, const T& val);
+  Sip da_len() const;
+  void da_reserve(Sip num);
+  void da_resize(Sip num);
+  void da_remove_range(Sip pos, Sip length);
+  void da_remove_at(Sip pos);
+  void da_insert_at(Sip index, const T& val);
   void da_append(const T& val);
-  T& operator[](SZ index);
-private:
+  T& operator[](Sz index);
+
   T* m_p = NULL;
-  ngAllocator* m_allocator = NULL;
-  SIP m_length = 0;
-  SIP m_capacity = 0;
+  Allocator* m_allocator = NULL;
+  Sip m_length = 0;
+  Sip m_capacity = 0;
 };
 

@@ -10,11 +10,11 @@
 
 #include <math.h>
 
-V3 ray_at(ngRay r, F32 t) {
+V3 ray_at(Ray r, F32 t) {
   return r.origin + r.dir * t;
 }
 
-bool ray_hit_plane(F32* out_t, ngRay r, ngPlane p) {
+bool ray_hit_plane(F32* out_t, Ray r, ngPlane p) {
   F32 denominator = v3_dot(r.dir, p.normal);
   if (!float_equal_0(denominator)) {
     // Solve vec3_dot((o + td - p) , n) = 0;
@@ -29,7 +29,7 @@ bool ray_hit_plane(F32* out_t, ngRay r, ngPlane p) {
   return false;
 }
 
-bool ray_hit_sphere(F32* out_t, ngRay r, ngSphere s) {
+bool ray_hit_sphere(F32* out_t, Ray r, Sphere s) {
   // This equation of t has roots: (r.o + t*r.d.x - s.c.x)^2 + ... = s.r^2
   F32 temp_x = r.origin.x - s.center.x;
   F32 temp_y = r.origin.y - s.center.y;
@@ -50,7 +50,7 @@ bool ray_hit_sphere(F32* out_t, ngRay r, ngSphere s) {
   return false;
 }
 
-bool ray_hit_triangle(ngRay r, ngTriangle tri) {
+bool ray_hit_triangle(Ray r, Triangle tri) {
   // Möller-Trumbore
   // Same variable names as the original paper.
   V3 e1 = tri.vertices[1] - tri.vertices[0];

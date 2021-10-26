@@ -8,6 +8,6 @@
 
 #include "core/ng_types.h"
 
-const OSChar* os_str_find_substr(const OSChar* str, const OSChar* substr);
-SZ os_str_get_len(const OSChar* str);
-bool os_str_compare(const OSChar* s1, const OSChar* s2);
+const Os_char* os_str_find_substr(const Os_char* str, const Os_char* substr);
+Sz os_str_get_len(const Os_char* str);
+bool os_str_compare(const Os_char* s1, const Os_char* s2);

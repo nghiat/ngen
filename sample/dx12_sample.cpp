@@ -36,20 +36,20 @@
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 
-#define DX_CHECK_RETURN(condition) CHECK_RETURN(condition == S_OK)
-#define DX_CHECK_RETURN_FALSE(condition) CHECK_RETURN_VAL(condition == S_OK, false)
+#define M_dx_check_return_(condition) M_check_return(condition == S_OK)
+#define M_dx_check_return_false_(condition) M_check_return_val(condition == S_OK, false)
 
-#if IS_CLANG()
+#if M_is_clang()
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-temporary"
 #endif
 
-enum EEnableDepth {
-  EENABLE_DEPTH_FALSE,
-  EENABLE_DEPTH_TRUE,
+enum E_enable_depth_ {
+  e_enable_depth_false,
+  e_enable_depth_true,
 };
 
-struct codepoint_t {
+struct Code_point_ {
   V2 uv_top_left;
   V2 uv_bottom_right;
   int x0, x1, y0, y1;
@@ -57,24 +57,24 @@ struct codepoint_t {
   int lsb;
 };
 
-struct font_t {
+struct Font_ {
   stbtt_fontinfo fontinfo;
-  codepoint_t codepoints[32*1024];
+  Code_point_ codepoints[32*1024];
   int baseline;
   int line_space;
   float scale;
 } g_font;
 
-struct per_obj_cb_t {
+struct Per_obj_cb_ {
   M4 world;
 };
 
-struct shadow_shared_cb_t {
+struct Shadow_shared_cb_ {
   M4 light_view;
   M4 light_proj;
 };
 
-struct final_shared_cb_t {
+struct Final_shared_cb_ {
   M4 view;
   M4 proj;
   M4 light_view;
@@ -85,49 +85,49 @@ struct final_shared_cb_t {
   V4 light_color;
 };
 
-struct ui_cb_t {
+struct Ui_cb_t {
   V4 color;
   F32 width;
   F32 height;
 };
 
-struct dx12_descriptor_heap {
+struct Dx12_descriptor_heap {
   ID3D12DescriptorHeap* heap = NULL;
   U32 increment_size = 0;
   U32 curr_index = 0;
 };
 
-struct dx12_descriptor {
-  dx12_descriptor_heap* descriptor_heap = NULL;
+struct Dx12_descriptor {
+  Dx12_descriptor_heap* descriptor_heap = NULL;
   U32 index = 0;
   D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = {};
   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {};
 };
 
-struct dx12_buffer {
+struct Dx12_buffer {
   ID3D12Resource* buffer = NULL;
   void* cpu_p = NULL;
-  SIP offset = 0;
+  Sip offset = 0;
 };
 
-struct dx12_subbuffer {
-  dx12_buffer* buffer = NULL;
+struct Dx12_subbuffer {
+  Dx12_buffer* buffer = NULL;
   U8* cpu_p = NULL;
   D3D12_GPU_VIRTUAL_ADDRESS gpu_p = 0;
-  SIP offset = 0;
-  SIP size = 0;
+  Sip offset = 0;
+  Sip size = 0;
 };
 
-class DX12Window : public ngWindow {
+class Dx12_window : public ngWindow {
 public:
-  DX12Window(const OSChar* title, int w, int h) : ngWindow(title, w, h) {}
+  Dx12_window(const Os_char* title, int w, int h) : ngWindow(title, w, h) {}
 
   bool init();
   void destroy() override;
   void loop() override;
-  void on_mouse_event(EMouse mouse, int x, int y, bool is_down) override;
+  void on_mouse_event(E_mouse mouse, int x, int y, bool is_down) override;
   void on_mouse_move(int x, int y) override;
-  void on_key_event(EKey key, bool is_down) override;
+  void on_key_event(E_key key, bool is_down) override;
   void on_char_event(wchar_t c) override;
 
   void wait_for_gpu();
@@ -142,38 +142,38 @@ public:
   ID3D12CommandQueue* m_cmd_queue = NULL;
   IDXGISwapChain3* m_swap_chain = NULL;
 
-  dx12_descriptor_heap m_rtv_heap;
+  Dx12_descriptor_heap m_rtv_heap;
   ID3D12Resource* m_render_targets[sc_frame_count];
-  dx12_descriptor m_rtv_descriptors[sc_frame_count];
+  Dx12_descriptor m_rtv_descriptors[sc_frame_count];
 
   ID3D12CommandAllocator* m_cmd_allocators[sc_frame_count];
   ID3D12GraphicsCommandList* m_cmd_list;
 
-  dx12_descriptor_heap m_cbv_srv_heap;
-  dx12_buffer m_upload_buffer;
-  dx12_descriptor m_shadow_srv_descriptor;
+  Dx12_descriptor_heap m_cbv_srv_heap;
+  Dx12_buffer m_upload_buffer;
+  Dx12_descriptor m_shadow_srv_descriptor;
 
-  dx12_descriptor m_per_obj_cbv_descriptors[10];
-  dx12_subbuffer m_per_obj_cb_subbuffers[10];
-  per_obj_cb_t m_per_obj_cbs[10];
+  Dx12_descriptor m_per_obj_cbv_descriptors[10];
+  Dx12_subbuffer m_per_obj_cb_subbuffers[10];
+  Per_obj_cb_ m_per_obj_cbs[10];
 
-  dx12_descriptor m_shadow_shared_cbv_descriptor;
-  dx12_subbuffer m_shadow_shared_cb_subbuffer;
-  shadow_shared_cb_t m_shadow_shared_cb;
+  Dx12_descriptor m_shadow_shared_cbv_descriptor;
+  Dx12_subbuffer m_shadow_shared_cb_subbuffer;
+  Shadow_shared_cb_ m_shadow_shared_cb;
 
-  dx12_descriptor m_final_shared_cbv_descriptor;
-  dx12_subbuffer m_final_shared_cb_subbuffer;
-  final_shared_cb_t m_final_shared_cb;
+  Dx12_descriptor m_final_shared_cbv_descriptor;
+  Dx12_subbuffer m_final_shared_cb_subbuffer;
+  Final_shared_cb_ m_final_shared_cb;
 
-  dx12_descriptor m_shared_ui_cbv_descriptor;
-  dx12_subbuffer m_shared_ui_cb_subbuffer;
-  ui_cb_t m_shared_ui_cb;
+  Dx12_descriptor m_shared_ui_cbv_descriptor;
+  Dx12_subbuffer m_shared_ui_cb_subbuffer;
+  Ui_cb_t m_shared_ui_cb;
 
-  dx12_descriptor_heap m_dsv_heap;
+  Dx12_descriptor_heap m_dsv_heap;
   ID3D12Resource* m_depth_stencil;
   ID3D12Resource* m_shadow_depth_stencil;
-  dx12_descriptor m_depth_rt_descriptor;
-  dx12_descriptor m_shadow_depth_rt_descriptor;
+  Dx12_descriptor m_depth_rt_descriptor;
+  Dx12_descriptor m_shadow_depth_rt_descriptor;
 
   ID3D12RootSignature* m_shadow_root_sig;
   ID3D12RootSignature* m_final_root_sig;
@@ -192,20 +192,20 @@ public:
   ID3D12PipelineState* m_ui_texture_pso;
   ID3D12PipelineState* m_console_pso;
 
-  dx12_buffer m_vertex_buffer;
-  dx12_subbuffer m_vertices_subbuffer;
-  dx12_subbuffer m_normals_subbuffer;
-  dx12_subbuffer m_text_subbuffer;
-  dx12_subbuffer m_console_subbuffer;
+  Dx12_buffer m_vertex_buffer;
+  Dx12_subbuffer m_vertices_subbuffer;
+  Dx12_subbuffer m_normals_subbuffer;
+  Dx12_subbuffer m_text_subbuffer;
+  Dx12_subbuffer m_console_subbuffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertices_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_normals_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_text_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_console_vb_view;
   U32 m_objs_count = 0;
   U32 m_obj_vertices_nums[10] = {};
-  dx12_subbuffer m_texture_subbuffer;
+  Dx12_subbuffer m_texture_subbuffer;
   ID3D12Resource* m_texture;
-  dx12_descriptor m_texture_srv_descriptor;
+  Dx12_descriptor m_texture_srv_descriptor;
   U32 m_visible_text_len = 0;
 
   const U32 m_normals_stride = 64 * 1024 * 1024;
@@ -217,14 +217,14 @@ public:
   S64 m_start_time;
   bool m_is_console_active = false;
 private:
-  void create_pso(ID3D12PipelineState** pso,
+  void create_pso_(ID3D12PipelineState** pso,
                   ID3D12RootSignature* root_sig,
                   ID3DBlob* vs,
                   ID3DBlob* ps,
                   D3D12_INPUT_ELEMENT_DESC* element_desc,
                   int num_elements,
-                  EEnableDepth enable_depth = EENABLE_DEPTH_FALSE);
-  void create_root_sig(ID3D12RootSignature** root_sig,
+                  E_enable_depth_ enable_depth = e_enable_depth_false);
+  void create_root_sig_(ID3D12RootSignature** root_sig,
                      UINT num_root_params,
                      const D3D12_ROOT_PARAMETER1* root_params,
                      UINT num_static_samplers,
@@ -232,20 +232,20 @@ private:
                      D3D12_ROOT_SIGNATURE_FLAGS flags);
 };
 
-static bool create_descriptor_heap(dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptors_num) {
+static bool create_descriptor_heap_(Dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptors_num) {
   D3D12_DESCRIPTOR_HEAP_DESC desc = {};
   desc.Type = type;
   desc.NumDescriptors = max_descriptors_num;
   desc.Flags = flags;
   desc.NodeMask = 0;
-  DX_CHECK_RETURN_FALSE(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap->heap)));
+  M_dx_check_return_false_(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap->heap)));
   descriptor_heap->increment_size = device->GetDescriptorHandleIncrementSize(type);
   return true;
 }
 
-static dx12_descriptor allocate_descriptor(dx12_descriptor_heap* descriptor_heap) {
-  dx12_descriptor descriptor;
-  CHECK_LOG_RETURN_VAL(descriptor_heap->curr_index < descriptor_heap->heap->GetDesc().NumDescriptors, descriptor, "Out of descriptors");
+static Dx12_descriptor allocate_descriptor_(Dx12_descriptor_heap* descriptor_heap) {
+  Dx12_descriptor descriptor;
+  M_check_log_return_val(descriptor_heap->curr_index < descriptor_heap->heap->GetDesc().NumDescriptors, descriptor, "Out of descriptors");
   descriptor.descriptor_heap = descriptor_heap;
   descriptor.index = descriptor_heap->curr_index;
   descriptor.cpu_handle.ptr = descriptor_heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + descriptor_heap->curr_index * descriptor_heap->increment_size;
@@ -254,7 +254,7 @@ static dx12_descriptor allocate_descriptor(dx12_descriptor_heap* descriptor_heap
   return descriptor;
 }
 
-static D3D12_RESOURCE_DESC create_resource_desc(size_t size) {
+static D3D12_RESOURCE_DESC create_resource_desc_(size_t size) {
   D3D12_RESOURCE_DESC desc = {};
   desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
   desc.Alignment = 0;
@@ -270,7 +270,7 @@ static D3D12_RESOURCE_DESC create_resource_desc(size_t size) {
   return desc;
 }
 
-static D3D12_HEAP_PROPERTIES create_heap_props(D3D12_HEAP_TYPE type) {
+static D3D12_HEAP_PROPERTIES create_heap_props_(D3D12_HEAP_TYPE type) {
   D3D12_HEAP_PROPERTIES props = {};
   props.Type = type;
   props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -280,7 +280,7 @@ static D3D12_HEAP_PROPERTIES create_heap_props(D3D12_HEAP_TYPE type) {
   return props;
 }
 
-static D3D12_DESCRIPTOR_RANGE1 create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE range_type,
+static D3D12_DESCRIPTOR_RANGE1 create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE range_type,
                                                            UINT num_descriptors,
                                                            UINT base_shader_reg,
                                                            UINT reg_space,
@@ -297,7 +297,7 @@ static D3D12_DESCRIPTOR_RANGE1 create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANG
 }
 
 static D3D12_ROOT_PARAMETER1
-create_root_param_1_1_descriptor_table(UINT num_ranges, const D3D12_DESCRIPTOR_RANGE1* ranges, D3D12_SHADER_VISIBILITY shader_visibility) {
+create_root_param_1_1_descriptor_table_(UINT num_ranges, const D3D12_DESCRIPTOR_RANGE1* ranges, D3D12_SHADER_VISIBILITY shader_visibility) {
   D3D12_ROOT_PARAMETER1 param = {};
   param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
   param.DescriptorTable = {};
@@ -307,7 +307,7 @@ create_root_param_1_1_descriptor_table(UINT num_ranges, const D3D12_DESCRIPTOR_R
   return param;
 }
 
-static D3D12_RESOURCE_BARRIER create_transition_barrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) {
+static D3D12_RESOURCE_BARRIER create_transition_barrier_(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) {
   D3D12_RESOURCE_BARRIER barrier = {};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -318,24 +318,24 @@ static D3D12_RESOURCE_BARRIER create_transition_barrier(ID3D12Resource* resource
   return barrier;
 }
 
-static D3D12_CONSTANT_BUFFER_VIEW_DESC create_const_buf_view_desc(D3D12_GPU_VIRTUAL_ADDRESS location, UINT size) {
+static D3D12_CONSTANT_BUFFER_VIEW_DESC create_const_buf_view_desc_(D3D12_GPU_VIRTUAL_ADDRESS location, UINT size) {
   D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
   desc.BufferLocation = location;
   desc.SizeInBytes = size;
   return desc;
 }
 
-static bool create_buffer(dx12_buffer* buffer, ID3D12Device* device, const D3D12_HEAP_PROPERTIES* heap_props, const D3D12_RESOURCE_DESC* desc) {
+static bool create_buffer_(Dx12_buffer* buffer, ID3D12Device* device, const D3D12_HEAP_PROPERTIES* heap_props, const D3D12_RESOURCE_DESC* desc) {
   *buffer = {};
-  DX_CHECK_RETURN_FALSE(device->CreateCommittedResource(heap_props, D3D12_HEAP_FLAG_NONE, desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&buffer->buffer)));
+  M_dx_check_return_false_(device->CreateCommittedResource(heap_props, D3D12_HEAP_FLAG_NONE, desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&buffer->buffer)));
   buffer->buffer->Map(0, NULL, &buffer->cpu_p);
   return true;
 }
 
-static dx12_subbuffer allocate_subbuffer(dx12_buffer* buffer, SIP size, SIP alignment) {
-  dx12_subbuffer subbuffer = {};
-  SIP aligned_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
-  CHECK_LOG_RETURN_VAL(aligned_offset + size <= buffer->buffer->GetDesc().Width, subbuffer, "Out of memory");
+static Dx12_subbuffer allocate_subbuffer_(Dx12_buffer* buffer, Sip size, Sip alignment) {
+  Dx12_subbuffer subbuffer = {};
+  Sip aligned_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
+  M_check_log_return_val(aligned_offset + size <= buffer->buffer->GetDesc().Width, subbuffer, "Out of memory");
   subbuffer.buffer = buffer;
   subbuffer.cpu_p = (U8*)buffer->cpu_p + aligned_offset;
   subbuffer.gpu_p = buffer->buffer->GetGPUVirtualAddress() + aligned_offset;
@@ -345,17 +345,17 @@ static dx12_subbuffer allocate_subbuffer(dx12_buffer* buffer, SIP size, SIP alig
   return subbuffer;
 }
 
-static bool compile_shader(const OSChar* path, const char* entry, const char* target, ID3DBlob** shader) {
+static bool compile_shader_(const Os_char* path, const char* entry, const char* target, ID3DBlob** shader) {
   UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
   ID3DBlob* error;
   if (D3DCompileFromFile(path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
-    LOGF("%s", (const char*)error->GetBufferPointer());
+    M_logf("%s", (const char*)error->GetBufferPointer());
     return false;
   }
   return true;
 }
 
-D3D12_RASTERIZER_DESC DX12Window::s_default_rasterizer_desc = {
+D3D12_RASTERIZER_DESC Dx12_window::s_default_rasterizer_desc = {
     .FillMode = D3D12_FILL_MODE_SOLID,
     .CullMode = D3D12_CULL_MODE_BACK,
     .FrontCounterClockwise = TRUE,
@@ -369,12 +369,12 @@ D3D12_RASTERIZER_DESC DX12Window::s_default_rasterizer_desc = {
     .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
 };
 
-D3D12_BLEND_DESC DX12Window::s_default_blend_desc = {
+D3D12_BLEND_DESC Dx12_window::s_default_blend_desc = {
     .AlphaToCoverageEnable = FALSE,
     .IndependentBlendEnable = FALSE,
 };
 
-bool DX12Window::init() {
+bool Dx12_window::init() {
   ngWindow::init();
 
   m_start_time = mono_time_now();
@@ -405,14 +405,14 @@ bool DX12Window::init() {
   {
     // Enable debug layer.
     ID3D12Debug* debug_controller;
-    DX_CHECK_RETURN_FALSE(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_controller)));
+    M_dx_check_return_false_(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_controller)));
     debug_controller->EnableDebugLayer();
     dxgi_factory_flags |= DXGI_CREATE_FACTORY_DEBUG;
     debug_controller->Release();
   }
 
   IDXGIFactory4* dxgi_factory;
-  DX_CHECK_RETURN_FALSE(CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory)));
+  M_dx_check_return_false_(CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory)));
 
   {
     // Choose adapter (graphics card).
@@ -435,22 +435,22 @@ bool DX12Window::init() {
     }
 
     if (adapter_i == -1) {
-      CHECK_LOG_RETURN_VAL(backup_adapter_i != -1, false, "Can't find a dx12 adapter");
+      M_check_log_return_val(backup_adapter_i != -1, false, "Can't find a dx12 adapter");
       adapter_i = backup_adapter_i;
     }
 
     dxgi_factory->EnumAdapters1(adapter_i, &adapter);
     DXGI_ADAPTER_DESC1 desc;
     adapter->GetDesc1(&desc);
-    LOGI("%ls", desc.Description);
-    DX_CHECK_RETURN_FALSE(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device)));
+    M_logi("%ls", desc.Description);
+    M_dx_check_return_false_(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device)));
   }
 
   {
     D3D12_COMMAND_QUEUE_DESC cmd_queue_desc = {};
     cmd_queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     cmd_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&m_cmd_queue)));
+    M_dx_check_return_false_(m_device->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&m_cmd_queue)));
   }
 
   DXGI_SWAP_CHAIN_DESC1 sc_desc = {};
@@ -463,25 +463,25 @@ bool DX12Window::init() {
   sc_desc.SampleDesc.Count = 1;
 
   IDXGISwapChain1* swap_chain;
-  DX_CHECK_RETURN_FALSE(dxgi_factory->CreateSwapChainForHwnd(m_cmd_queue, m_platform_data.hwnd, &sc_desc, NULL, NULL, &swap_chain));
-  DX_CHECK_RETURN_FALSE(dxgi_factory->MakeWindowAssociation(m_platform_data.hwnd, DXGI_MWA_NO_ALT_ENTER));
-  DX_CHECK_RETURN_FALSE(swap_chain->QueryInterface(IID_PPV_ARGS(&m_swap_chain)));
+  M_dx_check_return_false_(dxgi_factory->CreateSwapChainForHwnd(m_cmd_queue, m_platform_data.hwnd, &sc_desc, NULL, NULL, &swap_chain));
+  M_dx_check_return_false_(dxgi_factory->MakeWindowAssociation(m_platform_data.hwnd, DXGI_MWA_NO_ALT_ENTER));
+  M_dx_check_return_false_(swap_chain->QueryInterface(IID_PPV_ARGS(&m_swap_chain)));
   dxgi_factory->Release();
   m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
 
   {
-    if (!create_descriptor_heap(&m_rtv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, sc_frame_count))
+    if (!create_descriptor_heap_(&m_rtv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, sc_frame_count))
       return false;
 
     for (int i = 0; i < sc_frame_count; ++i) {
-      DX_CHECK_RETURN_FALSE(m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i])));
-      m_rtv_descriptors[i] = allocate_descriptor(&m_rtv_heap);
+      M_dx_check_return_false_(m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i])));
+      m_rtv_descriptors[i] = allocate_descriptor_(&m_rtv_heap);
       m_device->CreateRenderTargetView(m_render_targets[i], NULL, m_rtv_descriptors[i].cpu_handle);
     }
   }
 
   {
-    if (!create_descriptor_heap(&m_dsv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, 2))
+    if (!create_descriptor_heap_(&m_dsv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, 2))
       return false;
 
     D3D12_RESOURCE_DESC depth_tex_desc = {};
@@ -502,10 +502,10 @@ bool DX12Window::init() {
     clear_value.DepthStencil.Depth = 1.0f;
     clear_value.DepthStencil.Stencil = 0;
 
-    D3D12_HEAP_PROPERTIES heap_props = create_heap_props(D3D12_HEAP_TYPE_DEFAULT);
+    D3D12_HEAP_PROPERTIES heap_props = create_heap_props_(D3D12_HEAP_TYPE_DEFAULT);
 
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clear_value, IID_PPV_ARGS(&m_depth_stencil)));
-    m_depth_rt_descriptor = allocate_descriptor(&m_dsv_heap);
+    M_dx_check_return_false_(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clear_value, IID_PPV_ARGS(&m_depth_stencil)));
+    m_depth_rt_descriptor = allocate_descriptor_(&m_dsv_heap);
     D3D12_DEPTH_STENCIL_VIEW_DESC dsv_view_desc = {};
     dsv_view_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     dsv_view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -513,19 +513,19 @@ bool DX12Window::init() {
     dsv_view_desc.Texture2D.MipSlice = 0;
     m_device->CreateDepthStencilView(m_depth_stencil, &dsv_view_desc, m_depth_rt_descriptor.cpu_handle);
 
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, &clear_value, IID_PPV_ARGS(&m_shadow_depth_stencil)));
-    m_shadow_depth_rt_descriptor = allocate_descriptor(&m_dsv_heap);
+    M_dx_check_return_false_(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, &clear_value, IID_PPV_ARGS(&m_shadow_depth_stencil)));
+    m_shadow_depth_rt_descriptor = allocate_descriptor_(&m_dsv_heap);
     m_device->CreateDepthStencilView(m_shadow_depth_stencil, &dsv_view_desc, m_shadow_depth_rt_descriptor.cpu_handle);
   }
 
   {
-    if(!create_descriptor_heap(&m_cbv_srv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10))
+    if(!create_descriptor_heap_(&m_cbv_srv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10))
       return false;
 
     {
-      m_shadow_srv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
+      m_shadow_srv_descriptor = allocate_descriptor_(&m_cbv_srv_heap);
       // Allocate here and use later so they will be next to each other.
-      m_texture_srv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
+      m_texture_srv_descriptor = allocate_descriptor_(&m_cbv_srv_heap);
       D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
       srv_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
       srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -538,32 +538,32 @@ bool DX12Window::init() {
     }
 
     // Constant buffer
-    D3D12_RESOURCE_DESC upload_desc = create_resource_desc(64 * 1024 * 1024);
-    D3D12_HEAP_PROPERTIES heap_props = create_heap_props(D3D12_HEAP_TYPE_UPLOAD);
-    if (!create_buffer(&m_upload_buffer, m_device, &heap_props, &upload_desc))
+    D3D12_RESOURCE_DESC upload_desc = create_resource_desc_(64 * 1024 * 1024);
+    D3D12_HEAP_PROPERTIES heap_props = create_heap_props_(D3D12_HEAP_TYPE_UPLOAD);
+    if (!create_buffer_(&m_upload_buffer, m_device, &heap_props, &upload_desc))
       return false;
     // From D3D12HelloConstantBuffers sample
     // CB size is required to be 256-byte aligned
     {
-      m_shadow_shared_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
-      SIP cb_size = (sizeof(shadow_shared_cb_t) + 255) & ~255;
-      m_shadow_shared_cb_subbuffer = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
-      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_shadow_shared_cb_subbuffer.gpu_p, m_shadow_shared_cb_subbuffer.size), m_shadow_shared_cbv_descriptor.cpu_handle);
+      m_shadow_shared_cbv_descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+      Sip cb_size = (sizeof(Shadow_shared_cb_) + 255) & ~255;
+      m_shadow_shared_cb_subbuffer = allocate_subbuffer_(&m_upload_buffer, cb_size, 256);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc_(m_shadow_shared_cb_subbuffer.gpu_p, m_shadow_shared_cb_subbuffer.size), m_shadow_shared_cbv_descriptor.cpu_handle);
       memcpy(m_shadow_shared_cb_subbuffer.cpu_p, &m_shadow_shared_cb, sizeof(m_shadow_shared_cb));
     }
 
     {
-      m_final_shared_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
-      SIP cb_size = (sizeof(final_shared_cb_t) + 255) & ~255;
-      m_final_shared_cb_subbuffer = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
-      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_final_shared_cb_subbuffer.gpu_p, m_final_shared_cb_subbuffer.size), m_final_shared_cbv_descriptor.cpu_handle);
+      m_final_shared_cbv_descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+      Sip cb_size = (sizeof(Final_shared_cb_) + 255) & ~255;
+      m_final_shared_cb_subbuffer = allocate_subbuffer_(&m_upload_buffer, cb_size, 256);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc_(m_final_shared_cb_subbuffer.gpu_p, m_final_shared_cb_subbuffer.size), m_final_shared_cbv_descriptor.cpu_handle);
     }
 
     {
-      m_shared_ui_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
-      SIP cb_size = (sizeof(ui_cb_t) + 255) & ~255;
-      m_shared_ui_cb_subbuffer = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
-      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_shared_ui_cb_subbuffer.gpu_p, m_shared_ui_cb_subbuffer.size), m_shared_ui_cbv_descriptor.cpu_handle);
+      m_shared_ui_cbv_descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+      Sip cb_size = (sizeof(Ui_cb_t) + 255) & ~255;
+      m_shared_ui_cb_subbuffer = allocate_subbuffer_(&m_upload_buffer, cb_size, 256);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc_(m_shared_ui_cb_subbuffer.gpu_p, m_shared_ui_cb_subbuffer.size), m_shared_ui_cbv_descriptor.cpu_handle);
       memcpy(m_shared_ui_cb_subbuffer.cpu_p, &m_shared_ui_cb, sizeof(m_shared_ui_cb));
     }
   }
@@ -571,14 +571,14 @@ bool DX12Window::init() {
   {
     // Create a root signature consisting of a descriptor table with a single CBV
     D3D12_DESCRIPTOR_RANGE1 ranges[] = {
-      create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
-      create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
+      create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
+      create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
     };
     D3D12_ROOT_PARAMETER1 root_params[] = {
-      create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX),
-      create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
+      create_root_param_1_1_descriptor_table_(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX),
+      create_root_param_1_1_descriptor_table_(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
     };
-    create_root_sig(&m_shadow_root_sig,
+    create_root_sig_(&m_shadow_root_sig,
                     static_array_size(root_params),
                     root_params,
                     0,
@@ -589,19 +589,19 @@ bool DX12Window::init() {
   }
 
   {
-    OSChar shader_path[MAX_PATH_LEN];
-    path_from_exe_dir(shader_path, OS_TXT("assets/shadow.hlsl"), MAX_PATH_LEN);
-    compile_shader(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
+    Os_char shader_path[M_max_path_len];
+    path_from_exe_dir(shader_path, M_os_txt("assets/shadow.hlsl"), M_max_path_len);
+    compile_shader_(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
 
-    path_from_exe_dir(shader_path, OS_TXT("assets/shader.hlsl"), MAX_PATH_LEN);
-    compile_shader(shader_path, "VSMain", "vs_5_0", &m_final_vs);
-    compile_shader(shader_path, "PSMain", "ps_5_0", &m_final_ps);
+    path_from_exe_dir(shader_path, M_os_txt("assets/shader.hlsl"), M_max_path_len);
+    compile_shader_(shader_path, "VSMain", "vs_5_0", &m_final_vs);
+    compile_shader_(shader_path, "PSMain", "ps_5_0", &m_final_ps);
 
-    path_from_exe_dir(shader_path, OS_TXT("assets/ui.hlsl"), MAX_PATH_LEN);
-    compile_shader(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
-    compile_shader(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
-    compile_shader(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
-    compile_shader(shader_path, "PSNonTextureMain", "ps_5_0", &m_ui_non_texture_ps);
+    path_from_exe_dir(shader_path, M_os_txt("assets/ui.hlsl"), M_max_path_len);
+    compile_shader_(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
+    compile_shader_(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
+    compile_shader_(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
+    compile_shader_(shader_path, "PSNonTextureMain", "ps_5_0", &m_ui_non_texture_ps);
   }
 
   {
@@ -624,23 +624,23 @@ bool DX12Window::init() {
       D3D12_INPUT_ELEMENT_DESC input_elem_descs[] = {
         { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       };
-      create_pso(&m_shadow_pso, m_shadow_root_sig, m_shadow_vs, NULL, input_elem_descs, static_array_size(input_elem_descs), EENABLE_DEPTH_TRUE);
+      create_pso_(&m_shadow_pso, m_shadow_root_sig, m_shadow_vs, NULL, input_elem_descs, static_array_size(input_elem_descs), e_enable_depth_true);
     }
 
     for (int i = 0; i < sc_frame_count; ++i)
-      DX_CHECK_RETURN_FALSE(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
+      M_dx_check_return_false_(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
+    M_dx_check_return_false_(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
 
     {
       D3D12_DESCRIPTOR_RANGE1 ranges[] = {
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
       };
       D3D12_ROOT_PARAMETER1 root_params[] = {
-          create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL),
-          create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL),
-          create_root_param_1_1_descriptor_table(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL),
+          create_root_param_1_1_descriptor_table_(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL),
+          create_root_param_1_1_descriptor_table_(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL),
+          create_root_param_1_1_descriptor_table_(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL),
       };
       D3D12_STATIC_SAMPLER_DESC sampler = {};
       sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -657,7 +657,7 @@ bool DX12Window::init() {
       sampler.RegisterSpace = 0;
       sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-      create_root_sig(&m_final_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+      create_root_sig_(&m_final_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     }
 
     {
@@ -665,17 +665,17 @@ bool DX12Window::init() {
         { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
         { "N", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       };
-      create_pso(&m_final_pso, m_final_root_sig, m_final_vs, m_final_ps, final_elem_descs, static_array_size(final_elem_descs), EENABLE_DEPTH_TRUE);
+      create_pso_(&m_final_pso, m_final_root_sig, m_final_vs, m_final_ps, final_elem_descs, static_array_size(final_elem_descs), e_enable_depth_true);
     }
 
     {
       D3D12_DESCRIPTOR_RANGE1 ranges[] = {
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
       };
       D3D12_ROOT_PARAMETER1 root_params[] = {
-          create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL),
-          create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
+          create_root_param_1_1_descriptor_table_(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL),
+          create_root_param_1_1_descriptor_table_(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
       };
       D3D12_STATIC_SAMPLER_DESC sampler = {};
       sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -692,18 +692,18 @@ bool DX12Window::init() {
       sampler.RegisterSpace = 0;
       sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-      create_root_sig(&m_ui_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+      create_root_sig_(&m_ui_root_sig, static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     }
 
     {
       D3D12_DESCRIPTOR_RANGE1 ranges[] = {
-        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
+        create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
       };
       D3D12_ROOT_PARAMETER1 root_params[] = {
-          create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL),
+          create_root_param_1_1_descriptor_table_(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL),
       };
 
-      create_root_sig(&m_console_root_sig, static_array_size(root_params), root_params, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+      create_root_sig_(&m_console_root_sig, static_array_size(root_params), root_params, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     }
 
     {
@@ -711,30 +711,30 @@ bool DX12Window::init() {
         { "V", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
         { "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2 * sizeof(F32), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       };
-      create_pso(&m_ui_texture_pso, m_ui_root_sig, m_ui_texture_vs, m_ui_texture_ps, ui_elem_descs, static_array_size(ui_elem_descs));
+      create_pso_(&m_ui_texture_pso, m_ui_root_sig, m_ui_texture_vs, m_ui_texture_ps, ui_elem_descs, static_array_size(ui_elem_descs));
     }
 
     {
       D3D12_INPUT_ELEMENT_DESC console_elem_descs[] = {
         { "V", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       };
-      create_pso(&m_console_pso, m_console_root_sig, m_ui_non_texture_vs, m_ui_non_texture_ps, console_elem_descs, static_array_size(console_elem_descs));
+      create_pso_(&m_console_pso, m_console_root_sig, m_ui_non_texture_vs, m_ui_non_texture_ps, console_elem_descs, static_array_size(console_elem_descs));
     }
   }
 
   {
     stbtt_fontinfo font;
-    OSChar font_path[MAX_PATH_LEN];
-    path_from_exe_dir(font_path, OS_TXT("assets/UbuntuMono-Regular.ttf"), MAX_PATH_LEN);
-    DynamicArray<U8> font_buf = ngFile::f_read_whole_file_as_text(g_persistent_allocator, font_path);
-    CHECK_RETURN_VAL(stbtt_InitFont(&font, &font_buf[0], stbtt_GetFontOffsetForIndex(&font_buf[0], 0)) != 0, false);
+    Os_char font_path[M_max_path_len];
+    path_from_exe_dir(font_path, M_os_txt("assets/UbuntuMono-Regular.ttf"), M_max_path_len);
+    Dynamic_array<U8> font_buf = File::f_read_whole_file_as_text(g_persistent_allocator, font_path);
+    M_check_return_val(stbtt_InitFont(&font, &font_buf[0], stbtt_GetFontOffsetForIndex(&font_buf[0], 0)) != 0, false);
     g_font.fontinfo = font;
     const int c_tex_w = 2048;
     const int c_tex_h = 2048;
-    LinearAllocator<> temp_allocator("font_allocator");
+    Linear_allocator<> temp_allocator("font_allocator");
     temp_allocator.la_init();
-    SCOPE_EXIT(temp_allocator.al_destroy());
-    U8* font_tex = (U8*)temp_allocator.al_alloc_zero(c_tex_w * c_tex_h);
+    M_scope_exit(temp_allocator.al_destroy());
+    U8* Font_ex = (U8*)temp_allocator.al_alloc_zero(c_tex_w * c_tex_h);
     int font_h = 16;
     float scale = stbtt_ScaleForPixelHeight(&font, font_h);
     g_font.scale = scale;
@@ -753,14 +753,14 @@ bool DX12Window::init() {
       stbtt_GetCodepointBitmapBoxSubpixel(&font, c, scale, scale, x_shift, 0.0f, &x0, &y0, &x1, &y1);
       int w = x1 - x0;
       int h = y1 - y0;
-      CHECK_LOG_RETURN_VAL(y + h < c_tex_h, false, "Bigger than texture height");
+      M_check_log_return_val(y + h < c_tex_h, false, "Bigger than texture height");
       if (x + w + 1 >= c_tex_w) {
         y += font_h;
         x = c_x_left;
       }
       // Is +1 necessary for subpixel rendering?
-      CHECK_LOG_RETURN_VAL(x + w + 1 < c_tex_h, false, "Bigger than texture width");
-      stbtt_MakeCodepointBitmapSubpixel(&font, &font_tex[(int)(y) * c_tex_w + (int)x], w, h, c_tex_w, scale, scale, x_shift, 0.0f, c);
+      M_check_log_return_val(x + w + 1 < c_tex_h, false, "Bigger than texture width");
+      stbtt_MakeCodepointBitmapSubpixel(&font, &Font_ex[(int)(y) * c_tex_w + (int)x], w, h, c_tex_w, scale, scale, x_shift, 0.0f, c);
       int advance, lsb;
       stbtt_GetCodepointHMetrics(&font, c, &advance, &lsb);
       g_font.codepoints[c].uv_top_left = V2{x + 0.5f, y + 0.5f} / V2{c_tex_w, c_tex_h};
@@ -780,12 +780,12 @@ bool DX12Window::init() {
     pitched_desc.Height = c_tex_h;
     pitched_desc.Depth = 1;
     pitched_desc.RowPitch = (c_tex_w + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-    m_texture_subbuffer = allocate_subbuffer(&m_upload_buffer, pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+    m_texture_subbuffer = allocate_subbuffer_(&m_upload_buffer, pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
-    placed_texture.Offset = (SIP)m_texture_subbuffer.cpu_p - (SIP)m_texture_subbuffer.buffer->cpu_p;
+    placed_texture.Offset = (Sip)m_texture_subbuffer.cpu_p - (Sip)m_texture_subbuffer.buffer->cpu_p;
     placed_texture.Footprint = pitched_desc;
     for (int i = 0; i < pitched_desc.Height; ++i) {
-      memcpy(m_texture_subbuffer.cpu_p + i * pitched_desc.RowPitch, &font_tex[i * c_tex_w], pitched_desc.Width);
+      memcpy(m_texture_subbuffer.cpu_p + i * pitched_desc.RowPitch, &Font_ex[i * c_tex_w], pitched_desc.Width);
     }
     D3D12_RESOURCE_DESC tex_desc = {};
     tex_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -799,7 +799,7 @@ bool DX12Window::init() {
     tex_desc.SampleDesc.Quality = 0;
     tex_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     tex_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&create_heap_props(D3D12_HEAP_TYPE_DEFAULT),
+    M_dx_check_return_false_(m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_DEFAULT),
                                                             D3D12_HEAP_FLAG_NONE,
                                                             &tex_desc,
                                                             D3D12_RESOURCE_STATE_COPY_DEST,
@@ -814,7 +814,7 @@ bool DX12Window::init() {
     dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     dest.SubresourceIndex = 0;
     m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
-    m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+    m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
     m_cmd_list->Close();
     m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
 
@@ -832,44 +832,44 @@ bool DX12Window::init() {
   }
 
   {
-    LinearAllocator<> temp_allocator("obj_allocator");
+    Linear_allocator<> temp_allocator("obj_allocator");
     temp_allocator.la_init();
-    SCOPE_EXIT(temp_allocator.al_destroy());
-    const OSChar* obj_paths[] = {
-        OS_TXT("assets/plane.obj"),
-        OS_TXT("assets/wolf.obj"),
+    M_scope_exit(temp_allocator.al_destroy());
+    const Os_char* obj_paths[] = {
+        M_os_txt("assets/plane.obj"),
+        M_os_txt("assets/wolf.obj"),
     };
-    SIP vertices_offset = 0;
-    SIP normals_offset = 0;
+    Sip vertices_offset = 0;
+    Sip normals_offset = 0;
     m_objs_count = static_array_size(obj_paths);
 
     {
-      SIP cb_size = (sizeof(per_obj_cb_t) + 255) & ~255;
+      Sip cb_size = (sizeof(Per_obj_cb_) + 255) & ~255;
       for (int i = 0; i < m_objs_count; ++i) {
-        m_per_obj_cb_subbuffers[i] = allocate_subbuffer(&m_upload_buffer, cb_size, 256);
-        m_per_obj_cbv_descriptors[i] = allocate_descriptor(&m_cbv_srv_heap);
-        m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_per_obj_cb_subbuffers[i].gpu_p, cb_size), m_per_obj_cbv_descriptors[i].cpu_handle);
+        m_per_obj_cb_subbuffers[i] = allocate_subbuffer_(&m_upload_buffer, cb_size, 256);
+        m_per_obj_cbv_descriptors[i] = allocate_descriptor_(&m_cbv_srv_heap);
+        m_device->CreateConstantBufferView(&create_const_buf_view_desc_(m_per_obj_cb_subbuffers[i].gpu_p, cb_size), m_per_obj_cbv_descriptors[i].cpu_handle);
         m_per_obj_cbs[i].world = m4_identity();
-        memcpy(m_per_obj_cb_subbuffers[i].cpu_p, &m_per_obj_cbs[i], sizeof(per_obj_cb_t));
+        memcpy(m_per_obj_cb_subbuffers[i].cpu_p, &m_per_obj_cbs[i], sizeof(Per_obj_cb_));
       }
     }
 
-    if (!create_buffer(&m_vertex_buffer, m_device, &create_heap_props(D3D12_HEAP_TYPE_UPLOAD), &create_resource_desc(128 * 1024 * 1024)))
+    if (!create_buffer_(&m_vertex_buffer, m_device, &create_heap_props_(D3D12_HEAP_TYPE_UPLOAD), &create_resource_desc_(128 * 1024 * 1024)))
       return false;
 
-    m_vertices_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
-    m_normals_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
-    m_text_subbuffer = allocate_subbuffer(&m_vertex_buffer, 1024 * 1024, 16);
-    m_console_subbuffer = allocate_subbuffer(&m_vertex_buffer, 6 * sizeof(V2), 16);
+    m_vertices_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 16 * 1024 * 1024, 16);
+    m_normals_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 16 * 1024 * 1024, 16);
+    m_text_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 1024 * 1024, 16);
+    m_console_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 6 * sizeof(V2), 16);
     for (int i = 0; i < m_objs_count; ++i) {
-      OBJLoader obj;
-      OSChar full_obj_path[MAX_PATH_LEN];
-      obj.obj_init(&temp_allocator, path_from_exe_dir(full_obj_path, obj_paths[i], MAX_PATH_LEN));
+      Obj_loader obj;
+      Os_char full_obj_path[M_max_path_len];
+      obj.obj_init(&temp_allocator, path_from_exe_dir(full_obj_path, obj_paths[i], M_max_path_len));
       m_obj_vertices_nums[i] = obj.m_vertices.da_len();
       int vertices_size = m_obj_vertices_nums[i] * sizeof(obj.m_vertices[0]);
       int normals_size = m_obj_vertices_nums[i] * sizeof(obj.m_normals[0]);
-      CHECK_RETURN_VAL(vertices_offset + vertices_size <= m_vertices_subbuffer.size, false);
-      CHECK_RETURN_VAL(normals_offset + normals_size <= m_normals_subbuffer.size, false);
+      M_check_return_val(vertices_offset + vertices_size <= m_vertices_subbuffer.size, false);
+      M_check_return_val(normals_offset + normals_size <= m_normals_subbuffer.size, false);
       memcpy(m_vertices_subbuffer.cpu_p + vertices_offset, &obj.m_vertices[0], vertices_size);
       memcpy(m_normals_subbuffer.cpu_p + normals_offset, &obj.m_normals[0], normals_size);
       vertices_offset += vertices_size;
@@ -877,11 +877,11 @@ bool DX12Window::init() {
     }
     m_vertices_vb_view.BufferLocation = m_vertices_subbuffer.gpu_p;
     m_vertices_vb_view.SizeInBytes = vertices_offset;
-    m_vertices_vb_view.StrideInBytes = sizeof(((OBJLoader*)0)->m_vertices[0]);
+    m_vertices_vb_view.StrideInBytes = sizeof(((Obj_loader*)0)->m_vertices[0]);
 
     m_normals_vb_view.BufferLocation = m_normals_subbuffer.gpu_p;
     m_normals_vb_view.SizeInBytes = normals_offset;
-    m_normals_vb_view.StrideInBytes = sizeof(((OBJLoader*)0)->m_normals[0]);
+    m_normals_vb_view.StrideInBytes = sizeof(((Obj_loader*)0)->m_normals[0]);
 
   }
 
@@ -901,28 +901,28 @@ bool DX12Window::init() {
 
   m_vertex_buffer.buffer->Unmap(0, NULL);
   {
-    DX_CHECK_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+    M_dx_check_return_false_(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
     ++m_fence_vals[m_frame_no];
     m_fence_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-    CHECK_RETURN_VAL(m_fence_event, false);
+    M_check_return_val(m_fence_event, false);
     wait_for_gpu();
   }
 
   return true;
 }
 
-void DX12Window::destroy() {
+void Dx12_window::destroy() {
   if (m_device)
     m_device->Release();
   if (m_cmd_queue)
     m_cmd_queue->Release();
 }
 
-void DX12Window::loop() {
+void Dx12_window::loop() {
   {
-    LinearAllocator<> temp_allocator("text_allocator");
+    Linear_allocator<> temp_allocator("text_allocator");
     temp_allocator.la_init();
-    SCOPE_EXIT(temp_allocator.al_destroy());
+    M_scope_exit(temp_allocator.al_destroy());
     m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
     // text data
     static S64 last_frametime = mono_time_now();
@@ -941,7 +941,7 @@ void DX12Window::loop() {
     int c_console_height = 600;
     int max_num_lines = c_console_height / g_font.line_space + 1;
 
-    DynamicArray<float> ui_data;
+    Dynamic_array<float> ui_data;
     ui_data.da_init(&temp_allocator);
     const float c_x_left = 10.0f;
     const float c_max_w = 600.0f;
@@ -960,7 +960,7 @@ void DX12Window::loop() {
       }
       ++m_visible_text_len;
       const char* nc = &text[i + 1];
-      codepoint_t* cp = &g_font.codepoints[*c];
+      Code_point_* cp = &g_font.codepoints[*c];
       float left = x + cp->x0;
       float right = x + cp->x1;
       if (right > c_max_w) {
@@ -1040,9 +1040,9 @@ void DX12Window::loop() {
   F32 to_y = 0.5f;
   F32 y = (to_y - from_y) * norm_mod * 2 + from_y;
   m_per_obj_cbs[1].world = translate({0.0f, y, 0.0f});
-  memcpy(m_per_obj_cb_subbuffers[1].cpu_p, &m_per_obj_cbs[1], sizeof(per_obj_cb_t));
-  DX_CHECK_RETURN(m_cmd_allocators[m_frame_no]->Reset());
-  DX_CHECK_RETURN(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], m_shadow_pso));
+  memcpy(m_per_obj_cb_subbuffers[1].cpu_p, &m_per_obj_cbs[1], sizeof(Per_obj_cb_));
+  M_dx_check_return_(m_cmd_allocators[m_frame_no]->Reset());
+  M_dx_check_return_(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], m_shadow_pso));
 
   D3D12_VIEWPORT viewport = {};
   viewport.TopLeftX = 0;
@@ -1060,7 +1060,7 @@ void DX12Window::loop() {
   m_cmd_list->RSSetViewports(1, &viewport);
   m_cmd_list->RSSetScissorRects(1, &scissor_rect);
 
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
 
   m_cmd_list->SetPipelineState(m_shadow_pso);
   m_cmd_list->SetGraphicsRootSignature(m_shadow_root_sig);
@@ -1075,8 +1075,8 @@ void DX12Window::loop() {
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_per_obj_cbv_descriptors[1].gpu_handle);
   m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
 
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
   m_cmd_list->SetPipelineState(m_final_pso);
   m_cmd_list->SetGraphicsRootSignature(m_final_root_sig);
@@ -1114,56 +1114,56 @@ void DX12Window::loop() {
   m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
   m_cmd_list->DrawInstanced(6, 1, 0, 0);
 
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
-  DX_CHECK_RETURN(m_swap_chain->Present(1, 0));
+  M_dx_check_return_(m_swap_chain->Present(1, 0));
   // Prepare to render the next frame
   U64 curr_fence_val = m_fence_vals[m_frame_no];
-  DX_CHECK_RETURN(m_cmd_queue->Signal(m_fence, curr_fence_val));
+  M_dx_check_return_(m_cmd_queue->Signal(m_fence, curr_fence_val));
   m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
   // If the next frame is not ready to be rendered yet, wait until it's ready.
   if (m_fence->GetCompletedValue() < m_fence_vals[m_frame_no]) {
-    DX_CHECK_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+    M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
     WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
   }
   m_fence_vals[m_frame_no] = curr_fence_val + 1;
 }
 
-void DX12Window::on_mouse_event(EMouse mouse, int x, int y, bool is_down) {
+void Dx12_window::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
   m_cam.cam_mouse_event(mouse, x, y, is_down);
 }
 
-void DX12Window::on_mouse_move(int x, int y) {
+void Dx12_window::on_mouse_move(int x, int y) {
   m_cam.cam_mouse_move(x, y);
 }
 
-void DX12Window::on_key_event(EKey key, bool is_down) {
-  if (key == EKEY_BELOW_ESC) {
+void Dx12_window::on_key_event(E_key key, bool is_down) {
+  if (key == e_key_below_esc) {
     m_is_console_active = !m_is_console_active;
   }
 }
 
-void DX12Window::on_char_event(wchar_t c) {
+void Dx12_window::on_char_event(wchar_t c) {
   qc_append_codepoint((U32)c);
 }
 
-void DX12Window::wait_for_gpu() {
+void Dx12_window::wait_for_gpu() {
   // Wait for pending GPU work to complete.
 
   // Schedule a Signal command in the queue.
-  DX_CHECK_RETURN(m_cmd_queue->Signal(m_fence, m_fence_vals[m_frame_no]));
+  M_dx_check_return_(m_cmd_queue->Signal(m_fence, m_fence_vals[m_frame_no]));
 
   // Wait until the fence has been processed.
-  DX_CHECK_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+  M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
   WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
 
   // Increment the fence value for the current frame.
   ++m_fence_vals[m_frame_no];
 }
 
-void DX12Window::create_pso(ID3D12PipelineState** pso, ID3D12RootSignature* root_sig, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_ELEMENT_DESC* element_desc, int num_elements, EEnableDepth enable_depth) {
+void Dx12_window::create_pso_(ID3D12PipelineState** pso, ID3D12RootSignature* root_sig, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_ELEMENT_DESC* element_desc, int num_elements, E_enable_depth_ enable_depth) {
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
   pso_desc.pRootSignature = root_sig;
   pso_desc.VS.pShaderBytecode = vs->GetBufferPointer();
@@ -1183,16 +1183,16 @@ void DX12Window::create_pso(ID3D12PipelineState** pso, ID3D12RootSignature* root
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
   pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
   pso_desc.SampleDesc.Count = 1;
-  if (enable_depth == EENABLE_DEPTH_TRUE) {
+  if (enable_depth == e_enable_depth_true) {
       pso_desc.DepthStencilState.DepthEnable = TRUE;
       pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
       pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
       pso_desc.DepthStencilState.StencilEnable = FALSE;
   }
-  DX_CHECK_RETURN(m_device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(pso)));
+  M_dx_check_return_(m_device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(pso)));
 }
 
-void DX12Window::create_root_sig(ID3D12RootSignature** root_sig,
+void Dx12_window::create_root_sig_(ID3D12RootSignature** root_sig,
                                  UINT num_root_params,
                                  const D3D12_ROOT_PARAMETER1* root_params,
                                  UINT num_static_samplers,
@@ -1207,18 +1207,18 @@ void DX12Window::create_root_sig(ID3D12RootSignature** root_sig,
   desc.Desc_1_1.Flags = flags;
   ID3DBlob* signature;
   ID3DBlob* error;
-  DX_CHECK_RETURN(D3D12SerializeVersionedRootSignature(&desc, &signature, &error));
-  DX_CHECK_RETURN(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(root_sig)));
+  M_dx_check_return_(D3D12SerializeVersionedRootSignature(&desc, &signature, &error));
+  M_dx_check_return_(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(root_sig)));
 }
 
 int main() {
-  core_init(OS_TXT("dx12_sample.log"));
-  DX12Window w(OS_TXT("dx12_sample"), 1024, 768);
+  core_init(M_os_txt("dx12_sample.log"));
+  Dx12_window w(M_os_txt("dx12_sample"), 1024, 768);
   w.init();
   w.os_loop();
   return 0;
 }
 
-#if IS_CLANG()
+#if M_is_clang()
 #pragma clang diagnostic pop
 #endif

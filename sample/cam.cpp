@@ -26,22 +26,22 @@ bool ngCam::cam_init(const V3& eye, const V3& target, ngWindow* w) {
 bool ngCam::cam_update() {
   bool need_update_view = false;
   V3 cam_right = v3_normalize(v3_cross(m_forward, m_up));
-  if (m_w->m_key_down[EKEY_W]) {
+  if (m_w->m_key_down[e_key_w]) {
     V3 forward = m_forward * 0.1f;
     m_eye += forward;
     need_update_view = true;
   }
-  if (m_w->m_key_down[EKEY_S]) {
+  if (m_w->m_key_down[e_key_s]) {
     V3 backward = m_forward * -0.1f;
     m_eye += backward;
     need_update_view = true;
   }
-  if (m_w->m_key_down[EKEY_D]) {
+  if (m_w->m_key_down[e_key_d]) {
     V3 right = cam_right * 0.1f;
     m_eye += right;
     need_update_view = true;
   }
-  if (m_w->m_key_down[EKEY_A]) {
+  if (m_w->m_key_down[e_key_a]) {
     V3 left = cam_right * -0.1f;
     m_eye += left;
     need_update_view = true;
@@ -53,11 +53,11 @@ bool ngCam::cam_update() {
 }
 
 void ngCam::cam_mouse_move(int x, int y) {
-  if (m_w->m_mouse_down[EMOUSE_LEFT]) {
-    m_w->set_cursor_pos(m_w->m_old_mouse_x[EMOUSE_LEFT], m_w->m_old_mouse_y[EMOUSE_LEFT]);
+  if (m_w->m_mouse_down[e_mouse_left]) {
+    m_w->set_cursor_pos(m_w->m_old_mouse_x[e_mouse_left], m_w->m_old_mouse_y[e_mouse_left]);
 
-    int delta_x = m_w->m_old_mouse_x[EMOUSE_LEFT] - x;
-    int delta_y = m_w->m_old_mouse_y[EMOUSE_LEFT] - y;
+    int delta_x = m_w->m_old_mouse_x[e_mouse_left] - x;
+    int delta_y = m_w->m_old_mouse_y[e_mouse_left] - y;
     float angle_x = delta_x * 0.002f;
     float angle_y = delta_y * 0.002f;
     V3 right = v3_cross(m_forward, m_up);
@@ -68,9 +68,9 @@ void ngCam::cam_mouse_move(int x, int y) {
     m_view_mat = look_forward_lh(m_eye, m_forward, m_up);
   }
 
-  if (m_w->m_mouse_down[EMOUSE_MIDDLE]) {
-    int delta_x = m_w->m_old_mouse_x[EMOUSE_MIDDLE] - x;
-    int delta_y = m_w->m_old_mouse_y[EMOUSE_MIDDLE] - y;
+  if (m_w->m_mouse_down[e_mouse_middle]) {
+    int delta_x = m_w->m_old_mouse_x[e_mouse_middle] - x;
+    int delta_y = m_w->m_old_mouse_y[e_mouse_middle] - y;
     float angle_x = delta_x * 0.002f;
     float angle_y = delta_y * 0.002f;
     V3 backward = m_forward * -1.0f;
@@ -88,8 +88,8 @@ void ngCam::cam_mouse_move(int x, int y) {
   }
 }
 
-void ngCam::cam_mouse_event(EMouse mouse, int x, int y, bool is_down) {
-  if (mouse == EMOUSE_LEFT) {
+void ngCam::cam_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
+  if (mouse == e_mouse_left) {
     m_w->show_cursor(!is_down);
   }
 }

@@ -6,12 +6,12 @@
 
 #pragma once
 
-class ngAllocator;
+class Allocator;
 
 // Allocate once and will never change.
-extern ngAllocator* g_persistent_allocator;
+extern Allocator* g_persistent_allocator;
 
 // General purpose allocator.
-extern ngAllocator* g_general_allocator;
+extern Allocator* g_general_allocator;
 
 bool core_allocators_init();

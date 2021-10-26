@@ -8,4 +8,4 @@
 
 #include "core/os_string.h"
 
-bool tga_write(const U8* data, int width, int height, const OSChar* path);
+bool tga_write(const U8* data, int width, int height, const Os_char* path);

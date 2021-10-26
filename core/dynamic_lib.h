@@ -6,11 +6,11 @@
 
 #pragma once
 
-class DynamicLib {
+class Dynamic_lib {
 public:
   bool dl_open(const char* name);
   void dl_close();
   void* dl_get_proc(const char* name);
-private:
+
   void* m_handle;
 };

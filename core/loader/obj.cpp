@@ -16,25 +16,25 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-static void skip_space(char** p) {
+static void skip_space_(char** p) {
   while (**p == ' ')
     ++(*p);
 }
 
-static void skip_till(char** p, char c) {
+static void skip_till_(char** p, char c) {
   while(**p != c)
     ++(*p);
 }
 
-static void string_to_vec(char** p, int len, float* v) {
+static void string_to_vec_(char** p, int len, float* v) {
   for (int j = 0; j < len; ++j) {
-    skip_till(p, ' ');
-    skip_space(p);
+    skip_till_(p, ' ');
+    skip_space_(p);
     v[j] = atof(*p);
   }
 }
 
-static inline int parse_index(int index, int len) {
+static inline int parse_index_(int index, int len) {
   if (!index)
     return -1;
   if (index > 0)
@@ -42,16 +42,16 @@ static inline int parse_index(int index, int len) {
   return index + len;
 }
 
-bool OBJLoader::obj_init(ngAllocator* allocator, const OSChar* path) {
-  LinearAllocator<> temp_allocator("OBJLoader_allocator");
+bool Obj_loader::obj_init(Allocator* allocator, const Os_char* path) {
+  Linear_allocator<> temp_allocator("Obj_loader_allocator");
   temp_allocator.la_init();
-  SCOPE_EXIT(temp_allocator.al_destroy());
+  M_scope_exit(temp_allocator.al_destroy());
 
   int vs_count = 0;
   int uvs_count = 0;
   int ns_count = 0;
   int elems_count = 0;
-  DynamicArray<U8> f = ngFile::f_read_whole_file_as_text(&temp_allocator, path);
+  Dynamic_array<U8> f = File::f_read_whole_file_as_text(&temp_allocator, path);
   char* s = (char*)&f[0];
   char* e = (char*)&f[0] + f.da_len();
   for (;;) {
@@ -77,9 +77,9 @@ bool OBJLoader::obj_init(ngAllocator* allocator, const OSChar* path) {
       break;
     }
   }
-  DynamicArray<V4> vs;
-  DynamicArray<V2> uvs;
-  DynamicArray<V4> ns;
+  Dynamic_array<V4> vs;
+  Dynamic_array<V2> uvs;
+  Dynamic_array<V4> ns;
   vs.da_init(&temp_allocator);
   uvs.da_init(&temp_allocator);
   ns.da_init(&temp_allocator);
@@ -103,31 +103,31 @@ bool OBJLoader::obj_init(ngAllocator* allocator, const OSChar* path) {
     }
     if (s[0] == 'v' && s[1] == ' ') {
       V4 v;
-      string_to_vec(&s, 3, &v.x);
+      string_to_vec_(&s, 3, &v.x);
       v.w = 1.0f;
       vs.da_append(v);
     } else if (s[0] == 'v' && s[1] == 't') {
       V2 v;
-      string_to_vec(&s, 2, &v.x);
+      string_to_vec_(&s, 2, &v.x);
       uvs.da_append(v);
     } else if (s[0] == 'v' && s[1] == 'n') {
       V3 v;
-      string_to_vec(&s, 3, &v.x);
+      string_to_vec_(&s, 3, &v.x);
       v = v3_normalize(v);
       ns.da_append({v.x, v.y, v.z, 0.0f});
     } else if (s[0] == 'f' && s[1] == ' ') {
       for (int j = 0; j < 3; ++j) {
         int index;
-        skip_till(&s, ' ');
-        index = parse_index(atoi(++s), vs_count);
+        skip_till_(&s, ' ');
+        index = parse_index_(atoi(++s), vs_count);
         m_vertices.da_append(vs[index]);
-        skip_till(&s, '/');
-        index = parse_index(atoi(++s), uvs_count);
+        skip_till_(&s, '/');
+        index = parse_index_(atoi(++s), uvs_count);
         if (index != -1) {
           m_uvs.da_append(uvs[index]);
         }
-        skip_till(&s, '/');
-        index = parse_index(atoi(++s), ns_count);
+        skip_till_(&s, '/');
+        index = parse_index_(atoi(++s), ns_count);
         if (index != -1) {
           m_normals.da_append(ns[index]);
         }
@@ -141,7 +141,7 @@ bool OBJLoader::obj_init(ngAllocator* allocator, const OSChar* path) {
   return true;
 }
 
-void OBJLoader::obj_destroy() {
+void Obj_loader::obj_destroy() {
   m_normals.da_destroy();
   m_uvs.da_destroy();
   m_vertices.da_destroy();

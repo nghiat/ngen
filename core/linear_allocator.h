@@ -9,7 +9,7 @@
 #include "core/allocator.h"
 #include "core/ng_types.h"
 
-struct LAPage;
+struct LAPage_;
 
 // The idea of this allocator is simple.
 // It contains a linked list of pages.
@@ -17,21 +17,21 @@ struct LAPage;
 // If the current page doesn't have enough space, it will allocate another page that is >= |sc_default_page_size| depending on the size of the allocation.
 // The first page is stack memory which will probably fit most of its usage.
 // Realloc and free only works with the last allocation to keep it simple.
-template <SZ INITIAL_SIZE = 4096>
-class LinearAllocator : public ngAllocator {
+template <Sz T_initial_size = 4096>
+class Linear_allocator : public Allocator {
 public:
-  LinearAllocator(const char* name) : ngAllocator(name, INITIAL_SIZE) {}
+  Linear_allocator(const char* name) : Allocator(name, T_initial_size) {}
   bool la_init();
   void al_destroy() override;
-  void* al_aligned_alloc(SIP size, SIP alignment) override;
-  void* al_realloc(void* p, SIP size) override;
+  void* al_aligned_alloc(Sip size, Sip alignment) override;
+  void* al_realloc(void* p, Sip size) override;
   void al_free(void* p) override;
 
-private:
-  SIP get_current_page_remaning_size();
-
-  static const SIP sc_default_page_size = 1024 * 1024;
-  U8 m_stack_page[INITIAL_SIZE];
-  LAPage* m_current_page;
+  static const Sip sc_default_page_size = 1024 * 1024;
+  U8 m_stack_page[T_initial_size];
+  LAPage_* m_current_page;
   U8* m_top;
+
+private:
+  Sip get_current_page_remaning_size_();
 };

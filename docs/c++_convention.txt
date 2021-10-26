@@ -14,26 +14,36 @@
   - out -> in + out -> in
     Reason: you can put default arguments at the end
 
-
 * Naming conventions
 - Filename: lower_case.*
-- Public macro: UPPER_CASE
-- Internal macro: UPPER_CASE_
-- Enum name: ECamelCase
-  - Enum member: EUPPER_CASE (With the enum name as prefix)
-- Functions in .h: ng_lower_case()
-- Public struct/class name: CamelCase
-- Internal struct/class name: CamelCase_
-- You can add ng prefix to macro, function, class/struct name to prevent collision
-- Public member function: class name abbreviation + _lower_case
-- Variable/Struct member: lower_case
+- Public macro: M_macro_name
+- Internal macro: M_macro_name_
+- Public enum name: E_enum_name
+- Internal enum name: E_enum_name_
+- Enum member: e_enum_name_value
+- Public functions: lower_case()
+- Internal functions: lower_case_()
+- Local variable: lower_case
+- Global variable: g_lower_case
 - Constant variable: c_lower_case
-- Global member: g_lower_case
-- Struct member: lower_case
-- Class member: m_lower_case
-  Reason: To differentiate class member with local variables in a member function.
-- Static member: s_lower_case
+- Class/Struct:
+  - Public struct/class name: Class_name (Only the first letter is capitalized, even when the first word is an abbreviation, e.g. Udp instead of UDP)
+  - Internal struct/class name: Class_name_
+  - Public member function: class name abbreviation + _lower_case
+  - Protected/Private member function: lower_case_
+  - Struct member: lower_case
+  - Class member:
+    - Public: m_lower_case
+    - Protected/Private: m_lower_case_
+      Reason: To differentiate class member with local variables in a member function.
+  - Static member: s_lower_case
 - Prefix precedence: g -> s -> c (m is discarded if there is any other prefix)
+- Template parameter: T (or T_type_name)
+- To summarize:
+  - M_: macro
+  - E_, e_: enum name / enum value
+  - T_: template parameter
+  - g_, c_, s_, m_: global/const/static/meber variable
 
 * Including conventions
 - Project headers are surrounded with "", other headers are surrounded with <>
@@ -47,8 +57,7 @@
   - public -> protected -> private
     - Types -> Functions -> Members
       - static -> non-static
-- No getters and setters unless they do additional logic, just set the members to public.
-  Reason: No boilerplate code.
+- Members should always be public unless setting or getting them require additional logic, then you can change them to private and refactor their usages
 - Functions should be set to private whenever possible.
 
 * Constructor and Destrustor

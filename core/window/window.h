@@ -4,25 +4,24 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2021             //
 //----------------------------------------------------------------------------//
 
-#ifndef CORE_WINDOW_WINDOW_H
-#define CORE_WINDOW_WINDOW_H
+#pragma once
 
 #include "core/os_string.h"
 #include "core/os.h"
 #include "core/window/input.h"
 #include "core/windows_lite.h"
 
-struct ngAllocator;
+struct Allocator;
 
-#if OS_WIN()
-struct WindowPlatform {
+#if M_os_is_win()
+struct Platform_data_ {
   HWND hwnd;
 };
 #endif
 
 class ngWindow {
 public:
-  ngWindow(const OSChar* title, int width, int height) : m_title(title), m_width(width), m_height(height) {}
+  ngWindow(const Os_char* title, int width, int height) : m_title(title), m_width(width), m_height(height) {}
   bool init();
   virtual void destroy();
 
@@ -30,22 +29,20 @@ public:
   void show_cursor(bool show);
   void set_cursor_pos(int x, int y);
   virtual void loop() {}
-  virtual void on_mouse_event(EMouse mouse, int x, int y, bool is_down) {}
+  virtual void on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {}
   virtual void on_mouse_move(int x, int y) {}
-  virtual void on_key_event(EKey key, bool is_down) {}
+  virtual void on_key_event(E_key key, bool is_down) {}
   virtual void on_char_event(wchar_t c) {}
 
-  bool m_key_down[EKEY_COUNT] = {};
-  bool m_mouse_down[EMOUSE_COUNT] = {};
-  int m_old_mouse_x[EMOUSE_COUNT] = {};
-  int m_old_mouse_y[EMOUSE_COUNT] = {};
+  bool m_key_down[e_key_count] = {};
+  bool m_mouse_down[e_mouse_count] = {};
+  int m_old_mouse_x[e_mouse_count] = {};
+  int m_old_mouse_y[e_mouse_count] = {};
   bool m_is_cursor_visible = true;
 
-  const OSChar* m_title;
+  const Os_char* m_title;
   int m_width;
   int m_height;
 
-  WindowPlatform m_platform_data;
+  Platform_data_ m_platform_data;
 };
-
-#endif // CORE_WINDOW_WINDOW_H

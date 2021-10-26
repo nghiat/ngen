@@ -8,11 +8,11 @@
 
 #include <string.h>
 
-void* ngAllocator::al_alloc(SIP size) {
+void* Allocator::al_alloc(Sip size) {
   return al_aligned_alloc(size, 16);
 }
 
-void* ngAllocator::al_alloc_zero(SIP size) {
+void* Allocator::al_alloc_zero(Sip size) {
   void* p = al_aligned_alloc(size, 16);
   memset(p, 0, size);
   return p;

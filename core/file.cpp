@@ -19,16 +19,16 @@ static const int gc_max_buffer_size = 8 * 1024;
 
 struct FileBuffer {
   U8* buffer = NULL;
-  SZ len = 0;
+  Sz len = 0;
   // offset from the start of the buffer.
-  SZ offset = 0;
+  Sz offset = 0;
   bool is_in_used : 1;
   bool is_writing : 1;
 };
 
 static FileBuffer g_buffers[gc_max_buffer];
 
-bool ngFile::f_init() {
+bool File::f_init() {
   for (int i = 0; i < gc_max_buffer; ++i) {
     g_buffers[i].buffer = (U8*)g_persistent_allocator->al_alloc(gc_max_buffer_size);
     g_buffers[i].is_in_used = false;
@@ -40,22 +40,22 @@ bool ngFile::f_init() {
   return true;
 }
 
-DynamicArray<U8> ngFile::f_read_whole_file_as_text(ngAllocator* allocator, const OSChar* path) {
-  DynamicArray<U8> buffer;
-  ngFile f;
-  f.f_open(path, EFILE_MODE_READ);
-  CHECK_RETURN_VAL(f.f_is_valid(), buffer);
-  SIP file_size = f.f_get_size();
+Dynamic_array<U8> File::f_read_whole_file_as_text(Allocator* allocator, const Os_char* path) {
+  Dynamic_array<U8> buffer;
+  File f;
+  f.f_open(path, e_file_mode_read);
+  M_check_return_val(f.f_is_valid(), buffer);
+  Sip file_size = f.f_get_size();
   buffer.da_init(allocator);
   buffer.da_resize(file_size + 1);
-  f.f_read_plat(&buffer[0], NULL, file_size);
+  f.f_read_plat_(&buffer[0], NULL, file_size);
   buffer[file_size] = 0;
   f.f_close();
   return buffer;
 }
 
-bool ngFile::f_open(const OSChar* path, enum EFileMode mode) {
-  bool rv = f_open_plat(path, mode);
+bool File::f_open(const Os_char* path, enum E_file_mod mode) {
+  bool rv = f_open_plat_(path, mode);
   if (!rv) {
     return false;
   }
@@ -69,13 +69,13 @@ bool ngFile::f_open(const OSChar* path, enum EFileMode mode) {
       break;
     }
   }
-  CHECK_LOG_RETURN_VAL(m_internal_buffer, false, "Can't get a file buffer, too many files are being opened");
+  M_check_log_return_val(m_internal_buffer, false, "Can't get a file buffer, too many files are being opened");
   return true;
 }
 
-void ngFile::f_close() {
+void File::f_close() {
   f_flush();
-  f_close_plat();
+  f_close_plat_();
   if (m_internal_buffer) {
     for (int i = 0; i < gc_max_buffer; ++i) {
       if (m_internal_buffer == &g_buffers[i]) {
@@ -85,16 +85,16 @@ void ngFile::f_close() {
       }
     }
   }
-  CHECK_RETURN(!m_internal_buffer);
+  M_check_return(!m_internal_buffer);
 }
 
-bool ngFile::f_read(void* out, SIP* bytes_read, SIP size) {
-  CHECK_RETURN_VAL(size, false)
+bool File::f_read(void* out, Sip* bytes_read, Sip size) {
+  M_check_return_val(size, false)
   FileBuffer* fbuf = m_internal_buffer;
-  CHECK_RETURN_VAL(fbuf, false)
+  M_check_return_val(fbuf, false)
 
-  SIP bytes_left = fbuf->len - fbuf->offset;
-  SIP total_bytes_read = 0;
+  Sip bytes_left = fbuf->len - fbuf->offset;
+  Sip total_bytes_read = 0;
   if (!fbuf->is_writing) {
     if (bytes_left >= size) {
       memcpy(out, fbuf->buffer + fbuf->offset, size);
@@ -111,21 +111,21 @@ bool ngFile::f_read(void* out, SIP* bytes_read, SIP size) {
     }
   }
   // Update the file buffer.
-  SIP bytes_read_plat;
+  Sip bytes_read_plat;
   if (size >= gc_max_buffer_size) {
     // Too big for a file buffer, just read straight into the out buffer.
-    f_read_plat(out, &bytes_read_plat, size);
+    f_read_plat_(out, &bytes_read_plat, size);
     total_bytes_read += bytes_read_plat;
     maybe_assign(bytes_read, total_bytes_read);
     return total_bytes_read != 0;
   }
-  if (!f_read_plat(fbuf->buffer, &bytes_read_plat, gc_max_buffer_size)) {
+  if (!f_read_plat_(fbuf->buffer, &bytes_read_plat, gc_max_buffer_size)) {
     maybe_assign(bytes_read, total_bytes_read);
     return total_bytes_read != 0;
   }
   fbuf->len = bytes_read_plat;
   fbuf->is_writing = false;
-  SIP copy_len = min(bytes_read_plat, size);
+  Sip copy_len = min(bytes_read_plat, size);
   memcpy(out, fbuf->buffer, copy_len);
   fbuf->offset = copy_len;
   total_bytes_read += copy_len;
@@ -133,13 +133,13 @@ bool ngFile::f_read(void* out, SIP* bytes_read, SIP size) {
   return true;
 }
 
-bool ngFile::f_write(SIP* bytes_written, const void* in, SIP size) {
-  CHECK_RETURN_VAL(size, false);
+bool File::f_write(Sip* bytes_written, const void* in, Sip size) {
+  M_check_return_val(size, false);
   FileBuffer* fbuf = m_internal_buffer;
-  CHECK_RETURN_VAL(fbuf, false);
+  M_check_return_val(fbuf, false);
 
-  SIP bytes_left = fbuf->len - fbuf->offset;
-  SIP total_bytes_written = 0;
+  Sip bytes_left = fbuf->len - fbuf->offset;
+  Sip total_bytes_written = 0;
   if (fbuf->is_writing) {
     if (bytes_left >= size) {
       memcpy(fbuf->buffer + fbuf->offset, in, size);
@@ -152,8 +152,8 @@ bool ngFile::f_write(SIP* bytes_written, const void* in, SIP size) {
       fbuf->offset = fbuf->len;
       size -= bytes_left;
       in = (U8*)in + bytes_left;
-      SIP bytes_written_plat;
-      if (!f_write_plat(&bytes_written_plat, fbuf->buffer, fbuf->offset)) {
+      Sip bytes_written_plat;
+      if (!f_write_plat_(&bytes_written_plat, fbuf->buffer, fbuf->offset)) {
         return false;
       }
       total_bytes_written = bytes_left;
@@ -162,8 +162,8 @@ bool ngFile::f_write(SIP* bytes_written, const void* in, SIP size) {
   // Update the file buffer.
   if (size >= gc_max_buffer_size) {
     // Too big for a file buffer, just read straight into the out buffer.
-    SIP bytes_written_plat;
-    bool rv = f_write_plat(&bytes_written_plat, in, size);
+    Sip bytes_written_plat;
+    bool rv = f_write_plat_(&bytes_written_plat, in, size);
     total_bytes_written += bytes_written_plat;
     maybe_assign(bytes_written, total_bytes_written);
     return rv;
@@ -176,30 +176,30 @@ bool ngFile::f_write(SIP* bytes_written, const void* in, SIP size) {
   return true;
 }
 
-void ngFile::f_seek(enum EFileFrom from, SIP distance) {
+void File::f_seek(enum E_file_from from, Sip distance) {
   FileBuffer* fbuf = m_internal_buffer;
   if (!fbuf) {
-    f_seek_plat(from, distance);
+    f_seek_plat_(from, distance);
     return;
   }
 
-  if (from != EFILE_FROM_CURRENT) {
+  if (from != e_file_from_current) {
     if (fbuf->is_writing) {
       f_flush();
     }
-    f_seek_plat(from, distance);
+    f_seek_plat_(from, distance);
     return;
   }
-  // from == EFILE_FROM_CURRENT
-  SIP bytes_left = fbuf->len - fbuf->offset;
+  // from == e_file_from_current
+  Sip bytes_left = fbuf->len - fbuf->offset;
   if (distance >= bytes_left) {
     if (fbuf->is_writing) {
       f_flush();
       // We are seeking from fbuf->offset after flushing.
-      f_seek_plat(from, distance);
+      f_seek_plat_(from, distance);
     } else {
       // We are seeking from the end of the FileBuffer.
-      f_seek_plat(from, distance - bytes_left);
+      f_seek_plat_(from, distance - bytes_left);
     }
     return;
   }
@@ -211,11 +211,11 @@ void ngFile::f_seek(enum EFileFrom from, SIP distance) {
   fbuf->offset += distance;
 }
 
-void ngFile::f_flush() {
+void File::f_flush() {
   FileBuffer* fbuf = m_internal_buffer;
   if (fbuf) {
     if (fbuf->is_writing && fbuf->offset > 0) {
-      CHECK_RETURN(f_write_plat(NULL, fbuf->buffer, fbuf->offset));
+      M_check_return(f_write_plat_(NULL, fbuf->buffer, fbuf->offset));
       fbuf->is_writing = false;
       fbuf->offset = 0;
       fbuf->len = 0;

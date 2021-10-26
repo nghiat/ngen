@@ -21,9 +21,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define MAX_SECTIONS 64
-#define MAX_SYMBOLS 2048
-#define MAX_SYMBOL_NAME_LENGTH 256
+#define M_max_sections_ 64
+#define M_max_symbols_ 2048
+#define M_max_symbol_name_length_ 256
 
 static void find_symbol_name(const char* path, size_t offset, char* out_symbol_name) {
   out_symbol_name[0] = '\0';
@@ -33,11 +33,11 @@ static void find_symbol_name(const char* path, size_t offset, char* out_symbol_n
   }
   ElfW(Ehdr) ehdr;
   pread(fd, &ehdr, sizeof(ehdr), 0);
-  ElfW(Shdr) sections[MAX_SECTIONS];
+  ElfW(Shdr) sections[M_max_sections_];
   int remaining_sections = ehdr.e_shnum;
   int read_sections = 0;
   while (remaining_sections) {
-    int section_num = remaining_sections > MAX_SECTIONS ? MAX_SECTIONS : remaining_sections;
+    int section_num = remaining_sections > M_max_sections_ ? M_max_sections_ : remaining_sections;
     pread(fd, &sections, section_num * ehdr.e_shentsize, ehdr.e_shoff + read_sections * ehdr.e_shentsize);
     remaining_sections -= section_num;
     read_sections += section_num;
@@ -48,8 +48,8 @@ static void find_symbol_name(const char* path, size_t offset, char* out_symbol_n
         int read_symbols = 0;
         while (remaining_symbols) {
           int symbol_num =
-              remaining_symbols > MAX_SYMBOLS ? MAX_SYMBOLS : remaining_symbols;
-          ElfW(Sym) symbols[MAX_SYMBOLS];
+              remaining_symbols > M_max_symbols_ ? M_max_symbols_ : remaining_symbols;
+          ElfW(Sym) symbols[M_max_symbols_];
           pread(fd, &symbols, symbol_num * sizeof(ElfW(Sym)), symtab->sh_offset + read_symbols * sizeof(ElfW(Sym)));
           remaining_symbols -= symbol_num;
           read_symbols += symbol_num;
@@ -60,9 +60,9 @@ static void find_symbol_name(const char* path, size_t offset, char* out_symbol_n
               // symtab->sh_link is the index of the related string table header
               // in the section header table.
               pread(fd, &strtab, sizeof(strtab), ehdr.e_shoff + symtab->sh_link * ehdr.e_shentsize);
-              char symbol_name[MAX_SYMBOL_NAME_LENGTH];
-              pread(fd, &symbol_name, MAX_SYMBOL_NAME_LENGTH, strtab.sh_offset + sym->st_name);
-              memcpy(out_symbol_name, symbol_name, MAX_SYMBOL_NAME_LENGTH);
+              char symbol_name[M_max_symbol_name_length_];
+              pread(fd, &symbol_name, M_max_symbol_name_length_, strtab.sh_offset + sym->st_name);
+              memcpy(out_symbol_name, symbol_name, M_max_symbol_name_length_);
               goto out;
             }
           }
@@ -80,9 +80,9 @@ bool debug_init() {
 
 void debug_get_stack_trace(char* buffer, int len) {
   memset(buffer, 0, len);
-  CHECK_RETURN(len <= MAX_STACK_TRACE_LENGTH);
-  void* traces[MAX_TRACES];
-  int num = backtrace((void**)traces, MAX_TRACES);
+  M_check_return(len <= M_max_stack_trace_length_);
+  void* traces[M_max_traces_];
+  int num = backtrace((void**)traces, M_max_traces_);
   char** symbols = backtrace_symbols(traces, num);
   if (!symbols) {
     return;
@@ -100,7 +100,7 @@ void debug_get_stack_trace(char* buffer, int len) {
     memcpy(path, symbol, path_len);
     path[path_len] = '\0';
     // Check if the symbol name exists.
-    char symbol_name[MAX_SYMBOL_NAME_LENGTH];
+    char symbol_name[M_max_symbol_name_length_];
     symbol_name[0] = '\0';
     if (end_of_path[1] != ')') {
       if (end_of_path[1] != '+') {

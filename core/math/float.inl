@@ -11,13 +11,13 @@
 #include <math.h>
 
 inline bool float_equal(float a, float b) {
-  return fabs(a - b) < NG_EPSILON_F;
+  return fabs(a - b) < M_epsilon_f;
 }
 
 inline bool float_equal_0(float a) {
-  return fabs(a) < NG_EPSILON_F;
+  return fabs(a) < M_epsilon_f;
 }
 
 float degree_to_rad(float deg) {
-  return deg / 180.0f * NG_PI_F;
+  return deg / 180.0f * M_pi_f;
 }

@@ -9,15 +9,15 @@
 #include "core/free_list_allocator.h"
 #include "core/linear_allocator.h"
 
-static LinearAllocator<> g_internal_persistent_allocator("persistent_allocator");
-static FreeListAllocator g_internal_general_allocator("general_allocator", 10 * 1024 * 1024);
+static Linear_allocator<> g_persistent_allocator_("persistent_allocator");
+static FreeList_allocator g_general_allocator_("general_allocator", 10 * 1024 * 1024);
 
-ngAllocator* g_persistent_allocator = &g_internal_persistent_allocator;
-ngAllocator* g_general_allocator = &g_internal_general_allocator;
+Allocator* g_persistent_allocator = &g_persistent_allocator_;
+Allocator* g_general_allocator = &g_general_allocator_;
 
 bool core_allocators_init() {
   bool rv = true;
-  rv &= g_internal_persistent_allocator.la_init();
-  rv &= g_internal_general_allocator.fla_init();
+  rv &= g_persistent_allocator_.la_init();
+  rv &= g_general_allocator_.fla_init();
   return rv;
 }

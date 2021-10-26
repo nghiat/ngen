@@ -15,25 +15,25 @@
 #include <string.h>
 
 template <typename T>
-bool DynamicArray<T>::da_init(ngAllocator* allocator) {
+bool Dynamic_array<T>::da_init(Allocator* allocator) {
   m_allocator = allocator;
   return true;
 }
 
 template <typename T>
-void DynamicArray<T>::da_destroy() {
+void Dynamic_array<T>::da_destroy() {
   if (m_p) {
     m_allocator->al_free(m_p);
   }
 }
 
 template <typename T>
-SIP DynamicArray<T>::da_len() const {
+Sip Dynamic_array<T>::da_len() const {
   return m_length;
 }
 
 template <typename T>
-void DynamicArray<T>::da_reserve(SIP num) {
+void Dynamic_array<T>::da_reserve(Sip num) {
   if (num <= m_capacity) {
     return;
   }
@@ -42,30 +42,30 @@ void DynamicArray<T>::da_reserve(SIP num) {
   } else {
     m_p = (T*)m_allocator->al_realloc(m_p, num * sizeof(T));
   }
-  CHECK_LOG_RETURN(m_p, "Can't reserve memory for DynamicArray<T>");
+  M_check_log_return(m_p, "Can't reserve memory for Dynamic_array<T>");
   m_capacity = num;
 }
 
 template <typename T>
-void DynamicArray<T>::da_resize(SIP num) {
+void Dynamic_array<T>::da_resize(Sip num) {
   da_reserve(num);
   m_length = num;
 }
 
 template <typename T>
-void DynamicArray<T>::da_remove_range(SIP pos, SIP length) {
-  CHECK_LOG_RETURN(pos >= 0 && pos < m_length && pos + length < m_length, "Can't remove invalid rage");
+void Dynamic_array<T>::da_remove_range(Sip pos, Sip length) {
+  M_check_log_return(pos >= 0 && pos < m_length && pos + length < m_length, "Can't remove invalid rage");
   memmove(m_p + pos, m_p + pos + length, (m_length - pos - length) * sizeof(T));
   m_length -= length;
 }
 
 template <typename T>
-void DynamicArray<T>::da_remove_at(SIP pos) {
+void Dynamic_array<T>::da_remove_at(Sip pos) {
   da_remove_range(pos, 1);
 }
 
 template <typename T>
-void DynamicArray<T>::da_insert_at(SIP index, const T& val) {
+void Dynamic_array<T>::da_insert_at(Sip index, const T& val) {
   if (m_length == m_capacity) {
     da_reserve((m_capacity + 1) * 3 / 2);
   }
@@ -77,11 +77,11 @@ void DynamicArray<T>::da_insert_at(SIP index, const T& val) {
 }
 
 template <typename T>
-void DynamicArray<T>::da_append(const T& val) {
+void Dynamic_array<T>::da_append(const T& val) {
   da_insert_at(m_length, val);
 }
 
 template <typename T>
-T& DynamicArray<T>::operator[](SZ index) {
+T& Dynamic_array<T>::operator[](Sz index) {
   return m_p[index];
 }

@@ -26,39 +26,39 @@ struct WindowPlatform {
   xcb_key_symbols_t* key_symbols;
 };
 
-static EKey g_xcb_key_code_to_key[EKEY_COUNT];
-static EMouse g_xcb_button_to_mouse[EMOUSE_COUNT];
+static E_key g_xcb_key_code_to_key_[e_key_count];
+static E_mouse g_xcb_button_to_mouse_[e_mouse_count];
 
-static void init_input(xjWindow* w) {
+static void init_input_(xjWindow* w) {
   // key
-  static_assert (XKB_KEY_NoSymbol == EKEY_NONE && EKEY_NONE == 0, "g_xcb_key_code_to_key is default initialized to 0s");
-  int key_to_xkb[EKEY_COUNT] = {};
+  static_assert (XKB_KEY_NoSymbol == e_key_none && e_key_none == 0, "g_xcb_key_code_to_key_ is default initialized to 0s");
+  int key_to_xkb[e_key_count] = {};
 
-  key_to_xkb[EKEY_A] = XKB_KEY_A;
-  key_to_xkb[EKEY_D] = XKB_KEY_D;
-  key_to_xkb[EKEY_S] = XKB_KEY_S;
-  key_to_xkb[EKEY_W] = XKB_KEY_W;
-  key_to_xkb[EKEY_BELOW_ESC] = XKB_KEY_grave;
+  key_to_xkb[e_key_a] = XKB_KEY_A;
+  key_to_xkb[e_key_d] = XKB_KEY_D;
+  key_to_xkb[e_key_s] = XKB_KEY_S;
+  key_to_xkb[e_key_w] = XKB_KEY_W;
+  key_to_xkb[e_key_below_esc] = XKB_KEY_grave;
 
   for (int i = KEY_NONE + 1; i < KEY_COUNT; i++) {
-    EKey code = (EKey)i;
+    E_key code = (E_key)i;
     xcb_keycode_t* kc = xcb_key_symbols_get_keycode(w->platform_data->key_symbols, key_to_xkb[i]);
     if (kc) {
-      g_xcb_key_code_to_key[*kc] = code;
+      g_xcb_key_code_to_key_[*kc] = code;
       free(kc);
     } else {
-      LOGF("xcb_keycode_t* for key code %d is NULL", code);
+      M_logf("xcb_keycode_t* for key code %d is NULL", code);
     }
   }
 
   // mouse
-  static_assert(EMOUSE_NONE == 0, "g_xcb_button_to_mouse is default initialized to 0s");
-  g_xcb_button_to_mouse[XCB_BUTTON_INDEX_1] = EMOUSE_LEFT;
-  g_xcb_button_to_mouse[XCB_BUTTON_INDEX_2] = EMOUSE_RIGHT;
-  g_xcb_button_to_mouse[XCB_BUTTON_INDEX_3] = EMOUSE_MIDDLE;
+  static_assert(e_mouse_NONE == 0, "g_xcb_button_to_mouse_ is default initialized to 0s");
+  g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_1] = e_mouse_left;
+  g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_2] = e_mouse_right;
+  g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_3] = e_mouse_middle;
 }
 
-static void update_mouse_val(xjWindow* w, EMouse mouse, int x, int y, bool is_down) {
+static void update_mouse_val_(xjWindow* w, E_mouse mouse, int x, int y, bool is_down) {
   w->mouse_down[mouse] = is_down;
   w->on_mouse_event(mouse, x, y, is_down);
   w->old_mouse_x[mouse] = x;
@@ -67,9 +67,9 @@ static void update_mouse_val(xjWindow* w, EMouse mouse, int x, int y, bool is_do
 
 bool xjWindow::init() {
   Display* xdisplay = XOpenDisplay(0);
-  CHECK_LOG_RETURN_VAL(xdisplay, false, "XOpenDisplay failed");
+  M_check_log_return_val(xdisplay, false, "XOpenDisplay failed");
   xcb_connection_t* xcb_connection = XGetXCBConnection(xdisplay);
-  CHECK_LOG_RETURN_VAL(xcb_connection, false, "XGetXCBConnection failed");
+  M_check_log_return_val(xcb_connection, false, "XGetXCBConnection failed");
   XSetEventQueueOwner(xdisplay, XCBOwnsEventQueue);
   xcb_screen_t* screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
 
@@ -100,7 +100,7 @@ bool xjWindow::init() {
   platform_data->reply2 = reply2;
   platform_data->xcb_window_id = xcb_window_id;
   platform_data->key_symbols = key_symbols;
-  init_input(this);
+  init_input_(this);
   return true;
 }
 
@@ -119,21 +119,21 @@ void xjWindow::os_loop() {
         switch (event->response_type & ~0x80) {
         case XCB_BUTTON_PRESS: {
           xcb_button_press_event_t* bp = (xcb_button_press_event_t*)event;
-          update_mouse_val(this, g_xcb_button_to_mouse[bp->detail], bp->event_x, bp->event_y, true);
+          update_mouse_val_(this, g_xcb_button_to_mouse_[bp->detail], bp->event_x, bp->event_y, true);
         } break;
         case XCB_BUTTON_RELEASE: {
           xcb_button_release_event_t* br = (xcb_button_release_event_t*)event;
-          update_mouse_val(this, g_xcb_button_to_mouse[br->detail], br->event_x, br->event_y, false);
+          update_mouse_val_(this, g_xcb_button_to_mouse_[br->detail], br->event_x, br->event_y, false);
         } break;
         case XCB_KEY_PRESS: {
           xcb_key_press_event_t* kp = (xcb_key_press_event_t*)event;
-          EKey code = g_xcb_key_code_to_key[kp->detail];
+          E_key code = g_xcb_key_code_to_key_[kp->detail];
           key_down[code] = true;
           this->on_key_event(code, true);
         } break;
         case XCB_KEY_RELEASE: {
           xcb_key_release_event_t* kr = (xcb_key_release_event_t*)event;
-          EKey code = g_xcb_key_code_to_key[kr->detail];
+          E_key code = g_xcb_key_code_to_key_[kr->detail];
           key_down[code] = true;
           this->on_key_event(code, false);
         } break;
@@ -141,7 +141,7 @@ void xjWindow::os_loop() {
           xcb_motion_notify_event_t* m = (xcb_motion_notify_event_t*)event;
           this->on_mouse_move(m->event_x, m->event_y);
           if (w->is_cursor_visible) {
-            for (int i = 0; i < EMOUSE_COUNT; ++i) {
+            for (int i = 0; i < e_mouse_count; ++i) {
               if (mouse_down[i]) {
                 old_mouse_x[i] = m->event_x;
                 old_mouse_y[i] = m->event_y;

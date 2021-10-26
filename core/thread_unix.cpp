@@ -17,10 +17,10 @@ static void* platform_thread_start(void* args) {
   return NULL;
 }
 
-bool ngThread::thread_init(ngThreadFunc start_func, void* args) {
+bool ngThread::thread_init(ngThread_func start_func, void* args) {
   m_start_func = start_func;
   m_args = args;
-  CHECK_LOG_RETURN_VAL(pthread_create(&m_handle, NULL, platform_thread_start, (void*)this) == 0, false, "Can't create a new thread");
+  M_check_log_return_val(pthread_create(&m_handle, NULL, platform_thread_start, (void*)this) == 0, false, "Can't create a new thread");
   return true;
 }
 

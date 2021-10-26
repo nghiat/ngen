@@ -11,15 +11,15 @@
 #include "core/math/vec4.h"
 #include "core/os_string.h"
 
-struct ngAllocator;
+struct Allocator;
 
-class OBJLoader {
+class Obj_loader {
 public:
-  bool obj_init(ngAllocator* allocator, const OSChar* path);
+  bool obj_init(Allocator* allocator, const Os_char* path);
   void obj_destroy();
 
-  DynamicArray<V4> m_vertices;
-  DynamicArray<V2> m_uvs;
-  DynamicArray<V4> m_normals;
+  Dynamic_array<V4> m_vertices;
+  Dynamic_array<V2> m_uvs;
+  Dynamic_array<V4> m_normals;
 };
 

@@ -11,52 +11,52 @@
 
 #include <Windows.h>
 
-void ngFile::f_delete_path(const wchar_t* path) {
-  CHECK_RETURN(path);
+void File::f_delete_path(const wchar_t* path) {
+  M_check_return(path);
   DeleteFile(path);
 }
 
-bool ngFile::f_open_plat(const wchar_t* path, EFileMode mode) {
-  CHECK_RETURN_VAL(path, false);
+bool File::f_open_plat_(const wchar_t* path, E_file_mod mode) {
+  M_check_return_val(path, false);
 
   m_path = path;
   DWORD access = 0;
-  if (mode & EFILE_MODE_READ)
+  if (mode & e_file_mode_read)
     access |= GENERIC_READ;
-  if (mode & EFILE_MODE_WRITE)
+  if (mode & e_file_mode_write)
     access |= GENERIC_READ | GENERIC_WRITE;
-  if (mode & EFILE_MODE_APPEND)
+  if (mode & e_file_mode_append)
     access |= GENERIC_READ | FILE_APPEND_DATA;
 
   DWORD share_mode = 0;
   share_mode |= FILE_SHARE_READ;
 
   DWORD create_disposition = 0;
-  if (mode & EFILE_MODE_READ)
+  if (mode & e_file_mode_read)
     create_disposition = OPEN_EXISTING;
-  if (mode & EFILE_MODE_WRITE)
+  if (mode & e_file_mode_write)
     create_disposition = CREATE_ALWAYS;
-  if (mode & EFILE_MODE_APPEND)
+  if (mode & e_file_mode_append)
     create_disposition = OPEN_ALWAYS;
   m_handle = CreateFile(
       m_path, access, share_mode, NULL, create_disposition, 0, NULL);
-  CHECK_LOG_RETURN_VAL(f_is_valid(), false, "Can't open file %ls", path);
+  M_check_log_return_val(f_is_valid(), false, "Can't open file %ls", path);
   return true;
 }
 
-void ngFile::f_close_plat() {
-  CHECK_RETURN(f_is_valid());
+void File::f_close_plat_() {
+  M_check_return(f_is_valid());
   CloseHandle(m_handle);
   m_handle = INVALID_HANDLE_VALUE;
 }
 
-void ngFile::f_delete() {
-  CHECK_RETURN(f_is_valid());
+void File::f_delete() {
+  M_check_return(f_is_valid());
   f_delete_path(m_path);
 }
 
-bool ngFile::f_read_plat(void* buffer, SIP* bytes_read, SIP size) {
-  CHECK_RETURN_VAL(f_is_valid(), false);
+bool File::f_read_plat_(void* buffer, Sip* bytes_read, Sip size) {
+  M_check_return_val(f_is_valid(), false);
   DWORD read = 0;
   ReadFile(m_handle, buffer, size, &read, NULL);
   if (bytes_read) {
@@ -65,41 +65,41 @@ bool ngFile::f_read_plat(void* buffer, SIP* bytes_read, SIP size) {
   return read;
 }
 
-bool ngFile::f_write_plat(SIP* bytes_written, const void* buffer, SIP size) {
-  CHECK_RETURN_VAL(f_is_valid(), false);
+bool File::f_write_plat_(Sip* bytes_written, const void* buffer, Sip size) {
+  M_check_return_val(f_is_valid(), false);
   DWORD bytes_written_plat = 0;
   bool rv = WriteFile(m_handle, buffer, size, &bytes_written_plat, NULL);
-  maybe_assign(bytes_written, (SIP)bytes_written_plat);
+  maybe_assign(bytes_written, (Sip)bytes_written_plat);
   return rv;
 }
 
-void ngFile::f_seek_plat(EFileFrom from, SIP distance) {
-  CHECK_RETURN(f_is_valid());
+void File::f_seek_plat_(E_file_from from, Sip distance) {
+  M_check_return(f_is_valid());
   DWORD move_method;
   switch (from) {
-  case EFILE_FROM_BEGIN:
+  case e_file_from_begin:
     move_method = FILE_BEGIN;
     break;
-  case EFILE_FROM_CURRENT:
+  case e_file_from_current:
     move_method = FILE_CURRENT;
     break;
-  case EFILE_FROM_END:
+  case e_file_from_end:
     move_method = FILE_END;
     break;
   }
   SetFilePointer(m_handle, distance, NULL, move_method);
 }
 
-SIP ngFile::f_get_pos() const {
-  CHECK_RETURN_VAL(f_is_valid(), F_INVALID_POS);
+Sip File::f_get_pos() const {
+  M_check_return_val(f_is_valid(), F_INVALID_POS);
   return SetFilePointer(m_handle, 0, NULL, FILE_CURRENT);
 }
 
-bool ngFile::f_is_valid() const {
+bool File::f_is_valid() const {
   return m_handle != INVALID_HANDLE_VALUE;
 }
 
-SIP ngFile::f_get_size() const {
-  CHECK_RETURN_VAL(f_is_valid(), F_INVALID_SIZE);
+Sip File::f_get_size() const {
+  M_check_return_val(f_is_valid(), F_INVALID_SIZE);
   return GetFileSize(m_handle, NULL);
 }

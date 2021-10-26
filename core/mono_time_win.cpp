@@ -8,14 +8,14 @@
 
 #include <Windows.h>
 
-static LARGE_INTEGER g_performance_freq;
+static LARGE_INTEGER g_performance_freq_;
 
 bool mono_time_init() {
-  return QueryPerformanceFrequency(&g_performance_freq);
+  return QueryPerformanceFrequency(&g_performance_freq_);
 }
 
 S64 mono_time_from_s(F64 s) {
-  return s * g_performance_freq.QuadPart;
+  return s * g_performance_freq_.QuadPart;
 }
 
 S64 mono_time_now() {
@@ -25,7 +25,7 @@ S64 mono_time_now() {
 }
 
 F64 mono_time_to_s(S64 t) {
-  return (F64)t / g_performance_freq.QuadPart;
+  return (F64)t / g_performance_freq_.QuadPart;
 }
 
 F64 mono_time_to_ms(S64 t) {

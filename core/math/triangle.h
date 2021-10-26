@@ -8,6 +8,6 @@
 
 #include "core/math/vec3.h"
 
-struct ngTriangle {
+struct Triangle {
   V3 vertices[3];
 };

@@ -8,15 +8,14 @@
 
 #include "core/os_string.h"
 
-struct ngAllocator;
+struct Allocator;
 
-struct PNGLoader {
+struct Png_loader {
 public:
-  bool png_init(ngAllocator* allocator, const OSChar* path);
+  bool png_init(Allocator* allocator, const Os_char* path);
   void png_destroy();
 
-private:
-  ngAllocator* m_allocator;
+  Allocator* m_allocator;
   U8* m_data = NULL;
   U32 m_width = 0;
   U32 m_height = 0;

@@ -23,33 +23,33 @@ void debug_get_stack_trace(char* buffer, int len) {
   // TODO: mutex
   // std::lock_guard<std::mutex> lk(g_mutex);
   memset(buffer, 0, len);
-  CHECK(len <= MAX_STACK_TRACE_LENGTH);
-  void* frames[MAX_TRACES];
-  int count = CaptureStackBackTrace(0, MAX_TRACES, frames, NULL);
+  M_check(len <= M_max_stack_trace_length_);
+  void* frames[M_max_traces_];
+  int count = CaptureStackBackTrace(0, M_max_traces_, frames, NULL);
   int remaining_size = len;
   for (int i = 0; i < count; ++i) {
     DWORD64 displacement = 0;
     DWORD_PTR address = (DWORD_PTR)frames[i];
-    char symbol_buffer[sizeof(SYMBOL_INFO) + MAX_SYMBOL_LENGTH * sizeof(TCHAR)];
-    char traceBuffer[MAX_SYMBOL_LENGTH];
+    char symbol_buffer[sizeof(SYMBOL_INFO) + M_max_symbol_length_ * sizeof(TCHAR)];
+    char traceBuffer[M_max_symbol_length_];
     memset(symbol_buffer, 0, sizeof(symbol_buffer));
     memset(traceBuffer, 0, sizeof(traceBuffer));
 
     PSYMBOL_INFO symbol_info = (PSYMBOL_INFO)symbol_buffer;
 
     symbol_info->SizeOfStruct = sizeof(SYMBOL_INFO);
-    symbol_info->MaxNameLen = MAX_SYMBOL_LENGTH - 1;
+    symbol_info->MaxNameLen = M_max_symbol_length_ - 1;
     DWORD line_displacement = 0;
     IMAGEHLP_LINE line = {};
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
     HANDLE current_process = GetCurrentProcess();
     int trace_chars_written = 0;
     if (SymFromAddr(current_process, address, &displacement, symbol_info)) {
-      trace_chars_written = snprintf(traceBuffer, MAX_SYMBOL_LENGTH, "%s ", symbol_info->Name);
+      trace_chars_written = snprintf(traceBuffer, M_max_symbol_length_, "%s ", symbol_info->Name);
     }
     if (SymGetLineFromAddr(current_process, address, &line_displacement, &line)) {
       snprintf(traceBuffer + trace_chars_written,
-               MAX_SYMBOL_LENGTH - trace_chars_written,
+               M_max_symbol_length_ - trace_chars_written,
                "%s:%lu",
                line.FileName,
                line.LineNumber);

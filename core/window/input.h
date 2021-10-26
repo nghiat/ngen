@@ -4,27 +4,24 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2021             //
 //----------------------------------------------------------------------------//
 
-#ifndef CORE_WINDOW_INPUT_H
-#define CORE_WINDOW_INPUT_H
+#pragma once
 
-enum EKey {
-  EKEY_NONE = 0,
-  EKEY_A,
-  EKEY_D,
-  EKEY_S,
-  EKEY_W,
-  EKEY_BELOW_ESC,
+enum E_key {
+  e_key_none = 0,
+  e_key_a,
+  e_key_d,
+  e_key_s,
+  e_key_w,
+  e_key_below_esc,
 
-  EKEY_COUNT,
+  e_key_count,
 };
 
-enum EMouse {
-  EMOUSE_NONE = 0,
-  EMOUSE_LEFT,
-  EMOUSE_MIDDLE,
-  EMOUSE_RIGHT,
+enum E_mouse {
+  e_mouse_none = 0,
+  e_mouse_left,
+  e_mouse_middle,
+  e_mouse_right,
 
-  EMOUSE_COUNT,
+  e_mouse_count,
 };
-
-#endif // CORE_WINDOW_INPUT_H

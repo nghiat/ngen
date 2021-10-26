@@ -8,7 +8,7 @@
 
 #include "math/vec3.h"
 
-struct ngSphere {
+struct Sphere {
   V3 center;
   float radius;
 };

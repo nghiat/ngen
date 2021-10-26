@@ -17,8 +17,8 @@ const T& min(const T& a, const T& b) {
   return a < b ? a : b;
 }
 
-template <typename T, SZ N>
-SZ static_array_size(const T(&)[N]) {
+template <typename T, Sz N>
+Sz static_array_size(const T(&)[N]) {
   return N;
 }
 
@@ -29,8 +29,8 @@ struct ScopeExit {
   T f;
 };
 
-#define UNUSED(a) (void)a
+#define M_unused(a) (void)a
 
-#define STRING_JOIN_EXPANDED_(arg1, arg2) arg1 ## arg2
-#define STRING_JOIN_(arg1, arg2) STRING_JOIN_EXPANDED_(arg1, arg2)
-#define SCOPE_EXIT(code) auto STRING_JOIN_(zz_scope_exit_, __LINE__)([&](){code;}); UNUSED(STRING_JOIN_(zz_scope_exit_, __LINE__))
+#define M_string_join_expanded_(arg1, arg2) arg1 ## arg2
+#define M_string_join_(arg1, arg2) M_string_join_expanded_(arg1, arg2)
+#define M_scope_exit(code) auto M_string_join_(zz_scope_exit_, __LINE__)([&](){code;}); M_unused(M_string_join_(zz_scope_exit_, __LINE__))

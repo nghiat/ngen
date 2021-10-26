@@ -195,7 +195,7 @@ config("default_symbols") {
 # Dev/release ----------------------------------------------------------------
 
 config("dev") {
-  defines = [ "DEV_BUILD_" ]
+  defines = [ "M_dev_build_" ]
 }
 
 config("release") {

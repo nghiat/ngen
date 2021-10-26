@@ -10,15 +10,15 @@
 #include "core/log.h"
 #include "core/os_string.h"
 
-OSChar g_exe_path[MAX_PATH_LEN];
-OSChar g_exe_dir[MAX_PATH_LEN];
+Os_char g_exe_path_[M_max_path_len];
+Os_char g_exe_dir_[M_max_path_len];
 
-OSChar* path_from_exe_dir(OSChar* out, const OSChar* sub_path, int len) {
-  int exe_dir_len = os_str_get_len(g_exe_dir);
+Os_char* path_from_exe_dir(Os_char* out, const Os_char* sub_path, int len) {
+  int exe_dir_len = os_str_get_len(g_exe_dir_);
   int sub_path_len = os_str_get_len(sub_path);
-  CHECK_RETURN_VAL(exe_dir_len + sub_path_len < len, NULL);
-  memcpy(out, g_exe_dir, exe_dir_len * sizeof(OSChar));
-  memcpy(out + exe_dir_len, sub_path, sub_path_len * sizeof(OSChar));
+  M_check_return_val(exe_dir_len + sub_path_len < len, NULL);
+  memcpy(out, g_exe_dir_, exe_dir_len * sizeof(Os_char));
+  memcpy(out + exe_dir_len, sub_path, sub_path_len * sizeof(Os_char));
   out[exe_dir_len + sub_path_len] = 0;
   return out;
 }

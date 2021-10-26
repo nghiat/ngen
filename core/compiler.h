@@ -7,11 +7,11 @@
 #pragma once
 
 #if defined(__clang__)
-#define COMPILER_CLANG_ 1
+#define M_compiler_clang_ 1
 #elif defined(__GNUC__) || defined(__GNUG__)
-#define COMPILER_GCC_ 1
+#define M_compiler_gcc_ 1
 #elif defined(_MSC_VER)
-#define COMPILER_MSVC_ 1
+#define M_compiler_msvc_ 1
 #endif
 
-#define IS_CLANG() COMPILER_CLANG_
+#define M_is_clang() M_compiler_clang_

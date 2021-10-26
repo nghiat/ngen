@@ -10,64 +10,65 @@
 #include "core/ng_types.h"
 #include "core/os.h"
 
-#if OS_WIN()
+#if M_os_is_win()
 #  include "core/windows_lite.h"
 #endif
 
-enum EFileMode {
+enum E_file_mod {
   // open file if it exists, otherwise, create a new file.
-  EFILE_MODE_READ = 1 << 0,
-  EFILE_MODE_WRITE = 1 << 1,
-  EFILE_MODE_APPEND = 1 << 2,
+  e_file_mode_read = 1 << 0,
+  e_file_mode_write = 1 << 1,
+  e_file_mode_append = 1 << 2,
 };
 
-enum EFileFrom {
-  EFILE_FROM_BEGIN,
-  EFILE_FROM_CURRENT,
-  EFILE_FROM_END
+enum E_file_from {
+  e_file_from_begin,
+  e_file_from_current,
+  e_file_from_end
 };
 
-struct ngAllocator;
+struct Allocator;
 struct FileBuffer;
 
-class ngFile {
+class File {
 public:
   static bool f_init();
-  static void f_delete_path(const OSChar* path);
-  static DynamicArray<U8> f_read_whole_file_as_text(ngAllocator* allocator, const OSChar* path);
+  static void f_delete_path(const Os_char* path);
+  static Dynamic_array<U8> f_read_whole_file_as_text(Allocator* allocator, const Os_char* path);
 
-  bool f_open(const OSChar* path, enum EFileMode mode);
+  bool f_open(const Os_char* path, enum E_file_mod mode);
   void f_close();
 
   void f_delete();
 
-  bool f_read(void* buffer, SIP* bytes_read, SIP size);
-  bool f_read_line(char* buffer, SIP size);
-  bool f_write(SIP* bytes_written, const void* in, SIP size);
-  void f_seek(enum EFileFrom from, SIP distance);
+  bool f_read(void* buffer, Sip* bytes_read, Sip size);
+  bool f_read_line(char* buffer, Sip size);
+  bool f_write(Sip* bytes_written, const void* in, Sip size);
+  void f_seek(enum E_file_from from, Sip distance);
   void f_flush();
 
-  SIP f_get_pos() const;
+  Sip f_get_pos() const;
   bool f_is_valid() const;
-  SIP f_get_size() const;
+  Sip f_get_size() const;
 
-  static const SIP F_INVALID_POS = -1;
-  static const SIP F_INVALID_SIZE = -1;
-private:
-  bool f_open_plat(const OSChar* path, EFileMode mode);
-  void f_close_plat();
+  static const Sip F_INVALID_POS = -1;
+  static const Sip F_INVALID_SIZE = -1;
 
-  bool f_read_plat(void* buffer, SIP* bytes_read, SIP size);
-  bool f_write_plat(SIP* bytes_written, const void* buffer, SIP size);
-  void f_seek_plat(EFileFrom from, SIP distance);
-
-#if OS_WIN()
+#if M_os_is_win()
   HANDLE m_handle;
-#elif OS_LINUX()
+#elif M_os_is_linux()
   int m_handle;
 #else
 #error "?"
 #endif
-  const OSChar* m_path;
+  const Os_char* m_path;
   FileBuffer* m_internal_buffer = NULL;
+
+private:
+  bool f_open_plat_(const Os_char* path, E_file_mod mode);
+  void f_close_plat_();
+
+  bool f_read_plat_(void* buffer, Sip* bytes_read, Sip size);
+  bool f_write_plat_(Sip* bytes_written, const void* buffer, Sip size);
+  void f_seek_plat_(E_file_from from, Sip distance);
 };

@@ -9,20 +9,20 @@
 #include "core/os.h"
 
 // Maximum number of traces.
-#define MAX_TRACES 64
+#define M_max_traces_ 64
 
 // Maximum char for each trace.
 // Hopfully we don't use more than |gc_max_symbol_length| characters which means
 // we have to use heap allocation.
-#define MAX_SYMBOL_LENGTH 1024
+#define M_max_symbol_length_ 1024
 
 // Maximum char for all traces.
-#define MAX_STACK_TRACE_LENGTH (MAX_TRACES * MAX_SYMBOL_LENGTH)
+#define M_max_stack_trace_length_ (M_max_traces_ * M_max_symbol_length_)
 
-#if OS_WIN()
-#define DEBUG_BREAK_DEBUGGER() __debugbreak()
-#elif OS_LINUX()
-#define DEBUG_BREAK_DEBUGGER() __asm__("int $3")
+#if M_os_is_win()
+#define M_debug_break_debugger() __debugbreak()
+#elif M_os_is_linux()
+#define M_debug_break_debugger() __asm__("int $3")
 #else
 #error "?"
 #endif

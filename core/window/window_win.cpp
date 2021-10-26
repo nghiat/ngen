@@ -14,20 +14,20 @@
 
 #include <string.h>
 
-#define WIN_KEY_MAX 256
+#define M_win_key_max_ 256
 
-static EKey g_vk_to_key[WIN_KEY_MAX];
+static E_key g_vk_to_key_[M_win_key_max_];
 
-static void init_key_codes_map() {
-  static_assert(EKEY_NONE == 0, "g_vk_to_key is default initialized to 0s");
-  g_vk_to_key[0x41] = EKEY_A;
-  g_vk_to_key[0x44] = EKEY_D;
-  g_vk_to_key[0x53] = EKEY_S;
-  g_vk_to_key[0x57] = EKEY_W;
-  g_vk_to_key[VK_OEM_3] = EKEY_BELOW_ESC;
+static void init_key_codes_map_() {
+  static_assert(e_key_none == 0, "g_vk_to_key_ is default initialized to 0s");
+  g_vk_to_key_[0x41] = e_key_a;
+  g_vk_to_key_[0x44] = e_key_d;
+  g_vk_to_key_[0x53] = e_key_s;
+  g_vk_to_key_[0x57] = e_key_w;
+  g_vk_to_key_[VK_OEM_3] = e_key_below_esc;
 }
 
-static void update_mouse_val(ngWindow* w, LPARAM l_param, EMouse mouse, bool is_down) {
+static void update_mouse_val_(ngWindow* w, LPARAM l_param, E_mouse mouse, bool is_down) {
   int x = GET_X_LPARAM(l_param);
   int y = GET_Y_LPARAM(l_param);
   w->m_mouse_down[mouse] = is_down;
@@ -36,7 +36,7 @@ static void update_mouse_val(ngWindow* w, LPARAM l_param, EMouse mouse, bool is_
   w->m_old_mouse_y[mouse] = y;
 }
 
-static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_param, _In_ LPARAM l_param) {
+static LRESULT CALLBACK wnd_proc_(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_param, _In_ LPARAM l_param) {
   ngWindow* w = (ngWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   switch (msg) {
   case WM_CLOSE:
@@ -47,30 +47,30 @@ static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_pa
     break;
   case WM_KEYUP:
   case WM_KEYDOWN:
-    w->m_key_down[g_vk_to_key[w_param]] = msg == WM_KEYDOWN;
-    w->on_key_event(g_vk_to_key[w_param], msg == WM_KEYDOWN);
+    w->m_key_down[g_vk_to_key_[w_param]] = msg == WM_KEYDOWN;
+    w->on_key_event(g_vk_to_key_[w_param], msg == WM_KEYDOWN);
     break;
   case WM_CHAR:
     w->on_char_event((wchar_t)w_param);
     break;
   case WM_LBUTTONDOWN:
   case WM_LBUTTONUP:
-    update_mouse_val(w, l_param, EMOUSE_LEFT, msg == WM_LBUTTONDOWN);
+    update_mouse_val_(w, l_param, e_mouse_left, msg == WM_LBUTTONDOWN);
     break;
   case WM_MBUTTONDOWN:
   case WM_MBUTTONUP:
-    update_mouse_val(w, l_param, EMOUSE_MIDDLE, msg == WM_MBUTTONDOWN);
+    update_mouse_val_(w, l_param, e_mouse_middle, msg == WM_MBUTTONDOWN);
     break;
   case WM_RBUTTONDOWN:
   case WM_RBUTTONUP:
-    update_mouse_val(w, l_param, EMOUSE_RIGHT, msg == WM_MBUTTONDOWN);
+    update_mouse_val_(w, l_param, e_mouse_right, msg == WM_MBUTTONDOWN);
     break;
   case WM_MOUSEMOVE: {
     int x = GET_X_LPARAM(l_param);
     int y = GET_Y_LPARAM(l_param);
     w->on_mouse_move(x, y);
     if (w->m_is_cursor_visible) {
-      for (int i = 0; i < EMOUSE_COUNT; ++i) {
+      for (int i = 0; i < e_mouse_count; ++i) {
         w->m_old_mouse_x[i] = x;
         w->m_old_mouse_y[i] = y;
       }
@@ -86,11 +86,11 @@ bool ngWindow::init() {
   HINSTANCE hinstance;
   WNDCLASSEX wcex;
   HWND hwnd;
-  init_key_codes_map();
+  init_key_codes_map_();
   hinstance = GetModuleHandle(NULL);
   wcex.cbSize = sizeof(WNDCLASSEX);
   wcex.style = CS_OWNDC;
-  wcex.lpfnWndProc = &wnd_proc;
+  wcex.lpfnWndProc = &wnd_proc_;
   wcex.cbClsExtra = 0;
   wcex.cbWndExtra = 0;
   wcex.hInstance = hinstance;
@@ -101,9 +101,9 @@ bool ngWindow::init() {
   wcex.lpszClassName = m_title;
   wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
-  CHECK_LOG_RETURN_VAL(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
+  M_check_log_return_val(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
   hwnd = CreateWindow(m_title, m_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, m_width, m_height, NULL, NULL, hinstance, NULL);
-  CHECK_LOG_RETURN_VAL(hwnd, false, "Can't create HWND");
+  M_check_log_return_val(hwnd, false, "Can't create HWND");
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
   ShowWindow(hwnd, SW_SHOWNORMAL);
   UpdateWindow(hwnd);

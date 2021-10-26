@@ -8,27 +8,27 @@
 
 #include "core/os.h"
 
-#if OS_WIN()
+#if M_os_is_win()
 #include "core/windows_lite.h"
-typedef HANDLE ngThreadHandle;
+typedef HANDLE ngThread_handle_;
 
-#elif OS_LINUX()
+#elif M_os_is_linux()
 #include <pthread.h>
-typedef pthread_t ngThreadHandle;
+typedef pthread_t ngThread_handle_;
 
 #else
 #error "?"
 #endif
 
-typedef void (*ngThreadFunc)(void*);
+typedef void (*ngThread_func)(void*);
 
 class ngThread {
 public:
-  bool thread_init(ngThreadFunc start_func, void* args);
+  bool thread_init(ngThread_func start_func, void* args);
   void thread_wait_for();
   static int thread_get_nums();
 
-  ngThreadHandle m_handle;
-  ngThreadFunc m_start_func;
+  ngThread_handle_ m_handle;
+  ngThread_func m_start_func;
   void* m_args;
 };

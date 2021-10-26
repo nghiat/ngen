@@ -12,59 +12,59 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct LAPage {
-  SIP size;
-  LAPage* prev;
+struct LAPage_ {
+  Sip size;
+  LAPage_* prev;
 };
 
-template <SZ INITIAL_SIZE>
-bool LinearAllocator<INITIAL_SIZE>::la_init() {
-  m_used_size += sizeof(LAPage);
-  m_current_page = (LAPage*)&(m_stack_page[0]);
-  m_current_page->size = INITIAL_SIZE;
+template <Sz T_initial_size>
+bool Linear_allocator<T_initial_size>::la_init() {
+  m_used_size += sizeof(LAPage_);
+  m_current_page = (LAPage_*)&(m_stack_page[0]);
+  m_current_page->size = T_initial_size;
   m_current_page->prev = NULL;
   m_top = (U8*)(m_current_page + 1);
   return true;
 }
 
-template <SZ INITIAL_SIZE>
-void LinearAllocator<INITIAL_SIZE>::al_destroy() {
-  LAPage* page = m_current_page;
-  while (page != (LAPage*)&(m_stack_page[0])) {
-    LAPage* prev = page->prev;
+template <Sz T_initial_size>
+void Linear_allocator<T_initial_size>::al_destroy() {
+  LAPage_* page = m_current_page;
+  while (page != (LAPage_*)&(m_stack_page[0])) {
+    LAPage_* prev = page->prev;
     ::free(page);
     page = prev;
   }
 }
 
-template <SZ INITIAL_SIZE>
-void* LinearAllocator<INITIAL_SIZE>::al_aligned_alloc(SIP size, SIP alignment) {
-  CHECK_LOG_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
+template <Sz T_initial_size>
+void* Linear_allocator<T_initial_size>::al_aligned_alloc(Sip size, Sip alignment) {
+  M_check_log_return_val(check_aligned_alloc_(size, alignment), NULL, "Alignment is not power of 2");
 
-  U8* p = m_top + sizeof(AllocHeader);
-  p = align_forward(p, alignment);
-  SIP real_size = (p - m_top) + size;
-  if (get_current_page_remaning_size() < real_size) {
+  U8* p = m_top + sizeof(Alloc_header_);
+  p = align_forward_(p, alignment);
+  Sip real_size = (p - m_top) + size;
+  if (get_current_page_remaning_size_() < real_size) {
     // Create a new page.
-    SIP new_page_size = sizeof(LAPage) + sizeof(AllocHeader) + size + alignment;
+    Sip new_page_size = sizeof(LAPage_) + sizeof(Alloc_header_) + size + alignment;
     if (new_page_size < sc_default_page_size)
       new_page_size = sc_default_page_size;
-    LAPage* new_page = (LAPage*)malloc(new_page_size);
-    CHECK_LOG_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
+    LAPage_* new_page = (LAPage_*)malloc(new_page_size);
+    M_check_log_return_val(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
     m_total_size += new_page_size;
-    m_used_size += get_current_page_remaning_size() + sizeof(LAPage);
+    m_used_size += get_current_page_remaning_size_() + sizeof(LAPage_);
     new_page->size = new_page_size;
     new_page->prev = m_current_page;
     m_current_page = new_page;
     m_top = (U8*)(m_current_page + 1);
-    p = align_forward(m_top + sizeof(AllocHeader), alignment);
+    p = align_forward_(m_top + sizeof(Alloc_header_), alignment);
     real_size = (p - m_top) + size;
   }
-  AllocHeader* hdr = get_allocation_header(p);
+  Alloc_header_* hdr = get_allocation_header_(p);
   hdr->start = m_top;
   hdr->size = size;
   hdr->alignment = alignment;
-#if IS_DEV()
+#if M_is_dev()
   hdr->p = p;
 #endif
   m_top += real_size;
@@ -72,12 +72,12 @@ void* LinearAllocator<INITIAL_SIZE>::al_aligned_alloc(SIP size, SIP alignment) {
   return p;
 }
 
-template <SZ INITIAL_SIZE>
-void* LinearAllocator<INITIAL_SIZE>::al_realloc(void* p, SIP size) {
-  CHECK_LOG_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
+template <Sz T_initial_size>
+void* Linear_allocator<T_initial_size>::al_realloc(void* p, Sip size) {
+  M_check_log_return_val(check_p_in_dev_(p) && size, NULL, "Invalid pointer to realloc");
 
-  AllocHeader* header = get_allocation_header(p);
-  SIP old_size = header->size;
+  Alloc_header_* header = get_allocation_header_(p);
+  Sip old_size = header->size;
   // Not at top
   if ((U8*)p + header->size != m_top) {
     void* new_p = al_aligned_alloc(size, header->alignment);
@@ -85,7 +85,7 @@ void* LinearAllocator<INITIAL_SIZE>::al_realloc(void* p, SIP size) {
     return new_p;
   }
   // Remaining space is not enough.
-  if (size > get_current_page_remaning_size()) {
+  if (size > get_current_page_remaning_size_()) {
     void* new_p = al_aligned_alloc(size, header->alignment);
     memcpy(new_p, p, header->size);
     return new_p;
@@ -98,10 +98,10 @@ void* LinearAllocator<INITIAL_SIZE>::al_realloc(void* p, SIP size) {
   return p;
 }
 
-template <SZ INITIAL_SIZE>
-void LinearAllocator<INITIAL_SIZE>::al_free(void* p) {
-  CHECK_LOG_RETURN(check_p_in_dev(p), "Invalid pointer to free");
-  AllocHeader* header = get_allocation_header(p);
+template <Sz T_initial_size>
+void Linear_allocator<T_initial_size>::al_free(void* p) {
+  M_check_log_return(check_p_in_dev_(p), "Invalid pointer to free");
+  Alloc_header_* header = get_allocation_header_(p);
   if ((U8*)p + header->size != m_top) {
     return;
   }
@@ -109,10 +109,10 @@ void LinearAllocator<INITIAL_SIZE>::al_free(void* p) {
   m_used_size -= header->size + ((U8*)p - header->start);
 }
 
-template <SZ INITIAL_SIZE>
-SIP LinearAllocator<INITIAL_SIZE>::get_current_page_remaning_size() {
-  SIP remaining_size = m_current_page->size - (m_top - (U8*)(m_current_page));
-  CHECK(remaining_size >= 0);
+template <Sz T_initial_size>
+Sip Linear_allocator<T_initial_size>::get_current_page_remaning_size_() {
+  Sip remaining_size = m_current_page->size - (m_top - (U8*)(m_current_page));
+  M_check(remaining_size >= 0);
   return remaining_size;
 }
 

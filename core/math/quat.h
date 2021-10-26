@@ -9,15 +9,15 @@
 #include "core/math/mat4.h"
 #include "core/math/vec3.h"
 
-struct ngQuat {
+struct Quat {
   F32 a;
   F32 b;
   F32 c;
   F32 d;
 };
 
-ngQuat quat_inverse(const ngQuat& q);
-F32 quat_norm(const ngQuat& q);
-ngQuat quat_normalize(const ngQuat& q);
-M4 quat_to_m4(const ngQuat& q);
-ngQuat quat_rotate_v3(const V3& v, F32 angle);
+Quat quat_inverse(const Quat& q);
+F32 quat_norm(const Quat& q);
+Quat quat_normalize(const Quat& q);
+M4 quat_to_m4(const Quat& q);
+Quat quat_rotate_v3(const V3& v, F32 angle);

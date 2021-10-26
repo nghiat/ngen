@@ -6,4 +6,4 @@
 
 #pragma once
 
-#define IS_DEV() DEV_BUILD_
+#define M_is_dev() M_dev_build_

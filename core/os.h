@@ -8,12 +8,12 @@
 
 // OS macros
 #if defined(_WIN32) || defined(_WIN64)
-#  define OS_WIN_ 1
+#  define M_os_win_ 1
 #endif
 
 #if defined(__linux__)
-#  define OS_LINUX_ 1
+#  define M_os_linux_ 1
 #endif
 
-#define OS_WIN() OS_WIN_
-#define OS_LINUX() OS_LINUX_
+#define M_os_is_win() M_os_win_
+#define M_os_is_linux() M_os_linux_

@@ -8,7 +8,7 @@
 
 #include "core/ng_types.h"
 
-#define MAX_PATH_LEN (256)
+#define M_max_path_len (256)
 
 bool path_utils_init();
-OSChar* path_from_exe_dir(OSChar* out, const OSChar* sub_path, int len);
+Os_char* path_from_exe_dir(Os_char* out, const Os_char* sub_path, int len);
