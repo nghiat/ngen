@@ -158,6 +158,7 @@ def _GetClangMscVersionFromYear(version_as_year):
       '2015': '1900',
       '2017': '1910',
       '2019': '1920',
+      '2022': '1930',
   }
   if version_as_year not in year_to_version:
     raise Exception(('Visual Studio version %s (from version_as_year)'
@@ -201,6 +202,7 @@ def DetectVisualStudioPath(version_as_year):
       '2015': '14.0',
       '2017': '15.0',
       '2019': '16.0',
+      '2022': '17.0',
   }
 
   if version_as_year not in year_to_version:
@@ -208,12 +210,15 @@ def DetectVisualStudioPath(version_as_year):
                      ' not supported. Supported versions are: %s') % (
                        version_as_year, ', '.join(year_to_version.keys())))
 
-  if version_as_year == '2017' or version_as_year == '2019':
+  if version_as_year == '2017' or version_as_year == '2019' or version_as_year == '2022':
     # The VC++ 2017 install location needs to be located using COM instead of
     # the registry. For details see:
     # https://blogs.msdn.microsoft.com/heaths/2016/09/15/changes-to-visual-studio-15-setup/
     # For now we use a hardcoded default with an environment variable override.
-    root_path = r'C:\Program Files (x86)\Microsoft Visual Studio'
+    if version_as_year == '2022':
+        root_path = r'C:\Program Files\Microsoft Visual Studio'
+    else:
+        root_path = r'C:\Program Files (x86)\Microsoft Visual Studio'
     root_path += '\\' + version_as_year
     for edition in ['Professional', 'Community']:
       path = os.environ.get('vs%s_install' % version_as_year, os.path.join(root_path, edition))
