@@ -9,27 +9,15 @@
 #include "core/allocator.h"
 #include "core/log.h"
 
-#include <X11/Xlib-xcb.h>
-#include <X11/Xlib.h>
-#include <xcb/xcb.h>
-#include <xcb/xcb_keysyms.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 #include <stdlib.h>
 #include <string.h>
 
-struct WindowPlatform {
-  Display* xdisplay;
-  xcb_connection_t* xcb_connection;
-  xcb_intern_atom_reply_t* reply2;
-  uint32_t xcb_window_id;
-  xcb_key_symbols_t* key_symbols;
-};
-
 static E_key g_xcb_key_code_to_key_[e_key_count];
 static E_mouse g_xcb_button_to_mouse_[e_mouse_count];
 
-static void init_input_(xjWindow* w) {
+static void init_input_(ngWindow* w) {
   // key
   static_assert (XKB_KEY_NoSymbol == e_key_none && e_key_none == 0, "g_xcb_key_code_to_key_ is default initialized to 0s");
   int key_to_xkb[e_key_count] = {};
@@ -40,9 +28,9 @@ static void init_input_(xjWindow* w) {
   key_to_xkb[e_key_w] = XKB_KEY_W;
   key_to_xkb[e_key_below_esc] = XKB_KEY_grave;
 
-  for (int i = KEY_NONE + 1; i < KEY_COUNT; i++) {
+  for (int i = e_key_none + 1; i < e_key_count; i++) {
     E_key code = (E_key)i;
-    xcb_keycode_t* kc = xcb_key_symbols_get_keycode(w->platform_data->key_symbols, key_to_xkb[i]);
+    xcb_keycode_t* kc = xcb_key_symbols_get_keycode(w->m_platform_data.key_symbols, key_to_xkb[i]);
     if (kc) {
       g_xcb_key_code_to_key_[*kc] = code;
       free(kc);
@@ -52,20 +40,20 @@ static void init_input_(xjWindow* w) {
   }
 
   // mouse
-  static_assert(e_mouse_NONE == 0, "g_xcb_button_to_mouse_ is default initialized to 0s");
+  static_assert(e_mouse_none == 0, "g_xcb_button_to_mouse_ is default initialized to 0s");
   g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_1] = e_mouse_left;
   g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_2] = e_mouse_right;
   g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_3] = e_mouse_middle;
 }
 
-static void update_mouse_val_(xjWindow* w, E_mouse mouse, int x, int y, bool is_down) {
-  w->mouse_down[mouse] = is_down;
+static void update_mouse_val_(ngWindow* w, E_mouse mouse, int x, int y, bool is_down) {
+  w->m_mouse_down[mouse] = is_down;
   w->on_mouse_event(mouse, x, y, is_down);
-  w->old_mouse_x[mouse] = x;
-  w->old_mouse_y[mouse] = y;
+  w->m_old_mouse_x[mouse] = x;
+  w->m_old_mouse_y[mouse] = y;
 }
 
-bool xjWindow::init() {
+bool ngWindow::init() {
   Display* xdisplay = XOpenDisplay(0);
   M_check_log_return_val(xdisplay, false, "XOpenDisplay failed");
   xcb_connection_t* xcb_connection = XGetXCBConnection(xdisplay);
@@ -81,8 +69,8 @@ bool xjWindow::init() {
   U32 colormap = xcb_generate_id(xcb_connection);
   xcb_create_colormap(xcb_connection, XCB_COLORMAP_ALLOC_NONE, colormap, screen->root, screen->root_visual);
   uint32_t value_list[3] = {event_mask, colormap, 0};
-  xcb_create_window(xcb_connection, XCB_COPY_FROM_PARENT, xcb_window_id, screen->root, 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
-  xcb_change_property(xcb_connection, XCB_PROP_MODE_REPLACE, xcb_window_id, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
+  xcb_create_window(xcb_connection, XCB_COPY_FROM_PARENT, xcb_window_id, screen->root, 0, 0, m_width, m_height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
+  xcb_change_property(xcb_connection, XCB_PROP_MODE_REPLACE, xcb_window_id, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(m_title), m_title);
   xcb_intern_atom_cookie_t cookie = xcb_intern_atom(xcb_connection, 1, 12, "WM_PROTOCOLS");
   xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(xcb_connection, cookie, 0);
 
@@ -94,27 +82,25 @@ bool xjWindow::init() {
 
   xcb_flush(xcb_connection);
   xcb_key_symbols_t* key_symbols = xcb_key_symbols_alloc(xcb_connection);
-  platform_data = (WindowPlatform*)allocator->alloc(sizeof(WindowPlatform));
-  platform_data->xdisplay = xdisplay;
-  platform_data->xcb_connection = xcb_connection;
-  platform_data->reply2 = reply2;
-  platform_data->xcb_window_id = xcb_window_id;
-  platform_data->key_symbols = key_symbols;
+  m_platform_data.xdisplay = xdisplay;
+  m_platform_data.xcb_connection = xcb_connection;
+  m_platform_data.reply2 = reply2;
+  m_platform_data.xcb_window_id = xcb_window_id;
+  m_platform_data.key_symbols = key_symbols;
   init_input_(this);
   return true;
 }
 
-void xjWindow::destroy() {
-  xcb_destroy_window(platform_data->xcb_connection, platform_data->xcb_window_id);
-  xcb_key_symbols_free(platform_data->key_symbols);
-  allocator->free(platform_data);
+void ngWindow::destroy() {
+  xcb_destroy_window(m_platform_data.xcb_connection, m_platform_data.xcb_window_id);
+  xcb_key_symbols_free(m_platform_data.key_symbols);
 }
 
-void xjWindow::os_loop() {
+void ngWindow::os_loop() {
   bool running = true;
   while (running) {
     xcb_generic_event_t* event;
-    while ((event = xcb_poll_for_event(platform_data->xcb_connection))) {
+    while ((event = xcb_poll_for_event(m_platform_data.xcb_connection))) {
       if (event) {
         switch (event->response_type & ~0x80) {
         case XCB_BUTTON_PRESS: {
@@ -128,29 +114,29 @@ void xjWindow::os_loop() {
         case XCB_KEY_PRESS: {
           xcb_key_press_event_t* kp = (xcb_key_press_event_t*)event;
           E_key code = g_xcb_key_code_to_key_[kp->detail];
-          key_down[code] = true;
+          m_key_down[code] = true;
           this->on_key_event(code, true);
         } break;
         case XCB_KEY_RELEASE: {
           xcb_key_release_event_t* kr = (xcb_key_release_event_t*)event;
           E_key code = g_xcb_key_code_to_key_[kr->detail];
-          key_down[code] = true;
+          m_key_down[code] = true;
           this->on_key_event(code, false);
         } break;
         case XCB_MOTION_NOTIFY: {
           xcb_motion_notify_event_t* m = (xcb_motion_notify_event_t*)event;
           this->on_mouse_move(m->event_x, m->event_y);
-          if (w->is_cursor_visible) {
+          if (m_is_cursor_visible) {
             for (int i = 0; i < e_mouse_count; ++i) {
-              if (mouse_down[i]) {
-                old_mouse_x[i] = m->event_x;
-                old_mouse_y[i] = m->event_y;
+              if (m_mouse_down[i]) {
+                m_old_mouse_x[i] = m->event_x;
+                m_old_mouse_y[i] = m->event_y;
               }
             }
           }
         } break;
         case XCB_CLIENT_MESSAGE:
-          if ((*(xcb_client_message_event_t*)event).data.data32[0] == (*platform_data->reply2).atom)
+          if ((*(xcb_client_message_event_t*)event).data.data32[0] == m_platform_data.reply2->atom)
             running = false;
           break;
         default:

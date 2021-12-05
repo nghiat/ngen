@@ -10,7 +10,7 @@
 
 bool Dynamic_lib::dl_open(const char* name) {
   m_handle = dlopen(name, RTLD_LAZY | RTLD_LOCAL);
-  return m_handle != NULL;
+  return m_handle != nullptr;
 }
 
 void Dynamic_lib::dl_close() {
@@ -18,5 +18,5 @@ void Dynamic_lib::dl_close() {
 }
 
 void* Dynamic_lib::dl_get_proc(const char* name) {
-  return dlsym(dl, name);
+  return dlsym(m_handle, name);
 }

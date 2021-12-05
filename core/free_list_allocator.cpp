@@ -37,7 +37,7 @@ static bool is_allocaiton_adjacent_to_free_block_(Alloc_header_* header, Free_bl
 bool FreeList_allocator::fla_init() {
   m_used_size = 0;
   m_start = (U8*)malloc(m_total_size);
-  M_check_log_return_val(m_start, false, "Can't init allocator \"%s\": Out of memory");
+  M_check_log_return_val(m_start, false, "Can't init allocator \"%s\": Out of memory", m_name);
   m_first_block = (Free_block_*)m_start;
   m_first_block->size = m_total_size;
   m_first_block->next = NULL;

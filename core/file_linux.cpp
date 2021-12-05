@@ -57,7 +57,7 @@ bool File::f_read_plat_(void* buffer, Sip* bytes_read, Sip size) {
 }
 
 bool File::f_write_plat_(Sip* bytes_written, const void* buffer, Sip size) {
-  M_check_return(f_is_valid());
+  M_check_return_val(f_is_valid(), false);
   Sip rv = ::write(m_handle, buffer, size);
   if (rv == -1) {
     return false;
@@ -91,7 +91,6 @@ Sip File::f_get_pos() const {
 }
 
 bool File::f_is_valid() const {
-  M_check_return_val(file, false);
   return m_handle != -1;
 }
 

@@ -11,11 +11,27 @@
 #include "core/window/input.h"
 #include "core/windows_lite.h"
 
+#if M_os_is_linux()
+#include <X11/Xlib-xcb.h>
+#include <X11/Xlib.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
+#endif
+
 struct Allocator;
 
 #if M_os_is_win()
 struct Platform_data_ {
   HWND hwnd;
+};
+
+#elif M_os_is_linux()
+struct Platform_data_ {
+  Display* xdisplay;
+  xcb_connection_t* xcb_connection;
+  xcb_intern_atom_reply_t* reply2;
+  U32 xcb_window_id;
+  xcb_key_symbols_t* key_symbols;
 };
 #endif
 

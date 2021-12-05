@@ -58,7 +58,7 @@ void log_destroy();
 
 #define M_check_log(condition, format, ...) \
   if (!(condition)) {                     \
-    M_logf(format, __VA_ARGS__);            \
+    M_logf(format, ##__VA_ARGS__);            \
   }
 
 #define M_logf_return(format, ...) \
@@ -85,10 +85,10 @@ void log_destroy();
 
 #define M_check_log_return(condition, format, ...) \
   if (!(condition)) {                            \
-    M_logf_return(format, __VA_ARGS__);            \
+    M_logf_return(format, ##__VA_ARGS__);            \
   }
 
 #define M_check_log_return_val(condition, retval, format, ...) \
   if (!(condition)) {                                        \
-    M_logf_return_val(retval, format, __VA_ARGS__);            \
+    M_logf_return_val(retval, format, ##__VA_ARGS__);            \
   }
