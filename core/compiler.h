@@ -14,4 +14,5 @@
 #define M_compiler_msvc_ 1
 #endif
 
-#define M_is_clang() M_compiler_clang_
+#define M_compiler_is_clang() M_compiler_clang_
+#define M_compiler_is_msvc() M_compiler_msvc_

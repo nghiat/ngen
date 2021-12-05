@@ -7,9 +7,9 @@
 #pragma once
 
 #include "core/build.h"
+#include "core/compiler.h"
 #include "core/debug.h"
 #include "core/ng_types.h"
-#include "core/os.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -32,9 +32,9 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
 bool log_init(const Os_char* log_path);
 void log_destroy();
 
-#if M_os_is_win()
-#define M_likely(x)
-#define M_unlikely(x)
+#if M_compiler_is_msvc()
+#define M_likely(x) (x)
+#define M_unlikely(x) (x)
 #else
 #define M_likely(x) __builtin_expect((x), 1)
 #define M_unlikely(x) __builtin_expect((x), 0)
