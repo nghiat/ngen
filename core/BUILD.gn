@@ -64,6 +64,8 @@ static_library("core") {
     "path_utils.cpp",
     "path_utils.h",
     "utils.h",
+    "value.cpp",
+    "value.h",
     "window/window.h",
     "windows_lite.h",
   ]
