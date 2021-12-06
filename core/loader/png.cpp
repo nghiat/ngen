@@ -102,13 +102,13 @@ static void build_alphabet_(U8* lens, int num, Alphabet_* alphabet) {
 }
 
 static int decode_(Bit_stream* bs, const Alphabet_* c_alphabet) {
-  int code = bs->bs_consume_msb(c_alphabet->min_len);
+  int code = bs->consume_msb(c_alphabet->min_len);
   for (U8 i = c_alphabet->min_len; i <= c_alphabet->max_len; ++i) {
     int delta_to_min = code - c_alphabet->cfl[i].min;
     if (delta_to_min < c_alphabet->cfl[i].count) {
       return c_alphabet->cfl[i].codes[delta_to_min];
     }
-    code = code << 1 | bs->bs_consume_msb(1);
+    code = code << 1 | bs->consume_msb(1);
   }
   M_logf("Can't decode_");
   return -1;
@@ -118,11 +118,11 @@ static void decode_len_and_dist_(U8** o_deflated, int len_code, Bit_stream* bs, 
   int len_idx = len_code % 257;
   int len_base = gc_len_bases_[len_idx];
   int len_extra_bits = gc_len_extra_bits_[len_idx];
-  int len = len_base + bs->bs_consume_lsb(len_extra_bits);
-  int dist_idx = c_dist_alphabet ? decode_(bs, c_dist_alphabet) : bs->bs_consume_lsb(5);
+  int len = len_base + bs->consume_lsb(len_extra_bits);
+  int dist_idx = c_dist_alphabet ? decode_(bs, c_dist_alphabet) : bs->consume_lsb(5);
   int dist_base = gc_dist_bases_[dist_idx];
   int dist_extra_bits = gc_dist_extra_bits_[dist_idx];
-  int dist = dist_base + bs->bs_consume_lsb(dist_extra_bits);
+  int dist = dist_base + bs->consume_lsb(dist_extra_bits);
   U8* copy = *o_deflated - dist;
   for (int i = 0; i < len; ++i) {
     *(*o_deflated)++ = *copy++;
@@ -142,15 +142,15 @@ static int paeth_(int a, int b, int c) {
   return c;
 }
 
-bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
+bool Png_loader::init(Allocator* allocator, const Os_char* path) {
   m_allocator = allocator;
 
   Linear_allocator<> temp_allocator("PNG_loader_temp_allocator");
-  temp_allocator.la_init();
-  M_scope_exit(temp_allocator.al_destroy());
-  Dynamic_array<U8> data = File::f_read_whole_file_as_text(&temp_allocator, path);
+  temp_allocator.init();
+  M_scope_exit(temp_allocator.destroy());
+  Dynamic_array<U8> data = File::read_whole_file_as_text(&temp_allocator, path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
-  for (int i = gc_png_sig_len_; i < data.da_len();) {
+  for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
     i += 4;
     const U8* chunk_it = &data[0] + i;
@@ -198,40 +198,40 @@ bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
     }
     case FOURCC_("IDAT"): {
       Bit_stream bs;
-      bs.bs_init(p);
+      bs.init(p);
       // 2 bytes of zlib header.
-      U32 zlib_compress_method = bs.bs_consume_lsb(4);
+      U32 zlib_compress_method = bs.consume_lsb(4);
       M_check_log_return_val(zlib_compress_method == 8, false, "Invalid zlib compression method");
-      U32 zlib_compress_info = bs.bs_consume_lsb(4);
+      U32 zlib_compress_info = bs.consume_lsb(4);
       M_check_log_return_val((p[0] * 256 + p[1]) % 31 == 0, false, "Invalid FCHECK bits");
-      bs.bs_skip(5);
-      U8 fdict = bs.bs_consume_lsb( 1);
-      U8 flevel = bs.bs_consume_lsb(2);
+      bs.skip(5);
+      U8 fdict = bs.consume_lsb( 1);
+      U8 flevel = bs.consume_lsb(2);
 
       // 3 header bits
-      const U8 bfinal = bs.bs_consume_lsb(1);
-      const U8 ctype = bs.bs_consume_lsb(2);
-      U8* deflated_data = (U8*)temp_allocator.al_alloc((m_width + 1) * m_height * m_bit_depth);
+      const U8 bfinal = bs.consume_lsb(1);
+      const U8 ctype = bs.consume_lsb(2);
+      U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_bit_depth);
       U8* deflated_p = deflated_data;
       if (ctype == 1) {
         // Fixed Huffman.
         for (;;) {
           int code;
-          code = bs.bs_consume_msb(7);
+          code = bs.consume_msb(7);
           if (code >= 0 && code <= 23) {
             code += 256;
             if (code == 256) {
               break;
             }
           } else {
-            code = code << 1 | bs.bs_consume_msb(1);
+            code = code << 1 | bs.consume_msb(1);
             if (code >= 48 && code <= 191) {
               *deflated_p++ = code - 48;
               continue;
             } else if (code >= 192 && code <= 199) {
               code += 88;
             } else {
-              code = code << 1 | bs.bs_consume_msb(1);
+              code = code << 1 | bs.consume_msb(1);
               M_check_log_return_val(code >= 400 && code <= 511, false, "Can't decode_ fixed Huffman");
               *deflated_p++ = code - 256;
               continue;
@@ -241,13 +241,13 @@ bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
         }
       } else if (ctype == 2) {
         // Dynamic Huffman.
-        int hlit = bs.bs_consume_lsb(5) + 257;
-        int hdist = bs.bs_consume_lsb(5) + 1;
-        int hclen = bs.bs_consume_lsb(4) + 4;
+        int hlit = bs.consume_lsb(5) + 257;
+        int hdist = bs.consume_lsb(5) + 1;
+        int hclen = bs.consume_lsb(4) + 4;
         U8 len_of_len[19] = {};
         const int c_len_alphabet[] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
         for (int j = 0; j < hclen; ++j) {
-          len_of_len[c_len_alphabet[j]] = bs.bs_consume_lsb(3);
+          len_of_len[c_len_alphabet[j]] = bs.consume_lsb(3);
         }
         CodesForLen_ code_lens_cfl[8];
         Alphabet_ code_len_alphabet = {code_lens_cfl, 0, 0};
@@ -262,12 +262,12 @@ bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
             U8 repeat_num;
             U8 repeated_val = 0;
             if (code_len == 16) {
-              repeat_num = bs.bs_consume_lsb(2) + 3;
+              repeat_num = bs.consume_lsb(2) + 3;
               repeated_val = lit_and_dist_lens[index - 1];
             } else if (code_len == 17) {
-              repeat_num = bs.bs_consume_lsb(3) + 3;
+              repeat_num = bs.consume_lsb(3) + 3;
             } else if (code_len == 18) {
-              repeat_num = bs.bs_consume_lsb(7) + 11;
+              repeat_num = bs.consume_lsb(7) + 11;
             }
             memset(lit_and_dist_lens + index, repeated_val, repeat_num);
             index += repeat_num;
@@ -293,7 +293,7 @@ bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
           decode_len_and_dist_(&deflated_p, lit_or_len_code, &bs, &dist_alphabet);
         }
       }
-      m_data = (U8*)m_allocator->al_alloc(m_width * m_height * 4);
+      m_data = (U8*)m_allocator->alloc(m_width * m_height * 4);
       int bytes_per_deflated_row = 4 * m_width + 1;
       int bytes_per_data_row = 4 * m_width;
       for (int r = 0; r < m_height; ++r) {
@@ -375,6 +375,6 @@ bool Png_loader::png_init(Allocator* allocator, const Os_char* path) {
   return true;
 }
 
-void Png_loader::png_destroy() {
-  m_allocator->al_free(m_data);
+void Png_loader::destroy() {
+  m_allocator->free(m_data);
 }

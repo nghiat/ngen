@@ -11,13 +11,13 @@
 class Allocator {
 public:
   Allocator(const char* name, Sz total_size) : m_name(name), m_total_size(total_size) {}
-  virtual void al_destroy() = 0;
-  virtual void* al_aligned_alloc(Sip size, Sip alignment) = 0;
-  virtual void* al_realloc(void* p, Sip size) = 0;
-  virtual void al_free(void* p) = 0;
+  virtual void destroy() = 0;
+  virtual void* aligned_alloc(Sip size, Sip alignment) = 0;
+  virtual void* realloc(void* p, Sip size) = 0;
+  virtual void free(void* p) = 0;
 
-  void* al_alloc(Sip size);
-  void* al_alloc_zero(Sip size);
+  void* alloc(Sip size);
+  void* alloc_zero(Sip size);
 
   const char* m_name = nullptr;
   /// Total size of the allocator in bytes.

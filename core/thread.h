@@ -24,9 +24,9 @@ typedef void (*ngThread_func)(void*);
 
 class ngThread {
 public:
-  bool thread_init(ngThread_func start_func, void* args);
-  void thread_wait_for();
-  static int thread_get_nums();
+  bool init(ngThread_func start_func, void* args);
+  void wait_for();
+  static int get_nums();
 
   ngThread_handle_ m_handle;
   ngThread_func m_start_func;

@@ -14,10 +14,10 @@ class ngWindow;
 
 class ngCam {
 public:
-  bool cam_init(const V3& eye, const V3& target, ngWindow* w);
-  bool cam_update();
-  void cam_mouse_move(int x, int y);
-  void cam_mouse_event(E_mouse mouse, int x, int y, bool is_down);
+  bool init(const V3& eye, const V3& target, ngWindow* w);
+  bool update();
+  void mouse_move(int x, int y);
+  void mouse_event(E_mouse mouse, int x, int y, bool is_down);
 
   M4 m_view_mat;
   V3 m_eye;

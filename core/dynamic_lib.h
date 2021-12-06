@@ -8,9 +8,9 @@
 
 class Dynamic_lib {
 public:
-  bool dl_open(const char* name);
-  void dl_close();
-  void* dl_get_proc(const char* name);
+  bool open(const char* name);
+  void close();
+  void* get_proc(const char* name);
 
   void* m_handle;
 };

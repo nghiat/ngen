@@ -17,7 +17,7 @@ Allocator* g_general_allocator = &g_general_allocator_;
 
 bool core_allocators_init() {
   bool rv = true;
-  rv &= g_persistent_allocator_.la_init();
-  rv &= g_general_allocator_.fla_init();
+  rv &= g_persistent_allocator_.init();
+  rv &= g_general_allocator_.init();
   return rv;
 }

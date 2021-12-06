@@ -14,8 +14,8 @@ struct Allocator;
 
 class Dae_loader {
 public:
-  bool dae_init(Allocator* allocator, const Os_char* path);
-  void dae_destroy();
+  bool init(Allocator* allocator, const Os_char* path);
+  void destroy();
 
   Dynamic_array<V4> m_vertices;
 };

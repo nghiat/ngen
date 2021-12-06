@@ -27,23 +27,23 @@ struct ImageSpec_ {
 
 bool tga_write(const U8* data, int width, int height, const Os_char* path) {
   File f;
-  M_check_log_return_val(f.f_open(path, e_file_mode_write), false, "Can't open " M_os_txt_pr " to write tga",  path);
-  M_scope_exit(f.f_close());
+  M_check_log_return_val(f.open(path, e_file_mode_write), false, "Can't open " M_os_txt_pr " to write tga",  path);
+  M_scope_exit(f.close());
   {
     uint8_t id_length = 0;
-    f.f_write(NULL, &id_length, sizeof(id_length));
+    f.write(NULL, &id_length, sizeof(id_length));
   }
   {
     uint8_t color_map_type = 0;
-    f.f_write(NULL, &color_map_type, sizeof(color_map_type));
+    f.write(NULL, &color_map_type, sizeof(color_map_type));
   }
   {
     uint8_t image_type = 2;
-    f.f_write(NULL, &image_type, sizeof(image_type));
+    f.write(NULL, &image_type, sizeof(image_type));
   }
   {
     ColormapSpec_ spec = {};
-    f.f_write(NULL, &spec, sizeof(spec));
+    f.write(NULL, &spec, sizeof(spec));
   }
   {
     ImageSpec_ spec;
@@ -53,8 +53,8 @@ bool tga_write(const U8* data, int width, int height, const Os_char* path) {
     spec.height = height;
     spec.depth = 24;
     spec.descriptor = 0;
-    f.f_write(NULL, &spec, sizeof(spec));
+    f.write(NULL, &spec, sizeof(spec));
   }
-  f.f_write(NULL, data, width * height * 3);
+  f.write(NULL, data, width * height * 3);
   return true;
 }

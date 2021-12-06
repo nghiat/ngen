@@ -6,13 +6,13 @@
 
 #include "core/bit_stream.h"
 
-bool Bit_stream::bs_init(const U8* data) {
+bool Bit_stream::init(const U8* data) {
   m_data = data;
   m_index = 0;
   return true;
 }
 
-U64 Bit_stream::bs_read_lsb(Sip num_of_bits) {
+U64 Bit_stream::read_lsb(Sip num_of_bits) {
   U64 result = 0;
   Sip temp_idx = m_index;
   for (Sip i = 0; i < num_of_bits; ++i, temp_idx++) {
@@ -23,7 +23,7 @@ U64 Bit_stream::bs_read_lsb(Sip num_of_bits) {
   return result;
 }
 
-U64 Bit_stream::bs_read_msb(Sip num_of_bits) {
+U64 Bit_stream::read_msb(Sip num_of_bits) {
   U64 result = 0;
   Sip temp_idx = m_index;
   for (Sip i = 0; i < num_of_bits; ++i, temp_idx++) {
@@ -35,18 +35,18 @@ U64 Bit_stream::bs_read_msb(Sip num_of_bits) {
   return result;
 }
 
-void Bit_stream::bs_skip(Sip num_of_bits) {
+void Bit_stream::skip(Sip num_of_bits) {
   m_index += num_of_bits;
 }
 
-U64 Bit_stream::bs_consume_lsb(Sip num_of_bits) {
-  U64 result = bs_read_lsb(num_of_bits);
-  bs_skip(num_of_bits);
+U64 Bit_stream::consume_lsb(Sip num_of_bits) {
+  U64 result = read_lsb(num_of_bits);
+  skip(num_of_bits);
   return result;
 }
 
-U64 Bit_stream::bs_consume_msb(Sip num_of_bits) {
-  U64 result = bs_read_msb(num_of_bits);
-  bs_skip(num_of_bits);
+U64 Bit_stream::consume_msb(Sip num_of_bits) {
+  U64 result = read_msb(num_of_bits);
+  skip(num_of_bits);
   return result;
 }

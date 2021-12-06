@@ -21,11 +21,11 @@ template <Sz T_initial_size = 4096>
 class Linear_allocator : public Allocator {
 public:
   Linear_allocator(const char* name) : Allocator(name, T_initial_size) {}
-  bool la_init();
-  void al_destroy() override;
-  void* al_aligned_alloc(Sip size, Sip alignment) override;
-  void* al_realloc(void* p, Sip size) override;
-  void al_free(void* p) override;
+  bool init();
+  void destroy() override;
+  void* aligned_alloc(Sip size, Sip alignment) override;
+  void* realloc(void* p, Sip size) override;
+  void free(void* p) override;
 
   static const Sip sc_default_page_size = 1024 * 1024;
   U8 m_stack_page[T_initial_size];

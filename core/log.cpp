@@ -32,15 +32,15 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
     return;
   }
   Linear_allocator<> temp_allocator("log_temp_allocator");
-  temp_allocator.la_init();
-  M_scope_exit(temp_allocator.al_destroy());
+  temp_allocator.init();
+  M_scope_exit(temp_allocator.destroy());
 
   // FILE(LINE) for visual studio click to go to location.
   int log_len = 0;
   const char* log_prefix_format = "%s(%d): %s: ";
   const char* level_str = gc_log_level_strings_[(int)level];
   int prefix_len = snprintf(NULL, 0, log_prefix_format, file, line, level_str);
-  char* log_buffer = (char*)temp_allocator.al_alloc(log_len + 1);
+  char* log_buffer = (char*)temp_allocator.alloc(log_len + 1);
   snprintf(log_buffer, prefix_len + 1, log_prefix_format, file, line, level_str);
   log_len += prefix_len;
 
@@ -50,7 +50,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   // +1 for new line char.
   int msg_len = vsnprintf(NULL, 0, format, argptr) + 1;
   va_end(argptr);
-  temp_allocator.al_realloc(log_buffer, log_len + msg_len + 1);
+  temp_allocator.realloc(log_buffer, log_len + msg_len + 1);
   va_start(argptr2, format);
   vsnprintf(log_buffer + log_len, msg_len + 1, format, argptr2);
   va_end(argptr2);
@@ -63,7 +63,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
     char trace[M_max_stack_trace_length_];
     debug_get_stack_trace(trace, M_max_stack_trace_length_);
     int trace_len = snprintf(NULL, 0, trace_format, trace);
-    temp_allocator.al_realloc(log_buffer, log_len + trace_len + 1);
+    temp_allocator.realloc(log_buffer, log_len + trace_len + 1);
     snprintf(log_buffer + log_len, trace_len + 1, trace_format, trace);
     log_len += trace_len;
   }
@@ -78,19 +78,19 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
 #if M_os_is_win()
   OutputDebugStringA(log_buffer);
 #endif
-  g_log_file_.f_write(NULL, log_buffer, log_len);
+  g_log_file_.write(NULL, log_buffer, log_len);
 }
 
 bool log_init(const Os_char* log_path) {
-  g_log_file_.f_init();
-  g_log_file_.f_open(log_path, e_file_mode_append);
-  g_log_inited_ = g_log_file_.f_is_valid();
+  g_log_file_.init();
+  g_log_file_.open(log_path, e_file_mode_append);
+  g_log_inited_ = g_log_file_.is_valid();
   return g_log_inited_;
 }
 
 void log_destroy() {
   if (g_log_inited_) {
-    g_log_file_.f_close();
+    g_log_file_.close();
   }
   g_log_inited_ = false;
 }

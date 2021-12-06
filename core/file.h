@@ -32,24 +32,24 @@ struct FileBuffer;
 
 class File {
 public:
-  static bool f_init();
-  static void f_delete_path(const Os_char* path);
-  static Dynamic_array<U8> f_read_whole_file_as_text(Allocator* allocator, const Os_char* path);
+  static bool init();
+  static void delete_path(const Os_char* path);
+  static Dynamic_array<U8> read_whole_file_as_text(Allocator* allocator, const Os_char* path);
 
-  bool f_open(const Os_char* path, enum E_file_mod mode);
-  void f_close();
+  bool open(const Os_char* path, enum E_file_mod mode);
+  void close();
 
-  void f_delete();
+  void delete_this();
 
-  bool f_read(void* buffer, Sip* bytes_read, Sip size);
-  bool f_read_line(char* buffer, Sip size);
-  bool f_write(Sip* bytes_written, const void* in, Sip size);
-  void f_seek(enum E_file_from from, Sip distance);
-  void f_flush();
+  bool read(void* buffer, Sip* bytes_read, Sip size);
+  bool read_line(char* buffer, Sip size);
+  bool write(Sip* bytes_written, const void* in, Sip size);
+  void seek(enum E_file_from from, Sip distance);
+  void flush();
 
-  Sip f_get_pos() const;
-  bool f_is_valid() const;
-  Sip f_get_size() const;
+  Sip get_pos() const;
+  bool is_valid() const;
+  Sip get_size() const;
 
   static const Sip F_INVALID_POS = -1;
   static const Sip F_INVALID_SIZE = -1;
@@ -65,10 +65,10 @@ public:
   FileBuffer* m_internal_buffer = NULL;
 
 private:
-  bool f_open_plat_(const Os_char* path, E_file_mod mode);
-  void f_close_plat_();
+  bool open_plat_(const Os_char* path, E_file_mod mode);
+  void close_plat_();
 
-  bool f_read_plat_(void* buffer, Sip* bytes_read, Sip size);
-  bool f_write_plat_(Sip* bytes_written, const void* buffer, Sip size);
-  void f_seek_plat_(E_file_from from, Sip distance);
+  bool read_plat_(void* buffer, Sip* bytes_read, Sip size);
+  bool write_plat_(Sip* bytes_written, const void* buffer, Sip size);
+  void seek_plat_(E_file_from from, Sip distance);
 };

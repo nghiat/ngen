@@ -12,7 +12,7 @@
 #include "core/math/vec3.inl"
 #include "core/window/window.h"
 
-bool ngCam::cam_init(const V3& eye, const V3& target, ngWindow* w) {
+bool ngCam::init(const V3& eye, const V3& target, ngWindow* w) {
   m_w = w;
   m_eye = eye;
   m_forward = target - m_eye;
@@ -23,7 +23,7 @@ bool ngCam::cam_init(const V3& eye, const V3& target, ngWindow* w) {
   return true;
 }
 
-bool ngCam::cam_update() {
+bool ngCam::update() {
   bool need_update_view = false;
   V3 cam_right = v3_normalize(v3_cross(m_forward, m_up));
   if (m_w->m_key_down[e_key_w]) {
@@ -52,7 +52,7 @@ bool ngCam::cam_update() {
   return need_update_view;
 }
 
-void ngCam::cam_mouse_move(int x, int y) {
+void ngCam::mouse_move(int x, int y) {
   if (m_w->m_mouse_down[e_mouse_left]) {
     m_w->set_cursor_pos(m_w->m_old_mouse_x[e_mouse_left], m_w->m_old_mouse_y[e_mouse_left]);
 
@@ -88,7 +88,7 @@ void ngCam::cam_mouse_move(int x, int y) {
   }
 }
 
-void ngCam::cam_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
+void ngCam::mouse_event(E_mouse mouse, int x, int y, bool is_down) {
   if (mouse == e_mouse_left) {
     m_w->show_cursor(!is_down);
   }

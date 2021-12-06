@@ -16,22 +16,22 @@ Value::Value(float v) : m_float(v), m_value_type(e_value_type_float) {}
 
 Value::Value(char* v) : m_string(v), m_value_type(e_value_type_string) {}
 
-bool Value::v_get_bool() const {
+bool Value::get_bool() const {
   M_check(m_value_type == e_value_type_bool);
   return m_bool;
 }
 
-int Value::v_get_int() const {
+int Value::get_int() const {
   M_check(m_value_type == e_value_type_int);
   return m_int;
 }
 
-float Value::v_get_float() const {
+float Value::get_float() const {
   M_check(m_value_type == e_value_type_float);
   return m_float;
 }
 
-const char* Value::v_get_string() const {
+const char* Value::get_string() const {
   M_check(m_value_type == e_value_type_string);
   return m_string;
 }

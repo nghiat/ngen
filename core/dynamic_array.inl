@@ -15,59 +15,59 @@
 #include <string.h>
 
 template <typename T>
-bool Dynamic_array<T>::da_init(Allocator* allocator) {
+bool Dynamic_array<T>::init(Allocator* allocator) {
   m_allocator = allocator;
   return true;
 }
 
 template <typename T>
-void Dynamic_array<T>::da_destroy() {
+void Dynamic_array<T>::destroy() {
   if (m_p) {
-    m_allocator->al_free(m_p);
+    m_allocator->free(m_p);
   }
 }
 
 template <typename T>
-Sip Dynamic_array<T>::da_len() const {
+Sip Dynamic_array<T>::len() const {
   return m_length;
 }
 
 template <typename T>
-void Dynamic_array<T>::da_reserve(Sip num) {
+void Dynamic_array<T>::reserve(Sip num) {
   if (num <= m_capacity) {
     return;
   }
   if (!m_p) {
-    m_p = (T*)m_allocator->al_alloc(num * sizeof(T));
+    m_p = (T*)m_allocator->alloc(num * sizeof(T));
   } else {
-    m_p = (T*)m_allocator->al_realloc(m_p, num * sizeof(T));
+    m_p = (T*)m_allocator->realloc(m_p, num * sizeof(T));
   }
   M_check_log_return(m_p, "Can't reserve memory for Dynamic_array<T>");
   m_capacity = num;
 }
 
 template <typename T>
-void Dynamic_array<T>::da_resize(Sip num) {
-  da_reserve(num);
+void Dynamic_array<T>::resize(Sip num) {
+  reserve(num);
   m_length = num;
 }
 
 template <typename T>
-void Dynamic_array<T>::da_remove_range(Sip pos, Sip length) {
+void Dynamic_array<T>::remove_range(Sip pos, Sip length) {
   M_check_log_return(pos >= 0 && pos < m_length && pos + length < m_length, "Can't remove invalid rage");
   memmove(m_p + pos, m_p + pos + length, (m_length - pos - length) * sizeof(T));
   m_length -= length;
 }
 
 template <typename T>
-void Dynamic_array<T>::da_remove_at(Sip pos) {
-  da_remove_range(pos, 1);
+void Dynamic_array<T>::remove_at(Sip pos) {
+  remove_range(pos, 1);
 }
 
 template <typename T>
-void Dynamic_array<T>::da_insert_at(Sip index, const T& val) {
+void Dynamic_array<T>::insert_at(Sip index, const T& val) {
   if (m_length == m_capacity) {
-    da_reserve((m_capacity + 1) * 3 / 2);
+    reserve((m_capacity + 1) * 3 / 2);
   }
   if (index < m_length) {
     memmove(m_p + index + 1, m_p + index, (m_length - index) * sizeof(T));
@@ -77,8 +77,8 @@ void Dynamic_array<T>::da_insert_at(Sip index, const T& val) {
 }
 
 template <typename T>
-void Dynamic_array<T>::da_append(const T& val) {
-  da_insert_at(m_length, val);
+void Dynamic_array<T>::append(const T& val) {
+  insert_at(m_length, val);
 }
 
 template <typename T>

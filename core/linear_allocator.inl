@@ -18,7 +18,7 @@ struct LAPage_ {
 };
 
 template <Sz T_initial_size>
-bool Linear_allocator<T_initial_size>::la_init() {
+bool Linear_allocator<T_initial_size>::init() {
   m_used_size += sizeof(LAPage_);
   m_current_page = (LAPage_*)&(m_stack_page[0]);
   m_current_page->size = T_initial_size;
@@ -28,7 +28,7 @@ bool Linear_allocator<T_initial_size>::la_init() {
 }
 
 template <Sz T_initial_size>
-void Linear_allocator<T_initial_size>::al_destroy() {
+void Linear_allocator<T_initial_size>::destroy() {
   LAPage_* page = m_current_page;
   while (page != (LAPage_*)&(m_stack_page[0])) {
     LAPage_* prev = page->prev;
@@ -38,7 +38,7 @@ void Linear_allocator<T_initial_size>::al_destroy() {
 }
 
 template <Sz T_initial_size>
-void* Linear_allocator<T_initial_size>::al_aligned_alloc(Sip size, Sip alignment) {
+void* Linear_allocator<T_initial_size>::aligned_alloc(Sip size, Sip alignment) {
   M_check_log_return_val(check_aligned_alloc_(size, alignment), NULL, "Alignment is not power of 2");
 
   U8* p = m_top + sizeof(Alloc_header_);
@@ -73,20 +73,20 @@ void* Linear_allocator<T_initial_size>::al_aligned_alloc(Sip size, Sip alignment
 }
 
 template <Sz T_initial_size>
-void* Linear_allocator<T_initial_size>::al_realloc(void* p, Sip size) {
+void* Linear_allocator<T_initial_size>::realloc(void* p, Sip size) {
   M_check_log_return_val(check_p_in_dev_(p) && size, NULL, "Invalid pointer to realloc");
 
   Alloc_header_* header = get_allocation_header_(p);
   Sip old_size = header->size;
   // Not at top
   if ((U8*)p + header->size != m_top) {
-    void* new_p = al_aligned_alloc(size, header->alignment);
+    void* new_p = aligned_alloc(size, header->alignment);
     memcpy(new_p, p, header->size);
     return new_p;
   }
   // Remaining space is not enough.
   if (size > get_current_page_remaning_size_()) {
-    void* new_p = al_aligned_alloc(size, header->alignment);
+    void* new_p = aligned_alloc(size, header->alignment);
     memcpy(new_p, p, header->size);
     return new_p;
   }
@@ -99,7 +99,7 @@ void* Linear_allocator<T_initial_size>::al_realloc(void* p, Sip size) {
 }
 
 template <Sz T_initial_size>
-void Linear_allocator<T_initial_size>::al_free(void* p) {
+void Linear_allocator<T_initial_size>::free(void* p) {
   M_check_log_return(check_p_in_dev_(p), "Invalid pointer to free");
   Alloc_header_* header = get_allocation_header_(p);
   if ((U8*)p + header->size != m_top) {

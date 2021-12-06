@@ -17,18 +17,18 @@ static void* platform_thread_start(void* args) {
   return NULL;
 }
 
-bool ngThread::thread_init(ngThread_func start_func, void* args) {
+bool ngThread::init(ngThread_func start_func, void* args) {
   m_start_func = start_func;
   m_args = args;
   M_check_log_return_val(pthread_create(&m_handle, NULL, platform_thread_start, (void*)this) == 0, false, "Can't create a new thread");
   return true;
 }
 
-void ngThread::thread_wait_for() {
+void ngThread::wait_for() {
   void* res;
   pthread_join(m_handle, &res);
 }
 
-int ngThread::thread_get_nums() {
+int ngThread::get_nums() {
   return sysconf(_SC_NPROCESSORS_ONLN);
 }

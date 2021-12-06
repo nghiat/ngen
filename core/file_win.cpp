@@ -11,12 +11,12 @@
 
 #include <Windows.h>
 
-void File::f_delete_path(const wchar_t* path) {
+void File::delete_path(const wchar_t* path) {
   M_check_return(path);
   DeleteFile(path);
 }
 
-bool File::f_open_plat_(const wchar_t* path, E_file_mod mode) {
+bool File::open_plat_(const wchar_t* path, E_file_mod mode) {
   M_check_return_val(path, false);
 
   m_path = path;
@@ -40,23 +40,23 @@ bool File::f_open_plat_(const wchar_t* path, E_file_mod mode) {
     create_disposition = OPEN_ALWAYS;
   m_handle = CreateFile(
       m_path, access, share_mode, NULL, create_disposition, 0, NULL);
-  M_check_log_return_val(f_is_valid(), false, "Can't open file %ls", path);
+  M_check_log_return_val(is_valid(), false, "Can't open file %ls", path);
   return true;
 }
 
-void File::f_close_plat_() {
-  M_check_return(f_is_valid());
+void File::close_plat_() {
+  M_check_return(is_valid());
   CloseHandle(m_handle);
   m_handle = INVALID_HANDLE_VALUE;
 }
 
-void File::f_delete() {
-  M_check_return(f_is_valid());
-  f_delete_path(m_path);
+void File::delete_this() {
+  M_check_return(is_valid());
+  delete_path(m_path);
 }
 
-bool File::f_read_plat_(void* buffer, Sip* bytes_read, Sip size) {
-  M_check_return_val(f_is_valid(), false);
+bool File::read_plat_(void* buffer, Sip* bytes_read, Sip size) {
+  M_check_return_val(is_valid(), false);
   DWORD read = 0;
   ReadFile(m_handle, buffer, size, &read, NULL);
   if (bytes_read) {
@@ -65,16 +65,16 @@ bool File::f_read_plat_(void* buffer, Sip* bytes_read, Sip size) {
   return read;
 }
 
-bool File::f_write_plat_(Sip* bytes_written, const void* buffer, Sip size) {
-  M_check_return_val(f_is_valid(), false);
+bool File::write_plat_(Sip* bytes_written, const void* buffer, Sip size) {
+  M_check_return_val(is_valid(), false);
   DWORD bytes_written_plat = 0;
   bool rv = WriteFile(m_handle, buffer, size, &bytes_written_plat, NULL);
   maybe_assign(bytes_written, (Sip)bytes_written_plat);
   return rv;
 }
 
-void File::f_seek_plat_(E_file_from from, Sip distance) {
-  M_check_return(f_is_valid());
+void File::seek_plat_(E_file_from from, Sip distance) {
+  M_check_return(is_valid());
   DWORD move_method;
   switch (from) {
   case e_file_from_begin:
@@ -90,16 +90,16 @@ void File::f_seek_plat_(E_file_from from, Sip distance) {
   SetFilePointer(m_handle, distance, NULL, move_method);
 }
 
-Sip File::f_get_pos() const {
-  M_check_return_val(f_is_valid(), F_INVALID_POS);
+Sip File::get_pos() const {
+  M_check_return_val(is_valid(), F_INVALID_POS);
   return SetFilePointer(m_handle, 0, NULL, FILE_CURRENT);
 }
 
-bool File::f_is_valid() const {
+bool File::is_valid() const {
   return m_handle != INVALID_HANDLE_VALUE;
 }
 
-Sip File::f_get_size() const {
-  M_check_return_val(f_is_valid(), F_INVALID_SIZE);
+Sip File::get_size() const {
+  M_check_return_val(is_valid(), F_INVALID_SIZE);
   return GetFileSize(m_handle, NULL);
 }

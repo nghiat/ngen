@@ -12,8 +12,8 @@ struct Allocator;
 
 struct Png_loader {
 public:
-  bool png_init(Allocator* allocator, const Os_char* path);
-  void png_destroy();
+  bool init(Allocator* allocator, const Os_char* path);
+  void destroy();
 
   Allocator* m_allocator;
   U8* m_data = NULL;

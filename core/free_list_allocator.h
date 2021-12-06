@@ -20,11 +20,11 @@ struct Free_block_;
 class FreeList_allocator : public Allocator {
 public:
   FreeList_allocator(const char* name, Sz total_size) : Allocator(name, total_size) {}
-  bool fla_init();
-  void al_destroy() override;
-  void* al_aligned_alloc(Sip size, Sip alignment) override;
-  void* al_realloc(void* p, Sip size) override;
-  void al_free(void* p) override;
+  bool init();
+  void destroy() override;
+  void* aligned_alloc(Sip size, Sip alignment) override;
+  void* realloc(void* p, Sip size) override;
+  void free(void* p) override;
 
   U8* m_start;
   Free_block_* m_first_block;

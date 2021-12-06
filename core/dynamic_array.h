@@ -13,15 +13,15 @@ class Allocator;
 template <typename T>
 class Dynamic_array {
 public:
-  bool da_init(Allocator* allocator);
-  void da_destroy();
-  Sip da_len() const;
-  void da_reserve(Sip num);
-  void da_resize(Sip num);
-  void da_remove_range(Sip pos, Sip length);
-  void da_remove_at(Sip pos);
-  void da_insert_at(Sip index, const T& val);
-  void da_append(const T& val);
+  bool init(Allocator* allocator);
+  void destroy();
+  Sip len() const;
+  void reserve(Sip num);
+  void resize(Sip num);
+  void remove_range(Sip pos, Sip length);
+  void remove_at(Sip pos);
+  void insert_at(Sip index, const T& val);
+  void append(const T& val);
   T& operator[](Sz index);
 
   T* m_p = NULL;

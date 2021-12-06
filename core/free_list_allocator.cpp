@@ -34,7 +34,7 @@ static bool is_allocaiton_adjacent_to_free_block_(Alloc_header_* header, Free_bl
   return block && (U8*)header + sizeof(Alloc_header_) + header->size == (U8*)block;
 }
 
-bool FreeList_allocator::fla_init() {
+bool FreeList_allocator::init() {
   m_used_size = 0;
   m_start = (U8*)malloc(m_total_size);
   M_check_log_return_val(m_start, false, "Can't init allocator \"%s\": Out of memory", m_name);
@@ -44,13 +44,13 @@ bool FreeList_allocator::fla_init() {
   return true;
 }
 
-void FreeList_allocator::al_destroy() {
+void FreeList_allocator::destroy() {
   if (m_start) {
     ::free(m_start);
   }
 }
 
-void* FreeList_allocator::al_aligned_alloc(Sip size, Sip alignment) {
+void* FreeList_allocator::aligned_alloc(Sip size, Sip alignment) {
   M_check_log_return_val(check_aligned_alloc_(size, alignment), NULL, "Alignment is not power of 2");
   Free_block_* fit_block;
   Free_block_* prior_block;
@@ -68,7 +68,7 @@ void* FreeList_allocator::al_aligned_alloc(Sip size, Sip alignment) {
   return p;
 }
 
-void* FreeList_allocator::al_realloc(void* p, Sip size) {
+void* FreeList_allocator::realloc(void* p, Sip size) {
   M_check_log_return_val(check_p_in_dev_(p) && size, NULL, "Invalid pointer to realloc");
 
   Alloc_header_* header = get_allocation_header_(p);
@@ -93,7 +93,7 @@ void* FreeList_allocator::al_realloc(void* p, Sip size) {
   return realloc_bigger_((U8*)p, size, prior_block, next_block);
 }
 
-void FreeList_allocator::al_free(void* p) {
+void FreeList_allocator::free(void* p) {
   M_check_log_return(check_p_in_dev_(p), "Invalid pointer to free");
   Alloc_header_* header = get_allocation_header_(p);
   Sip freed_size = header->size + ((U8*)p - header->start);

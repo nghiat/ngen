@@ -15,8 +15,8 @@ struct Allocator;
 
 class Obj_loader {
 public:
-  bool obj_init(Allocator* allocator, const Os_char* path);
-  void obj_destroy();
+  bool init(Allocator* allocator, const Os_char* path);
+  void destroy();
 
   Dynamic_array<V4> m_vertices;
   Dynamic_array<V2> m_uvs;

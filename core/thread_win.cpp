@@ -16,7 +16,7 @@ static DWORD platform_thread_start(void* args) {
   return 0;
 }
 
-bool ngThread::thread_init(ngThread_func start_func, void* args) {
+bool ngThread::init(ngThread_func start_func, void* args) {
   m_start_func = start_func;
   m_args = args;
   m_handle = CreateThread(NULL, 0, platform_thread_start, (void*)this, 0, NULL);
@@ -24,11 +24,11 @@ bool ngThread::thread_init(ngThread_func start_func, void* args) {
   return true;
 }
 
-void ngThread::thread_wait_for() {
+void ngThread::wait_for() {
   WaitForSingleObject(m_handle, INFINITE);
 }
 
-int ngThread::thread_get_nums() {
+int ngThread::get_nums() {
   SYSTEM_INFO info;
   GetSystemInfo(&info);
   return info.dwNumberOfProcessors;
