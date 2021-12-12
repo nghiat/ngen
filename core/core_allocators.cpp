@@ -7,7 +7,7 @@
 #include "core/core_allocators.h"
 
 #include "core/free_list_allocator.h"
-#include "core/linear_allocator.h"
+#include "core/linear_allocator.inl"
 
 static Linear_allocator<> g_persistent_allocator_("persistent_allocator");
 static FreeList_allocator g_general_allocator_("general_allocator", 10 * 1024 * 1024);

@@ -19,7 +19,7 @@ void File::delete_path(const char* path) {
   ::unlink(path);
 }
 
-bool File::open(const char* path, E_file_mod mode) {
+bool File::open_plat_(const char* path, E_file_mod mode) {
   M_check_return_val(path, false);
 
   m_path = path;
@@ -29,13 +29,13 @@ bool File::open(const char* path, E_file_mod mode) {
   if (mode & e_file_mode_write)
     flags |= O_RDWR | O_CREAT | O_TRUNC;
   if (mode & e_file_mode_append)
-    flags |= O_APPEND | O_RDWR;
+    flags |= O_CREAT | O_APPEND | O_RDWR;
   int modes = S_IRWXU;
   m_handle = ::open(m_path, flags, modes);
   return is_valid();
 }
 
-void File::close() {
+void File::close_plat_() {
   M_check_return(is_valid());
   if (!::close(m_handle)) {
     m_handle = -1;
