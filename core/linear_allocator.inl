@@ -80,6 +80,10 @@ void* Linear_allocator<T_initial_size>::realloc(void* p, Sip size) {
   Sip old_size = header->size;
   // Not at top
   if ((U8*)p + header->size != m_top) {
+    // TODO test this after free top
+    if (size < old_size) {
+      return p;
+    }
     void* new_p = aligned_alloc(size, header->alignment);
     memcpy(new_p, p, header->size);
     return new_p;

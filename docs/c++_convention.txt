@@ -1,4 +1,5 @@
 *** grep is the priority for this convention
+*** Find all references trick: change the variable/function/... declaration and check the compile errors
 
 * Headers use #pragma once
   Reason: short, ubiquitous
@@ -13,6 +14,7 @@
 * Function declaration:
   - out -> in + out -> in
     Reason: you can put default arguments at the end
+* Prefer zeroed-init which means that the struct deafult state should be zero
 
 * Naming conventions
 - Filename: lower_case.*
@@ -29,7 +31,7 @@
 - Class/Struct:
   - Public struct/class name: Class_name (Only the first letter is capitalized, even when the first word is an abbreviation, e.g. Udp instead of UDP)
   - Internal struct/class name: Class_name_
-  - Public member function: class name abbreviation + _lower_case
+  - Public member function: lower_case (I tried adding abbriviated class name as prefix to member function which made grep way easier but it didn't work well with inheritance and template)
   - Protected/Private member function: lower_case_
   - Struct member: lower_case
   - Class member:
@@ -43,7 +45,7 @@
   - M_: macro
   - E_, e_: enum name / enum value
   - T_: template parameter
-  - g_, c_, s_, m_: global/const/static/meber variable
+  - g_, s_, c_, m_: global/const/static/meber variable
 
 * Including conventions
 - Project headers are surrounded with "", other headers are surrounded with <>

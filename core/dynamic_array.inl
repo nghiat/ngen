@@ -67,6 +67,7 @@ void Dynamic_array<T>::remove_at(Sip pos) {
 template <typename T>
 void Dynamic_array<T>::insert_at(Sip index, const T& val) {
   if (m_length == m_capacity) {
+    // TODO lower the factor when m_capacity is big
     reserve((m_capacity + 1) * 3 / 2);
   }
   if (index < m_length) {

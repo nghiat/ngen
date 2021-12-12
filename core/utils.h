@@ -23,6 +23,14 @@ Sz static_array_size(const T(&)[N]) {
 }
 
 template <typename T>
+void swap(T* a, T* b) {
+  T temp;
+  temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
+template <typename T>
 struct ScopeExit {
   ScopeExit(T f) : f(f) {}
   ~ScopeExit() { f(); }

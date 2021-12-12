@@ -32,6 +32,16 @@ executable("dx12_sample") {
   ]
 }
 
+executable("hash_table") {
+  sources = [
+    "hash_table.cpp",
+  ]
+
+  deps = [
+    "//core",
+  ]
+}
+
 copy("dx12_shader") {
   sources = [
     "rtt.hlsl",
