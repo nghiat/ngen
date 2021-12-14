@@ -46,3 +46,21 @@ public:
   // Used to calculate load factor
   F32 m_load_factor = 0.5f;
 };
+
+template <typename T_key, typename T_value>
+struct Pair_ {
+  T_key key;
+  T_value value;
+};
+
+template <typename T>
+union FakePair_ {
+  T key;
+  T value;
+};
+
+template <typename T_key, typename T_value>
+using Hash_map = Hash_table_<T_key, T_value, Pair_<T_key, T_value>>;
+
+template <typename T>
+using Hash_set = Hash_table_<T, T, Pair_<T, T>>;

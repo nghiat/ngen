@@ -41,3 +41,8 @@ public:
   F32 m_load_factor = 0.5f;
 };
 
+template <typename T_key, typename T_value>
+using Hash_map2 = Hash_table2_<T_key, T_value, Pair_<T_key, T_value>>;
+
+template <typename T>
+using Hash_set2 = Hash_table2_<T, T, Pair_<T, T>>;

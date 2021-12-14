@@ -6,9 +6,11 @@
 #include "core/mono_time.h"
 #include <unordered_map>
 
-struct Pair {
-  int key;
-  int value;
+template <typename T>
+struct Ng_hash_std {
+  Sz operator()(const T& key) const {
+    return ng_hash(key);
+  }
 };
 
 template <typename T>
@@ -23,7 +25,7 @@ int main() {
   int num = 1000000;
   int lookup_loop = 100;
 
-  std::unordered_map<int, int> std_hash_table;
+  std::unordered_map<int, int, Ng_hash_std<int>> std_hash_table;
   std_hash_table.reserve(num);
   F64 std_hash_table_insert_time = time_func([&]() {
     for (int i = 0; i < num; ++i) {
@@ -44,7 +46,7 @@ int main() {
 
   Linear_allocator<> allocator("hash_table_allocator");
   allocator.init();
-  Hash_table_<int, int, Pair> hash_table;
+  Hash_map<int, int> hash_table;
   hash_table.init(&allocator);
   hash_table.reserve(num);
   F64 hash_table_insert_time = time_func([&]() {
@@ -67,7 +69,7 @@ int main() {
 
   Linear_allocator<> allocator2("hash_table2_allocator");
   allocator2.init();
-  Hash_table2_<int, int, Pair> hash_table2;
+  Hash_map2<int, int> hash_table2;
   hash_table2.init(&allocator2);
   hash_table2.reserve(num);
   F64 hash_table2_insert_time = time_func([&]() {
