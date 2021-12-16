@@ -37,23 +37,23 @@ static void find_symbol_name(const char* path, size_t offset, char* out_symbol_n
   int remaining_sections = ehdr.e_shnum;
   int read_sections = 0;
   while (remaining_sections) {
-    int section_num = remaining_sections > M_max_sections_ ? M_max_sections_ : remaining_sections;
-    pread(fd, &sections, section_num * ehdr.e_shentsize, ehdr.e_shoff + read_sections * ehdr.e_shentsize);
-    remaining_sections -= section_num;
-    read_sections += section_num;
-    for (int i = 0; i < section_num; ++i) {
+    int section_count = remaining_sections > M_max_sections_ ? M_max_sections_ : remaining_sections;
+    pread(fd, &sections, section_count * ehdr.e_shentsize, ehdr.e_shoff + read_sections * ehdr.e_shentsize);
+    remaining_sections -= section_count;
+    read_sections += section_count;
+    for (int i = 0; i < section_count; ++i) {
       if (sections[i].sh_type == SHT_SYMTAB) {
         ElfW(Shdr)* symtab = &sections[i];
         int remaining_symbols = symtab->sh_size / symtab->sh_entsize;
         int read_symbols = 0;
         while (remaining_symbols) {
-          int symbol_num =
+          int symbol_count =
               remaining_symbols > M_max_symbols_ ? M_max_symbols_ : remaining_symbols;
           ElfW(Sym) symbols[M_max_symbols_];
-          pread(fd, &symbols, symbol_num * sizeof(ElfW(Sym)), symtab->sh_offset + read_symbols * sizeof(ElfW(Sym)));
-          remaining_symbols -= symbol_num;
-          read_symbols += symbol_num;
-          for (int j = 0; j < symbol_num; ++j) {
+          pread(fd, &symbols, symbol_count * sizeof(ElfW(Sym)), symtab->sh_offset + read_symbols * sizeof(ElfW(Sym)));
+          remaining_symbols -= symbol_count;
+          read_symbols += symbol_count;
+          for (int j = 0; j < symbol_count; ++j) {
             ElfW(Sym)* sym = &symbols[j];
             if (sym->st_name && sym->st_size && sym->st_value <= offset && sym->st_value + sym->st_size > offset) {
               ElfW(Shdr) strtab;
@@ -82,13 +82,13 @@ void debug_get_stack_trace(char* buffer, int len) {
   memset(buffer, 0, len);
   M_check_return(len <= M_max_stack_trace_length_);
   void* traces[M_max_traces_];
-  int num = backtrace((void**)traces, M_max_traces_);
-  char** symbols = backtrace_symbols(traces, num);
+  int count = backtrace((void**)traces, M_max_traces_);
+  char** symbols = backtrace_symbols(traces, count);
   if (!symbols) {
     return;
   }
   size_t buf_remaning_size = len - 1;
-  for (int i = 0; i < num; ++i) {
+  for (int i = 0; i < count; ++i) {
     char* symbol = symbols[i];
     char path[PATH_MAX];
     // symbol looks like this:

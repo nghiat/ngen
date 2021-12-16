@@ -33,23 +33,23 @@ Sip Dynamic_array<T>::len() const {
 }
 
 template <typename T>
-void Dynamic_array<T>::reserve(Sip num) {
-  if (num <= m_capacity) {
+void Dynamic_array<T>::reserve(Sip count) {
+  if (count <= m_capacity) {
     return;
   }
   if (!m_p) {
-    m_p = (T*)m_allocator->alloc(num * sizeof(T));
+    m_p = (T*)m_allocator->alloc(count * sizeof(T));
   } else {
-    m_p = (T*)m_allocator->realloc(m_p, num * sizeof(T));
+    m_p = (T*)m_allocator->realloc(m_p, count * sizeof(T));
   }
   M_check_log_return(m_p, "Can't reserve memory for Dynamic_array<T>");
-  m_capacity = num;
+  m_capacity = count;
 }
 
 template <typename T>
-void Dynamic_array<T>::resize(Sip num) {
-  reserve(num);
-  m_length = num;
+void Dynamic_array<T>::resize(Sip count) {
+  reserve(count);
+  m_length = count;
 }
 
 template <typename T>

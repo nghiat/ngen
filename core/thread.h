@@ -26,7 +26,7 @@ class ngThread {
 public:
   bool init(ngThread_func start_func, void* args);
   void wait_for();
-  static int get_nums();
+  static int get_total_thread_count();
 
   ngThread_handle_ m_handle;
   ngThread_func m_start_func;

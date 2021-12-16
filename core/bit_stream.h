@@ -13,15 +13,15 @@ class Bit_stream {
 public:
   bool init(const U8* data);
 
-  // Get number from |num_of_bits| without moving the bit pointer.
-  U64 read_lsb(Sip num_of_bits);
-  U64 read_msb(Sip num_of_bits);
+  // Get number from |bit_count| without moving the bit pointer.
+  U64 read_lsb(Sip bit_count);
+  U64 read_msb(Sip bit_count);
 
-  void skip(Sip num_of_bits);
+  void skip(Sip bit_count);
 
-  // Same as |Read*| but also skip |num_of_bits|.
-  U64 consume_lsb(Sip num_of_bits);
-  U64 consume_msb(Sip num_of_bits);
+  // Same as |Read*| but also skip |bit_count|.
+  U64 consume_lsb(Sip bit_count);
+  U64 consume_msb(Sip bit_count);
 
   const U8* m_data;
   Sip m_index;

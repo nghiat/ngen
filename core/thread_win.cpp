@@ -28,7 +28,7 @@ void ngThread::wait_for() {
   WaitForSingleObject(m_handle, INFINITE);
 }
 
-int ngThread::get_nums() {
+int ngThread::get_total_thread_count() {
   SYSTEM_INFO info;
   GetSystemInfo(&info);
   return info.dwNumberOfProcessors;

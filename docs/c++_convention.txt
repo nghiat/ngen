@@ -17,6 +17,8 @@
 * Prefer zeroed-init which means that the struct deafult state should be zero
 
 * Naming conventions
+- General:
+  - number of sth: singular_noun + _count
 - Filename: lower_case.*
 - Public macro: M_macro_name
 - Internal macro: M_macro_name_

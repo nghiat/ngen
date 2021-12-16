@@ -47,9 +47,9 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
-  int vs_count = 0;
-  int uvs_count = 0;
-  int ns_count = 0;
+  int v_count = 0;
+  int uv_count = 0;
+  int n_count = 0;
   int elems_count = 0;
   Dynamic_array<U8> f = File::read_whole_file_as_text(&temp_allocator, path);
   char* s = (char*)&f[0];
@@ -59,13 +59,13 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
       ++s;
     }
     if(s[0] == 'v' && s[1] == ' ') {
-      ++vs_count;
+      ++v_count;
     }
     if(s[0] == 'v' && s[1] == 't') {
-      ++uvs_count;
+      ++uv_count;
     }
     if(s[0] == 'v' && s[1] == 'n') {
-      ++ns_count;
+      ++n_count;
     }
     if(s[0] == 'f' && s[1] == ' ') {
       ++elems_count;
@@ -83,17 +83,17 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
   vs.init(&temp_allocator);
   uvs.init(&temp_allocator);
   ns.init(&temp_allocator);
-  vs.reserve(vs_count);
-  uvs.reserve(vs_count);
-  ns.reserve(vs_count);
+  vs.reserve(v_count);
+  uvs.reserve(v_count);
+  ns.reserve(v_count);
 
   m_vertices.init(allocator);
   m_uvs.init(allocator);
   m_normals.init(allocator);
   vs.reserve(elems_count);
-  if (uvs_count)
+  if (uv_count)
     uvs.reserve(elems_count);
-  if (ns_count)
+  if (n_count)
     ns.reserve(elems_count);
 
   s = (char*)&f[0];
@@ -119,15 +119,15 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
       for (int j = 0; j < 3; ++j) {
         int index;
         skip_till_(&s, ' ');
-        index = parse_index_(atoi(++s), vs_count);
+        index = parse_index_(atoi(++s), v_count);
         m_vertices.append(vs[index]);
         skip_till_(&s, '/');
-        index = parse_index_(atoi(++s), uvs_count);
+        index = parse_index_(atoi(++s), uv_count);
         if (index != -1) {
           m_uvs.append(uvs[index]);
         }
         skip_till_(&s, '/');
-        index = parse_index_(atoi(++s), ns_count);
+        index = parse_index_(atoi(++s), n_count);
         if (index != -1) {
           m_normals.append(ns[index]);
         }

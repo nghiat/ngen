@@ -38,17 +38,17 @@ T_value& M_hash_table2_c_::operator[](const T_key& key) {
   }
 
   if (m_buckets.len() == 0 || m_count + 1 > m_load_factor * m_buckets.len() * m_average_entries_per_bucket) {
-    int old_num_buckets = m_buckets.len();
-    int new_num_buckets = old_num_buckets * 3 / 2;
-    if (old_num_buckets == 0) {
-      new_num_buckets = m_initial_num_buckets;
+    int bucket_count = m_buckets.len();
+    int new_bucket_count = bucket_count * 3 / 2;
+    if (bucket_count == 0) {
+      new_bucket_count = m_initial_bucket_count;
     }
-    m_buckets.resize(new_num_buckets);
-    for (int i = old_num_buckets; i < new_num_buckets; ++i) {
+    m_buckets.resize(new_bucket_count);
+    for (int i = bucket_count; i < new_bucket_count; ++i) {
       m_buckets[i] = Bucket_();
     }
-    if (old_num_buckets) {
-      rehash(old_num_buckets);
+    if (bucket_count) {
+      rehash(bucket_count);
     }
   }
   ++m_count;
@@ -73,18 +73,18 @@ T_value* M_hash_table2_c_::find(const T_key& key) {
 }
 
 M_hash_table2_t_
-void M_hash_table2_c_::reserve(int num_keys) {
-  int old_num_buckets = m_buckets.len();
-  int new_num_buckets = num_keys / m_load_factor + 1;
-  if (old_num_buckets >= new_num_buckets) {
+void M_hash_table2_c_::reserve(int key_count) {
+  int bucket_count = m_buckets.len();
+  int new_bucket_count = key_count / m_load_factor + 1;
+  if (bucket_count >= new_bucket_count) {
     return;
   }
-  m_buckets.resize(new_num_buckets);
-  for (int i = old_num_buckets; i < new_num_buckets; ++i) {
+  m_buckets.resize(new_bucket_count);
+  for (int i = bucket_count; i < new_bucket_count; ++i) {
     m_buckets[i] = Bucket_();
   }
-  if (old_num_buckets) {
-    rehash(old_num_buckets);
+  if (bucket_count) {
+    rehash(bucket_count);
   }
 }
 
@@ -94,8 +94,8 @@ Sz M_hash_table2_c_::get_bucket_index(const T_key& key) {
 }
 
 M_hash_table2_t_
-void M_hash_table2_c_::rehash(int old_num_buckets) {
-  for (int i = 0; i < old_num_buckets; ++i) {
+void M_hash_table2_c_::rehash(int bucket_count) {
+  for (int i = 0; i < bucket_count; ++i) {
     Bucket_& bucket = m_buckets[i];
     if (bucket.len == 0) {
       continue;

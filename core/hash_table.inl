@@ -35,21 +35,21 @@ T_value& M_hash_table_c_::operator[](const T_key& key) {
     return *found_value;
   }
 
-  if (m_num_buckets == 0 || m_count + 1 > m_load_factor * m_num_buckets) {
-    int old_num_buckets = m_num_buckets;
-    int new_num_buckets = old_num_buckets * 3 / 2;
-    if (old_num_buckets == 0) {
-      new_num_buckets = m_initial_num_buckets;
+  if (m_bucket_count == 0 || m_count + 1 > m_load_factor * m_bucket_count) {
+    int bucket_count = m_bucket_count;
+    int new_bucket_count = bucket_count * 3 / 2;
+    if (bucket_count == 0) {
+      new_bucket_count = m_initial_bucket_count;
     }
-    reserve(new_num_buckets);
-    if (old_num_buckets) {
-      rehash(old_num_buckets);
+    reserve(new_bucket_count);
+    if (bucket_count) {
+      rehash(bucket_count);
     }
   }
   ++m_count;
   Sip starting_bucket_idx = get_bucket_index(key);
-  for (int j = 0; j < m_num_buckets; ++j) {
-    int bucket_idx = (starting_bucket_idx + j) % m_num_buckets;
+  for (int j = 0; j < m_bucket_count; ++j) {
+    int bucket_idx = (starting_bucket_idx + j) % m_bucket_count;
     E_slot_state& state = m_states_p[bucket_idx];
     if (state != e_slot_state_alive) {
       m_data_p[bucket_idx].key = key;
@@ -68,8 +68,8 @@ T_value* M_hash_table_c_::find(const T_key& key) {
   }
   Sip first_bucket_idx = get_bucket_index(key);
   T_value* rv = nullptr;
-  for (int i = 0; i < m_num_buckets; ++i) {
-    Sip bucket_idx = (first_bucket_idx + i) % m_num_buckets;
+  for (int i = 0; i < m_bucket_count; ++i) {
+    Sip bucket_idx = (first_bucket_idx + i) % m_bucket_count;
     if (m_states_p[bucket_idx] == e_slot_state_free) {
       break;
     }
@@ -87,22 +87,22 @@ T_value* M_hash_table_c_::find(const T_key& key) {
 }
 
 M_hash_table_t_
-void M_hash_table_c_::reserve(int num_keys) {
-  int old_num_buckets = m_num_buckets;
-  int new_num_buckets = num_keys / m_load_factor + 1;
-  if (old_num_buckets >= new_num_buckets) {
+void M_hash_table_c_::reserve(int key_count) {
+  int bucket_count = m_bucket_count;
+  int new_bucket_count = key_count / m_load_factor + 1;
+  if (bucket_count >= new_bucket_count) {
     return;
   }
-  m_num_buckets = new_num_buckets;
-  m_data.resize(new_num_buckets * (sizeof(T_data) + sizeof(E_slot_state)));
+  m_bucket_count = new_bucket_count;
+  m_data.resize(new_bucket_count * (sizeof(T_data) + sizeof(E_slot_state)));
   m_data_p = (T_data*)m_data.m_p;
-  E_slot_state* new_states_p = (E_slot_state*)(m_data.m_p + new_num_buckets * sizeof(T_data));
+  E_slot_state* new_states_p = (E_slot_state*)(m_data.m_p + new_bucket_count * sizeof(T_data));
   static_assert(e_slot_state_free == 0, "memset needs the enum value to be 0");
-  memset(new_states_p, 0, new_num_buckets * sizeof(E_slot_state));
-  if (old_num_buckets) {
-    memmove(new_states_p, m_states_p, old_num_buckets);
+  memset(new_states_p, 0, new_bucket_count * sizeof(E_slot_state));
+  if (bucket_count) {
+    memmove(new_states_p, m_states_p, bucket_count);
     m_states_p = new_states_p;
-    rehash(old_num_buckets);
+    rehash(bucket_count);
   } else {
     m_states_p = new_states_p;
   }
@@ -110,13 +110,13 @@ void M_hash_table_c_::reserve(int num_keys) {
 
 M_hash_table_t_
 Sz M_hash_table_c_::get_bucket_index(const T_key& key) {
-  return ng_hash(key) % m_num_buckets;
+  return ng_hash(key) % m_bucket_count;
 }
 
 M_hash_table_t_
-void M_hash_table_c_::rehash(int old_num_buckets) {
+void M_hash_table_c_::rehash(int bucket_count) {
   // Updating states
-  for (int i = 0; i < old_num_buckets; ++i) {
+  for (int i = 0; i < bucket_count; ++i) {
     E_slot_state& state = m_states_p[i];
     if (state == e_slot_state_alive) {
       state = e_slot_state_moving;
@@ -126,15 +126,15 @@ void M_hash_table_c_::rehash(int old_num_buckets) {
   }
 
   // Actually moving
-  for (int i = 0; i < old_num_buckets; ++i) {
+  for (int i = 0; i < bucket_count; ++i) {
     E_slot_state& old_state = m_states_p[i];
     if (old_state != e_slot_state_moving) {
       continue;
     }
     T_data& old_data = m_data_p[i];
     int starting_bucket_idx = get_bucket_index(old_data.key);
-    for (int j = 0; j < m_num_buckets; ++j) {
-      int new_bucket_idx = (starting_bucket_idx + j) % m_num_buckets;
+    for (int j = 0; j < m_bucket_count; ++j) {
+      int new_bucket_idx = (starting_bucket_idx + j) % m_bucket_count;
       if (new_bucket_idx == i) {
         old_state = e_slot_state_alive;
         break;

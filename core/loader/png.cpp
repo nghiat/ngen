@@ -68,10 +68,10 @@ struct Alphabet_ {
   U8 max_len;
 };
 
-// Build an alphabet based on lengths of  codes from 0 to |num| - 1.
-static void build_alphabet_(U8* lens, int num, Alphabet_* alphabet) {
+// Build an alphabet based on lengths of codes from 0 to |count| - 1.
+static void build_alphabet_(U8* lens, int count, Alphabet_* alphabet) {
   U8 len_counts[gc_max_code__len_] = {};
-  for (int i = 0; i < num; ++i) {
+  for (int i = 0; i < count; ++i) {
     if (lens[i]) {
       alphabet->cfl[lens[i]].codes[len_counts[lens[i]]] = i;
       len_counts[lens[i]]++;
@@ -259,18 +259,18 @@ bool Png_loader::init(Allocator* allocator, const Os_char* path) {
           if (code_len < 16) {
             lit_and_dist_lens[index++] = code_len;
           } else {
-            U8 repeat_num;
+            U8 repeat_count;
             U8 repeated_val = 0;
             if (code_len == 16) {
-              repeat_num = bs.consume_lsb(2) + 3;
+              repeat_count = bs.consume_lsb(2) + 3;
               repeated_val = lit_and_dist_lens[index - 1];
             } else if (code_len == 17) {
-              repeat_num = bs.consume_lsb(3) + 3;
+              repeat_count = bs.consume_lsb(3) + 3;
             } else if (code_len == 18) {
-              repeat_num = bs.consume_lsb(7) + 11;
+              repeat_count = bs.consume_lsb(7) + 11;
             }
-            memset(lit_and_dist_lens + index, repeated_val, repeat_num);
-            index += repeat_num;
+            memset(lit_and_dist_lens + index, repeated_val, repeat_count);
+            index += repeat_count;
           }
           M_check_log_return_val(index <= hlit + hdist, false, "Can't decode_ literal and length alphabet, overflowed");
         }

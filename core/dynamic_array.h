@@ -16,8 +16,8 @@ public:
   bool init(Allocator* allocator);
   void destroy();
   Sip len() const;
-  void reserve(Sip num);
-  void resize(Sip num);
+  void reserve(Sip count);
+  void resize(Sip count);
   void remove_range(Sip pos, Sip length);
   void remove_at(Sip pos);
   void insert_at(Sip index, const T& val);
@@ -29,4 +29,3 @@ public:
   Sip m_length = 0;
   Sip m_capacity = 0;
 };
-

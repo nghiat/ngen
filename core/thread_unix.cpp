@@ -29,6 +29,6 @@ void ngThread::wait_for() {
   pthread_join(m_handle, &res);
 }
 
-int ngThread::get_nums() {
+int ngThread::get_total_thread_count() {
   return sysconf(_SC_NPROCESSORS_ONLN);
 }
