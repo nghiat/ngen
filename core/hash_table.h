@@ -7,12 +7,33 @@
 #pragma once
 
 #include "core/dynamic_array.h"
+#include "core/hash.h"
 #include "core/ng_types.h"
+
+#include <string.h>
+
+#include <type_traits>
+
+template <typename T>
+class Ng_equal {
+public:
+  bool operator()(const T& lhs, const T& rhs) {
+    return lhs == rhs;
+  }
+};
+
+template <>
+class Ng_equal<const char*> {
+public:
+  bool operator()(const char* const& lhs, const char* const& rhs) {
+    return strcmp(lhs, rhs) == 0;
+  }
+};
 
 // This hash table uses linear probing.
 // There is another implementation in hash_table2.h which uses separate chaining.
 // But in a preliminary benchmark, Hash_table2 showed is significantly slower, even when it uses array for chaining instead of linked list.
-template <typename T_key, typename T_value, typename T_data>
+template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
 class Hash_table_ {
 public:
   bool init(Allocator* allocator);
@@ -59,8 +80,8 @@ union FakePair_ {
   T value;
 };
 
-template <typename T_key, typename T_value>
-using Hash_map = Hash_table_<T_key, T_value, Pair_<T_key, T_value>>;
+template <typename T_key, typename T_value, typename T_hash = Ng_hash<std::remove_const_t<T_key>>, typename T_equal = Ng_equal<T_key>>
+using Hash_map = Hash_table_<T_key, T_value, Pair_<T_key, T_value>, T_hash, T_equal>;
 
-template <typename T>
-using Hash_set = Hash_table_<T, T, Pair_<T, T>>;
+template <typename T_key, typename T_hash = Ng_hash<std::remove_const_t<T_key>>, typename T_equal = Ng_equal<T_key>>
+using Hash_set = Hash_table_<T_key, T_key, Pair_<T_key, T_key>, T_hash, T_equal>;

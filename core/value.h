@@ -19,22 +19,25 @@ enum E_value_type {
 
 class Value {
 public:
+  Value();
   Value(bool v);
   Value(int v);
   Value(float v);
   Value(char* v);
 
+  bool is_valid() const;
   bool get_bool() const;
   int get_int() const;
   float get_float() const;
   const char* get_string() const;
 
-private:
+// private:
   union {
     bool m_bool;
     int m_int;
     float m_float;
     char* m_string;
+    const char* m_const_string;
   };
   E_value_type m_value_type = e_value_type_none;
 };

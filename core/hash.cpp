@@ -6,6 +6,8 @@
 
 #include "core/hash.h"
 
+#include <string.h>
+
 Sz fnv1(const U8* key, int len) {
   Sz hash = 0xcbf29ce484222325;
   for (int i = 0; i < len; ++i) {
@@ -13,4 +15,12 @@ Sz fnv1(const U8* key, int len) {
     hash = hash ^ key[i];
   }
   return hash;
+}
+
+Sz Ng_hash<int>::operator()(const int& key) const {
+  return key;
+}
+
+Sz Ng_hash<const char*>::operator()(const char* const& key) const {
+  return fnv1((const U8*)key, strlen(key));
 }

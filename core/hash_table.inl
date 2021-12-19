@@ -9,11 +9,10 @@
 #include "core/hash_table.h"
 
 #include "core/dynamic_array.inl"
-#include "core/hash.h"
 #include "core/utils.h"
 
-#define M_hash_table_t_ template <typename T_key, typename T_value, typename T_data>
-#define M_hash_table_c_ Hash_table_<T_key, T_value, T_data>
+#define M_hash_table_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
+#define M_hash_table_c_ Hash_table_<T_key, T_value, T_data, T_hash, T_equal>
 
 M_hash_table_t_
 bool M_hash_table_c_::init(Allocator* allocator) {
@@ -78,7 +77,7 @@ T_value* M_hash_table_c_::find(const T_key& key) {
     }
     // e_slot_alive
     T_data& data = m_data_p[bucket_idx];
-    if (data.key == key) {
+    if (T_equal()(data.key, key)) {
       rv = &data.value;
       break;
     }
@@ -110,7 +109,7 @@ void M_hash_table_c_::reserve(int key_count) {
 
 M_hash_table_t_
 Sz M_hash_table_c_::get_bucket_index(const T_key& key) {
-  return ng_hash(key) % m_bucket_count;
+  return T_hash()(key) % m_bucket_count;
 }
 
 M_hash_table_t_

@@ -7,10 +7,11 @@
 #pragma once
 
 #include "core/dynamic_array.h"
+#include "core/hash.h"
 #include "core/ng_types.h"
 
 // See comment in hash_table.h
-template <typename T_key, typename T_value, typename T_data>
+template <typename T_key, typename T_value, typename T_data, typename T_hash>
 class Hash_table2_ {
 public:
   struct Bucket_ {
@@ -41,8 +42,8 @@ public:
   F32 m_load_factor = 0.5f;
 };
 
-template <typename T_key, typename T_value>
-using Hash_map2 = Hash_table2_<T_key, T_value, Pair_<T_key, T_value>>;
+template <typename T_key, typename T_value, typename T_hash = Ng_hash<T_key>>
+using Hash_map2 = Hash_table2_<T_key, T_value, Pair_<T_key, T_value>, T_hash>;
 
-template <typename T>
-using Hash_set2 = Hash_table2_<T, T, Pair_<T, T>>;
+template <typename T_key, typename T_hash = Ng_hash<T_key>>
+using Hash_set2 = Hash_table2_<T_key, T_key, Pair_<T_key, T_key>, T_hash>;

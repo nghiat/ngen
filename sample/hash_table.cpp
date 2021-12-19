@@ -7,25 +7,18 @@
 #include <unordered_map>
 
 template <typename T>
-struct Ng_hash_std {
-  Sz operator()(const T& key) const {
-    return ng_hash(key);
-  }
-};
-
-template <typename T>
 F64 time_func(T f) {
   S64 t0 = mono_time_now();
   f();
   return mono_time_to_s(mono_time_now() - t0);
 }
 
-int main() {
+int main(int argc, const char** argv) {
   core_init(M_os_txt("hash_table.log"));
   int num = 1000000;
   int lookup_loop = 100;
 
-  std::unordered_map<int, int, Ng_hash_std<int>> std_hash_table;
+  std::unordered_map<int, int, Ng_hash<int>> std_hash_table;
   std_hash_table.reserve(num);
   F64 std_hash_table_insert_time = time_func([&]() {
     for (int i = 0; i < num; ++i) {

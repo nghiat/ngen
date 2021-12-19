@@ -9,8 +9,8 @@
 
 #include "core/dynamic_array.inl"
 
-#define M_hash_table2_t_ template <typename T_key, typename T_value, typename T_data>
-#define M_hash_table2_c_ Hash_table2_<T_key, T_value, T_data>
+#define M_hash_table2_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash>
+#define M_hash_table2_c_ Hash_table2_<T_key, T_value, T_data, T_hash>
 
 M_hash_table2_t_
 bool M_hash_table2_c_::init(Allocator* allocator) {
@@ -90,7 +90,7 @@ void M_hash_table2_c_::reserve(int key_count) {
 
 M_hash_table2_t_
 Sz M_hash_table2_c_::get_bucket_index(const T_key& key) {
-  return ng_hash(key) % m_buckets.len();
+  return T_hash()(key) % m_buckets.len();
 }
 
 M_hash_table2_t_
