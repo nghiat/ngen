@@ -4,6 +4,8 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 201             //
 //----------------------------------------------------------------------------//
 
+#pragma once
+
 #include "core/linear_allocator.h"
 
 #include "core/allocator_internal.h"

@@ -12,6 +12,8 @@
 
 #include <ctype.h>
 
+Command_line::Command_line() : m_default_flag_allocator("Command_line default flag allocator") {}
+
 bool Command_line::init(Allocator* allocator) {
   bool rv = m_flags.init(allocator);
   rv &= m_default_flag_allocator.init();

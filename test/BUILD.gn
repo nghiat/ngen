@@ -4,10 +4,19 @@
 ## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2021             ##
 ##----------------------------------------------------------------------------##
 
-group("ngen") {
+group("test") {
+  deps = [
+    ":core_test",
+  ]
+}
+
+executable("core_test") {
+  sources = [
+    "core/dynamic_array_test.cpp",
+    "main.cpp",
+  ]
+
   deps = [
     "//core",
-    "//sample",
-    "//test",
   ]
 }
