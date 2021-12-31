@@ -13,42 +13,32 @@ void dynamic_array_test() {
   {
     Dynamic_array<int> array;
     array.init(&allocator);
-    M_check(allocator.m_used_size == 1);
+    M_check(allocator.m_used_size == 0);
   }
 
-  // {
-  //   {
-  //     DynamicArray<ei8> ei8Array(&allocator);
-  //     for (int i = 0; i < 100; ++i) {
-  //       ei8Array.Append(i);
-  //     }
-  //   }
-  //   REQUIRE(allocator.GetActualUsedSize() == 0);
-  //   REQUIRE(allocator.GetUsedSize() == 0);
-  // }
+  {
+    Dynamic_array<S8> s8_array;
+    s8_array.init(&allocator);
+    const int elem_count = 10;
+    s8_array.reserve(elem_count);
+    M_check(allocator.m_used_size == elem_count * sizeof(S8));
 
-  // {
-  //   DynamicArray<ei8> ei8Array(&allocator);
-  //   constexpr esz elemsNum = 10;
-  //   ei8Array.Reserve(elemsNum);
-  //   REQUIRE(allocator.GetActualUsedSize() == elemsNum * sizeof(ei8));
+    // constexpr esz smallerElemsNum = 5;
+    // s8_array.Reserve(smallerElemsNum);
+    // REQUIRE(allocator.GetActualUsedSize() == smallerElemsNum * sizeof(ei8));
 
-  //   constexpr esz smallerElemsNum = 5;
-  //   ei8Array.Reserve(smallerElemsNum);
-  //   REQUIRE(allocator.GetActualUsedSize() == smallerElemsNum * sizeof(ei8));
+    // constexpr esz biggerElemsNum = 100;
+    // s8_array.Reserve(biggerElemsNum);
+    // REQUIRE(allocator.GetActualUsedSize() == biggerElemsNum * sizeof(ei8));
 
-  //   constexpr esz biggerElemsNum = 100;
-  //   ei8Array.Reserve(biggerElemsNum);
-  //   REQUIRE(allocator.GetActualUsedSize() == biggerElemsNum * sizeof(ei8));
-
-  //   SECTION("Multiple times") {
-  //     for (int i = 0; i < 1000; ++i) {
-  //       ei8Array.Reserve(smallerElemsNum);
-  //       ei8Array.Reserve(biggerElemsNum);
-  //     }
-  //     REQUIRE(ei8Array.Capacity() == biggerElemsNum);
-  //   }
-  // }
+    // SECTION("Multiple times") {
+    //   for (int i = 0; i < 1000; ++i) {
+    //     s8_array.Reserve(smallerElemsNum);
+    //     s8_array.Reserve(biggerElemsNum);
+    //   }
+    //   REQUIRE(s8_array.Capacity() == biggerElemsNum);
+    // }
+  }
 
   // {
   //   test::TestUnsignedType<eu8>(&allocator);

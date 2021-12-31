@@ -15,6 +15,21 @@
 #define M_hash_table_c_ Hash_table_<T_key, T_value, T_data, T_hash, T_equal>
 
 M_hash_table_t_
+void M_hash_table_c_::Iterator_::operator++() {
+  while (++m_idx < m_ht->m_bucket_count && m_ht->m_states_p[m_idx] != e_slot_state_alive) {}
+}
+
+M_hash_table_t_
+T_data& M_hash_table_c_::Iterator_::operator*() {
+  return m_ht->m_data_p[m_idx];
+}
+
+M_hash_table_t_
+bool M_hash_table_c_::Iterator_::operator!=(const M_hash_table_c_::Iterator_& rhs) {
+  return m_ht != rhs.m_ht || m_idx != rhs.m_idx;
+}
+
+M_hash_table_t_
 bool M_hash_table_c_::init(Allocator* allocator) {
   m_allocator = allocator;
   bool rv = m_data.init(allocator);
@@ -105,6 +120,28 @@ void M_hash_table_c_::reserve(int key_count) {
   } else {
     m_states_p = new_states_p;
   }
+}
+
+M_hash_table_t_
+typename M_hash_table_c_::Iterator_ M_hash_table_c_::begin() const {
+  if (m_count == 0) {
+    return end();
+  }
+  Iterator_ it;
+  it.m_ht = this;
+  it.m_idx = 0;
+  if (m_states_p[0] != e_slot_state_alive) {
+    ++it;
+  }
+  return it;
+}
+
+M_hash_table_t_
+typename M_hash_table_c_::Iterator_ M_hash_table_c_::end() const {
+  Iterator_ it;
+  it.m_ht = this;
+  it.m_idx = m_bucket_count;
+  return it;
 }
 
 M_hash_table_t_

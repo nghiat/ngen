@@ -36,12 +36,26 @@ public:
 template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
 class Hash_table_ {
 public:
+  class Iterator_ {
+  public:
+    void operator++();
+    T_data& operator*();
+    bool operator!=(const Iterator_& rhs);
+
+    const Hash_table_<T_key, T_value, T_data, T_hash, T_equal>* m_ht;
+    Sz m_idx;
+  };
+
   bool init(Allocator* allocator);
   void destroy();
   T_value& operator[](const T_key& key);
   T_value* find(const T_key& key);
   Sip len() const;
   void reserve(int key_count);
+
+// iterator (for each)
+  Iterator_ begin() const;
+  Iterator_ end() const;
 
 // private:
   enum E_slot_state : U8 {
