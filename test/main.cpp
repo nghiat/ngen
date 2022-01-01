@@ -8,25 +8,26 @@
 #include "core/core_allocators.h"
 #include "core/core_init.h"
 #include "core/hash_table.inl"
+#include "test/test.h"
 
 Hash_map<const char*, void (*)()> g_tests_;
-
-#define M_register_test(func) \
-  extern void func(); \
-  g_tests_[#func] = func
+int g_total_test_count_ = 0;
+int g_passed_test_count_ = 0;
 
 int main(int argc, const char** argv) {
   core_init(M_os_txt("test.log"));
   Command_line cl;
   cl.init(g_persistent_allocator);
-  cl.add_flag(nullptr, "--filter", e_value_type_string);
   cl.parse(argc, argv);
 
   g_tests_.init(g_persistent_allocator);
-  M_register_test(dynamic_array_test);
+  // M_register_test(dynamic_array_test);
+  M_register_test(linear_allocator_test);
   for (auto& test : g_tests_) {
     M_logi("Running test %s", test.key);
     test.value();
   }
+
+  M_logi("%d/%d tests passed", g_passed_test_count_, g_total_test_count_);
   return 0;
 }

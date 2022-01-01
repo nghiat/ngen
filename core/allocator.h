@@ -22,6 +22,8 @@ public:
   const char* m_name = nullptr;
   /// Total size of the allocator in bytes.
   Sip m_total_size = 0;
-  /// Allocations' sizes and supporting data of the allocator in bytes.
+  /// The size of the allocator that has been exposed via alloc(), realloc(), free() (without the size used by internal data).
+  Sip m_exposed_size = 0;
+  /// The same with |m_exposed_size| but with the size of internal data.
   Sip m_used_size = 0;
 };

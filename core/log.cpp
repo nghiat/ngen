@@ -59,7 +59,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   log_buffer[log_len] = 0;
 
   if (level == e_log_level_fatal && !debug_is_debugger_attached()) {
-    const char* trace_format = "StackTraces:\n%s";
+    const char* trace_format = "StackTraces:\n%s\n";
     char trace[M_max_stack_trace_length_];
     debug_get_stack_trace(trace, M_max_stack_trace_length_);
     int trace_len = snprintf(NULL, 0, trace_format, trace);

@@ -7,13 +7,15 @@
 #include "core/dynamic_array.inl"
 
 #include "core/free_list_allocator.h"
+#include "test/test.h"
 
 void dynamic_array_test() {
   FreeList_allocator allocator("dynamic_array_test_allocator", 1024 * 1024 * 1024);
+  allocator.init();
   {
     Dynamic_array<int> array;
     array.init(&allocator);
-    M_check(allocator.m_used_size == 0);
+    M_test(allocator.m_used_size == 0);
   }
 
   {
@@ -21,7 +23,7 @@ void dynamic_array_test() {
     s8_array.init(&allocator);
     const int elem_count = 10;
     s8_array.reserve(elem_count);
-    M_check(allocator.m_used_size == elem_count * sizeof(S8));
+    M_test(allocator.m_used_size == elem_count * sizeof(S8));
 
     // constexpr esz smallerElemsNum = 5;
     // s8_array.Reserve(smallerElemsNum);
