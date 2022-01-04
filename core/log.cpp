@@ -22,8 +22,10 @@ static const char* gc_log_level_strings_[] = {
     "DEBUG",
     "WARNING",
     "FATAL",
+    "TEST",
 };
 
+E_log_preset g_log_preset = e_log_preset_normal;
 static File g_log_file_;
 static bool g_log_inited_ = false;
 
@@ -58,7 +60,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   log_buffer[log_len - 1] = '\n';
   log_buffer[log_len] = 0;
 
-  if (level == e_log_level_fatal && !debug_is_debugger_attached()) {
+  if ((level == e_log_level_fatal || level == e_log_level_test) && !debug_is_debugger_attached()) {
     const char* trace_format = "StackTraces:\n%s\n";
     char trace[M_max_stack_trace_length_];
     debug_get_stack_trace(trace, M_max_stack_trace_length_);
@@ -74,7 +76,9 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   } else {
     stream = stderr;
   }
-  fprintf(stream, "%s", log_buffer);
+  if (level == e_log_level_test || g_log_preset == e_log_preset_normal) {
+    fprintf(stream, "%s", log_buffer);
+  }
 #if M_os_is_win()
   OutputDebugStringA(log_buffer);
 #endif

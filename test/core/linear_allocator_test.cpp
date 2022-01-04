@@ -102,6 +102,19 @@ void linear_allocator_test() {
     M_test(allocator.m_used_size == c_initial_used_size);
   }
 
+  // alloc bigger than the stack page
+  {
+    Linear_allocator<128> allocator("test");
+    allocator.init();
+    M_scope_exit(allocator.destroy());
+    void* p = allocator.alloc(1);
+    void* p2 = allocator.alloc(1024);
+    M_test(p);
+    M_test(p2);
+    p = allocator.realloc(p, 1024);
+    M_test(p);
+  }
+
   // realloc
   {
     Linear_allocator<> allocator("test");

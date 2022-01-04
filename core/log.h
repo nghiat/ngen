@@ -19,7 +19,15 @@ enum E_log_level_ {
   e_log_level_debug = 1,
   e_log_level_warning = 2,
   e_log_level_fatal = 3,
+  e_log_level_test = 4,
 };
+
+enum E_log_preset {
+  e_log_preset_normal,
+  e_log_preset_test,
+};
+
+extern E_log_preset g_log_preset;
 
 #if M_is_dev()
 void ng_log_(E_log_level_ level, const char* file, int line, const char* format, ...);
