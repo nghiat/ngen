@@ -120,17 +120,22 @@ void linear_allocator_test() {
     Linear_allocator<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
-    void* not_top_of_stack_pointer = allocator.alloc(128);
-    void* top_of_stack_pointer = allocator.alloc(128);
+    void* p1 = allocator.alloc(128);
+    void* p2 = allocator.alloc(128);
     /// Invalid argument.
     M_test(allocator.realloc(nullptr, 0) == nullptr);
-    M_test(allocator.realloc(top_of_stack_pointer, 0) == nullptr);
+    M_test(allocator.realloc(p2, 0) == nullptr);
     /// Not the top of the stack pointer.
-    top_of_stack_pointer = allocator.realloc(not_top_of_stack_pointer, 256);
-    M_test(top_of_stack_pointer);
+    p1 = allocator.realloc(p1, 256);
+    M_test(p1);
 
-    // Same size.
-    M_test(allocator.realloc(top_of_stack_pointer, 128) == top_of_stack_pointer);
-    M_test(allocator.realloc(top_of_stack_pointer, 256) == top_of_stack_pointer);
+    // Top of the stack pointer.
+    M_test(allocator.realloc(p1, 128) == p1);
+    M_test(allocator.realloc(p1, 256) == p1);
+
+    // Previous top of the stack pointer
+    allocator.free(p1);
+    M_test(allocator.realloc(p2, 64) == p2);
+    M_test(allocator.realloc(p2, 256) == p1);
   }
 }

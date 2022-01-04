@@ -15,7 +15,7 @@ int g_total_test_count_ = 0;
 int g_passed_test_count_ = 0;
 
 int main(int argc, const char** argv) {
-  g_log_preset = e_log_preset_test;
+  g_is_log_in_testing = true;
   core_init(M_os_txt("test.log"));
   Command_line cl;
   cl.init(g_persistent_allocator);
@@ -29,7 +29,7 @@ int main(int argc, const char** argv) {
     test.value();
   }
 
-  g_log_preset = e_log_preset_normal;
+  g_is_log_in_testing = false;
   M_logi("%d/%d tests passed", g_passed_test_count_, g_total_test_count_);
   return 0;
 }

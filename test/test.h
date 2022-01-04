@@ -21,7 +21,7 @@ extern int g_passed_test_count_;
 #define M_test(condition)                                                                        \
   ++g_total_test_count_;                                                                         \
   if (M_unlikely(!(condition))) {                                                                \
-    ng_log_(e_log_level_test, __FILE__, __LINE__, "Test (%s) failed)", M_stringify_(condition)); \
+    ng_log_(e_log_level_test, __FILE__, __LINE__, "Test (%s) failed", M_stringify_(condition)); \
     if (debug_is_debugger_attached()) {                                                          \
       M_debug_break_debugger();                                                                  \
     }                                                                                            \

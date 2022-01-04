@@ -52,13 +52,13 @@ void Command_line::add_flag(const char* short_flag, const char* long_flag, E_val
     if (long_flag) {
       m_short_to_long_flag_map[short_flag_c] = long_flag + 2;
     } else {
-      m_short_to_long_flag_map[short_flag_c] = short_flag + 1;
-      // TODO check if exists
+      M_check_log_return(m_flags.find(short_flag + 1) == nullptr, "Flag already exists");
       m_flags[short_flag + 1] = v;
+      m_short_to_long_flag_map[short_flag_c] = short_flag + 1;
     }
   }
   if (long_flag) {
-    // TODO check if exists
+    M_check_log_return(m_flags.find(long_flag + 2) == nullptr, "Flag already exists");
     m_flags[long_flag + 2] = v;
   }
 }

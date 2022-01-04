@@ -25,7 +25,7 @@ static const char* gc_log_level_strings_[] = {
     "TEST",
 };
 
-E_log_preset g_log_preset = e_log_preset_normal;
+bool g_is_log_in_testing = false;
 static File g_log_file_;
 static bool g_log_inited_ = false;
 
@@ -76,7 +76,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   } else {
     stream = stderr;
   }
-  if (level == e_log_level_test || g_log_preset == e_log_preset_normal) {
+  if (level == e_log_level_test || !g_is_log_in_testing) {
     fprintf(stream, "%s", log_buffer);
   }
 #if M_os_is_win()

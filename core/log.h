@@ -22,12 +22,7 @@ enum E_log_level_ {
   e_log_level_test = 4,
 };
 
-enum E_log_preset {
-  e_log_preset_normal,
-  e_log_preset_test,
-};
-
-extern E_log_preset g_log_preset;
+extern bool g_is_log_in_testing;
 
 #if M_is_dev()
 void ng_log_(E_log_level_ level, const char* file, int line, const char* format, ...);
@@ -66,11 +61,12 @@ void log_destroy();
 #endif
 
 #define M_stringify_expanded_(condition) #condition
-#define M_stringify_(condition) M_stringify_expanded_(condition) " doesn't match"
+#define M_stringify_(condition) M_stringify_expanded_(condition)
+#define M_stringify_condition_(condition) M_stringify_(condition) " doesn't match"
 
 #define M_check(condition)               \
   if (M_unlikely(!(condition))) {                  \
-    M_logf("%s", M_stringify_(condition)); \
+    M_logf("%s", M_stringify_condition_(condition)); \
   }
 
 #define M_check_log(condition, format, ...) \
@@ -92,12 +88,12 @@ void log_destroy();
 
 #define M_check_return(condition)               \
   if (M_unlikely(!(condition))) {                         \
-    M_logf_return("%s", M_stringify_(condition)); \
+    M_logf_return("%s", M_stringify_condition_(condition)); \
   }
 
 #define M_check_return_val(condition, retval)               \
   if (M_unlikely(!(condition))) {                                     \
-    M_logf_return_val(retval, "%s", M_stringify_(condition)); \
+    M_logf_return_val(retval, "%s", M_stringify_condition_(condition)); \
   }
 
 #define M_check_log_return(condition, format, ...) \

@@ -38,7 +38,6 @@ bool M_hash_table_c_::init(Allocator* allocator) {
 
 M_hash_table_t_
 void M_hash_table_c_::destroy() {
-  // TODO: call destroy
   m_data.destroy();
 }
 
