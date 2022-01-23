@@ -17,6 +17,8 @@
 * Prefer zeroed-init which means that the struct deafult state should be zero
 * Declartion order in header:
   - enum -> function -> struct/class -> macro
+* Avoid single-line statement:
+  Reason: Easier to debug (step next)
 
 * Naming conventions
 - General:
