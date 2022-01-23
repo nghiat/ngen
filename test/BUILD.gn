@@ -15,6 +15,7 @@ executable("core_test") {
     # "core/dynamic_array_test.cpp",
     "core/hash_map_test.cpp",
     "core/linear_allocator_test.cpp",
+    "core/utils_test.cpp",
     "main.cpp",
   ]
 

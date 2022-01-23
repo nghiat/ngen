@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "core/ng_types.h"
+
 template <typename T>
 void maybe_assign(T* t, T v) {
   if (t)
@@ -31,14 +33,25 @@ void swap(T* a, T* b) {
 }
 
 template <typename T>
-struct ScopeExit {
-  ScopeExit(T f) : f(f) {}
-  ~ScopeExit() { f(); }
+struct Scope_exit {
+  Scope_exit(T f) : f(f) {}
+  ~Scope_exit() {
+    f();
+  }
   T f;
 };
+
+template <typename T>
+auto make_scope_exit_(T f) {
+  return Scope_exit<T>(f);
+}
 
 #define M_unused(a) (void)a
 
 #define M_string_join_expanded_(arg1, arg2) arg1 ## arg2
 #define M_string_join_(arg1, arg2) M_string_join_expanded_(arg1, arg2)
-#define M_scope_exit(code) auto M_string_join_(zz_scope_exit_, __LINE__)([&](){code;}); M_unused(M_string_join_(zz_scope_exit_, __LINE__))
+#define M_scope_exit(code) \
+  auto M_string_join_(zz_scope_exit_at_line_, __LINE__) = make_scope_exit_([&]() { \
+    code; \
+  }); \
+  M_unused(M_string_join_(zz_scope_exit_at_line_, __LINE__))
