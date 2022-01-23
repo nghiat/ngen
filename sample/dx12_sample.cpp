@@ -39,7 +39,7 @@
 #define M_dx_check_return_(condition) M_check_return(condition == S_OK)
 #define M_dx_check_return_false_(condition) M_check_return_val(condition == S_OK, false)
 
-#if M_is_clang()
+#if M_compiler_is_clang()
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-temporary"
 #endif
@@ -52,7 +52,7 @@ enum E_enable_depth_ {
 struct Code_point_ {
   V2 uv_top_left;
   V2 uv_bottom_right;
-  int x0, x1, y0, y1;
+  int x_left, x_right, y_bottom, y_top;
   int advance;
   int lsb;
 };
@@ -201,8 +201,8 @@ public:
   D3D12_VERTEX_BUFFER_VIEW m_normals_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_text_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_console_vb_view;
-  U32 m_objs_count = 0;
-  U32 m_obj_vertices_nums[10] = {};
+  U32 m_obj_count = 0;
+  U32 m_obj_vertices_counts[10] = {};
   Dx12_subbuffer m_texture_subbuffer;
   ID3D12Resource* m_texture;
   Dx12_descriptor m_texture_srv_descriptor;
@@ -214,6 +214,8 @@ public:
   HANDLE m_fence_event;
   U64 m_fence_vals[sc_frame_count] = {};
 
+  Quake_console m_console;
+
   S64 m_start_time;
   bool m_is_console_active = false;
 private:
@@ -222,20 +224,21 @@ private:
                   ID3DBlob* vs,
                   ID3DBlob* ps,
                   D3D12_INPUT_ELEMENT_DESC* element_desc,
-                  int num_elements,
+                  int element_count,
                   E_enable_depth_ enable_depth = e_enable_depth_false);
   void create_root_sig_(ID3D12RootSignature** root_sig,
-                     UINT num_root_params,
+                     UINT root_param_count,
                      const D3D12_ROOT_PARAMETER1* root_params,
-                     UINT num_static_samplers,
+                     UINT static_sampler_count,
                      const D3D12_STATIC_SAMPLER_DESC* static_samplers,
                      D3D12_ROOT_SIGNATURE_FLAGS flags);
+  void add_text_at_(const char* text, F32 x_left, F32 y_top, F32 wrap_width, Dx12_subbuffer* subbuffer, D3D12_VERTEX_BUFFER_VIEW* vb_view);
 };
 
-static bool create_descriptor_heap_(Dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptors_num) {
+static bool create_descriptor_heap_(Dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptor_count) {
   D3D12_DESCRIPTOR_HEAP_DESC desc = {};
   desc.Type = type;
-  desc.NumDescriptors = max_descriptors_num;
+  desc.NumDescriptors = max_descriptor_count;
   desc.Flags = flags;
   desc.NodeMask = 0;
   M_dx_check_return_false_(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap->heap)));
@@ -281,14 +284,14 @@ static D3D12_HEAP_PROPERTIES create_heap_props_(D3D12_HEAP_TYPE type) {
 }
 
 static D3D12_DESCRIPTOR_RANGE1 create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RANGE_TYPE range_type,
-                                                           UINT num_descriptors,
+                                                           UINT descriptor_count,
                                                            UINT base_shader_reg,
                                                            UINT reg_space,
                                                            D3D12_DESCRIPTOR_RANGE_FLAGS flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC,
                                                            UINT offset_in_descriptors_from_table_start = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND) {
   D3D12_DESCRIPTOR_RANGE1 range = {};
   range.RangeType = range_type;
-  range.NumDescriptors = num_descriptors;
+  range.NumDescriptors = descriptor_count;
   range.BaseShaderRegister = base_shader_reg;
   range.RegisterSpace = reg_space;
   range.Flags = flags;
@@ -297,11 +300,11 @@ static D3D12_DESCRIPTOR_RANGE1 create_descriptor_range_1_1_(D3D12_DESCRIPTOR_RAN
 }
 
 static D3D12_ROOT_PARAMETER1
-create_root_param_1_1_descriptor_table_(UINT num_ranges, const D3D12_DESCRIPTOR_RANGE1* ranges, D3D12_SHADER_VISIBILITY shader_visibility) {
+create_root_param_1_1_descriptor_table_(UINT range_count, const D3D12_DESCRIPTOR_RANGE1* ranges, D3D12_SHADER_VISIBILITY shader_visibility) {
   D3D12_ROOT_PARAMETER1 param = {};
   param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
   param.DescriptorTable = {};
-  param.DescriptorTable.NumDescriptorRanges = num_ranges;
+  param.DescriptorTable.NumDescriptorRanges = range_count;
   param.DescriptorTable.pDescriptorRanges = ranges;
   param.ShaderVisibility = shader_visibility;
   return param;
@@ -378,7 +381,7 @@ bool Dx12_window::init() {
   ngWindow::init();
 
   m_start_time = mono_time_now();
-  m_cam.cam_init({5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
+  m_cam.init({5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
   m_final_shared_cb.eye_pos = V3o_v4(m_cam.m_eye, 1.0f);
   m_final_shared_cb.obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
   m_final_shared_cb.light_pos = {10.0f, 10.0f, 10.0f, 1.0f};
@@ -386,7 +389,7 @@ bool Dx12_window::init() {
 
   // The light is static for now.
   ngCam light_cam;
-  light_cam.cam_init({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, this);
+  light_cam.init({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, this);
   // TODO: ortho?
   M4 perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 100.0f);
 
@@ -726,15 +729,15 @@ bool Dx12_window::init() {
     stbtt_fontinfo font;
     Os_char font_path[M_max_path_len];
     path_from_exe_dir(font_path, M_os_txt("assets/UbuntuMono-Regular.ttf"), M_max_path_len);
-    Dynamic_array<U8> font_buf = File::f_read_whole_file_as_text(g_persistent_allocator, font_path);
+    Dynamic_array<U8> font_buf = File::read_whole_file_as_text(g_persistent_allocator, font_path);
     M_check_return_val(stbtt_InitFont(&font, &font_buf[0], stbtt_GetFontOffsetForIndex(&font_buf[0], 0)) != 0, false);
     g_font.fontinfo = font;
     const int c_tex_w = 2048;
     const int c_tex_h = 2048;
     Linear_allocator<> temp_allocator("font_allocator");
-    temp_allocator.la_init();
-    M_scope_exit(temp_allocator.al_destroy());
-    U8* Font_ex = (U8*)temp_allocator.al_alloc_zero(c_tex_w * c_tex_h);
+    temp_allocator.init();
+    M_scope_exit(temp_allocator.destroy());
+    U8* Font_ex = (U8*)temp_allocator.alloc_zero(c_tex_w * c_tex_h);
     int font_h = 16;
     float scale = stbtt_ScaleForPixelHeight(&font, font_h);
     g_font.scale = scale;
@@ -749,10 +752,10 @@ bool Dx12_window::init() {
       // if (!isprint(c))
       //   continue;
       float x_shift = x - (float) floor(x);
-      int x0, y0, x1, y1;
-      stbtt_GetCodepointBitmapBoxSubpixel(&font, c, scale, scale, x_shift, 0.0f, &x0, &y0, &x1, &y1);
-      int w = x1 - x0;
-      int h = y1 - y0;
+      int x_left, y_bottom, x_right, y_top;
+      stbtt_GetCodepointBitmapBoxSubpixel(&font, c, scale, scale, x_shift, 0.0f, &x_left, &y_bottom, &x_right, &y_top);
+      int w = x_right - x_left;
+      int h = y_top - y_bottom;
       M_check_log_return_val(y + h < c_tex_h, false, "Bigger than texture height");
       if (x + w + 1 >= c_tex_w) {
         y += font_h;
@@ -767,10 +770,10 @@ bool Dx12_window::init() {
       g_font.codepoints[c].uv_bottom_right = V2{x + w - 0.5f, y + h - 0.5f} / V2{c_tex_w, c_tex_h};
       g_font.codepoints[c].advance = advance;
       g_font.codepoints[c].lsb = lsb;
-      g_font.codepoints[c].x0 = x0;
-      g_font.codepoints[c].x1 = x1;
-      g_font.codepoints[c].y0 = y0;
-      g_font.codepoints[c].y1 = y1;
+      g_font.codepoints[c].x_left = x_left;
+      g_font.codepoints[c].x_right = x_right;
+      g_font.codepoints[c].y_bottom = y_bottom;
+      g_font.codepoints[c].y_top = y_top;
       x += w;
     }
 
@@ -833,19 +836,19 @@ bool Dx12_window::init() {
 
   {
     Linear_allocator<> temp_allocator("obj_allocator");
-    temp_allocator.la_init();
-    M_scope_exit(temp_allocator.al_destroy());
+    temp_allocator.init();
+    M_scope_exit(temp_allocator.destroy());
     const Os_char* obj_paths[] = {
         M_os_txt("assets/plane.obj"),
         M_os_txt("assets/wolf.obj"),
     };
     Sip vertices_offset = 0;
     Sip normals_offset = 0;
-    m_objs_count = static_array_size(obj_paths);
+    m_obj_count = static_array_size(obj_paths);
 
     {
       Sip cb_size = (sizeof(Per_obj_cb_) + 255) & ~255;
-      for (int i = 0; i < m_objs_count; ++i) {
+      for (int i = 0; i < m_obj_count; ++i) {
         m_per_obj_cb_subbuffers[i] = allocate_subbuffer_(&m_upload_buffer, cb_size, 256);
         m_per_obj_cbv_descriptors[i] = allocate_descriptor_(&m_cbv_srv_heap);
         m_device->CreateConstantBufferView(&create_const_buf_view_desc_(m_per_obj_cb_subbuffers[i].gpu_p, cb_size), m_per_obj_cbv_descriptors[i].cpu_handle);
@@ -861,13 +864,13 @@ bool Dx12_window::init() {
     m_normals_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 16 * 1024 * 1024, 16);
     m_text_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 1024 * 1024, 16);
     m_console_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 6 * sizeof(V2), 16);
-    for (int i = 0; i < m_objs_count; ++i) {
+    for (int i = 0; i < m_obj_count; ++i) {
       Obj_loader obj;
       Os_char full_obj_path[M_max_path_len];
-      obj.obj_init(&temp_allocator, path_from_exe_dir(full_obj_path, obj_paths[i], M_max_path_len));
-      m_obj_vertices_nums[i] = obj.m_vertices.da_len();
-      int vertices_size = m_obj_vertices_nums[i] * sizeof(obj.m_vertices[0]);
-      int normals_size = m_obj_vertices_nums[i] * sizeof(obj.m_normals[0]);
+      obj.init(&temp_allocator, path_from_exe_dir(full_obj_path, obj_paths[i], M_max_path_len));
+      m_obj_vertices_counts[i] = obj.m_vertices.len();
+      int vertices_size = m_obj_vertices_counts[i] * sizeof(obj.m_vertices[0]);
+      int normals_size = m_obj_vertices_counts[i] * sizeof(obj.m_normals[0]);
       M_check_return_val(vertices_offset + vertices_size <= m_vertices_subbuffer.size, false);
       M_check_return_val(normals_offset + normals_size <= m_normals_subbuffer.size, false);
       memcpy(m_vertices_subbuffer.cpu_p + vertices_offset, &obj.m_vertices[0], vertices_size);
@@ -886,14 +889,8 @@ bool Dx12_window::init() {
   }
 
   {
-    V2 console_rect[6];
-    console_rect[0] = {0.0f, 0.0f};
-    console_rect[1] = {0.0f, 300.0f};
-    console_rect[2] = {(F32)m_width, 0.0f};
-    console_rect[3] = {(F32)m_width, 0.0f};
-    console_rect[4] = {0.0f, 300.0f};
-    console_rect[5] = {(F32)m_width, 300.0f};
-    memcpy(m_console_subbuffer.cpu_p, &console_rect[0], sizeof(console_rect));
+    m_console.init(m_width, 300.0f);
+    memcpy(m_console_subbuffer.cpu_p, &m_console.m_rect[0], sizeof(m_console.m_rect));
     m_console_vb_view.BufferLocation = m_console_subbuffer.gpu_p;
     m_console_vb_view.SizeInBytes = 6 * sizeof(V2);
     m_console_vb_view.StrideInBytes = sizeof(V2);
@@ -920,113 +917,10 @@ void Dx12_window::destroy() {
 
 void Dx12_window::loop() {
   {
-    Linear_allocator<> temp_allocator("text_allocator");
-    temp_allocator.la_init();
-    M_scope_exit(temp_allocator.al_destroy());
-    m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
-    // text data
-    static S64 last_frametime = mono_time_now();
-    S64 now = mono_time_now();
-    char text[256];
-    F64 frametime = mono_time_to_ms(now - last_frametime);
-    float fps = (int)(1000.0 / frametime);
-    int i_fps;
-    if (fps - (int)fps > 0.5)
-      i_fps = (int)fps + 1;
-    else
-      i_fps = (int)fps;
-    snprintf(text, 256, "Frametime: %.2fms\nFPS: %d", frametime, i_fps);
-    last_frametime = now;
-    // Console background
-    int c_console_height = 600;
-    int max_num_lines = c_console_height / g_font.line_space + 1;
-
-    Dynamic_array<float> ui_data;
-    ui_data.da_init(&temp_allocator);
-    const float c_x_left = 10.0f;
-    const float c_max_w = 600.0f;
-    const float c_first_line = 400.0f;
-    float x = c_x_left;
-    float y = c_first_line;
-    int text_len = strlen(text);
-    m_visible_text_len = 0;
-    float scale = g_font.scale;
-    for (int i = 0; i < text_len; ++i) {
-      const char* c = &text[i];
-      if (*c == '\n') {
-        y += g_font.line_space;
-        x= c_x_left;
-        continue;
-      }
-      ++m_visible_text_len;
-      const char* nc = &text[i + 1];
-      Code_point_* cp = &g_font.codepoints[*c];
-      float left = x + cp->x0;
-      float right = x + cp->x1;
-      if (right > c_max_w) {
-        y += g_font.line_space;
-        x = c_x_left;
-        left = x + cp->x0;
-        right = x + cp->x1;
-      }
-      float top = y - g_font.baseline + cp->y0;
-      float bottom = y - g_font.baseline + cp->y1;
-      ui_data.da_append(left);
-      ui_data.da_append(top);
-      ui_data.da_append(cp->uv_top_left.x);
-      ui_data.da_append(cp->uv_top_left.y);
-
-      ui_data.da_append(left);
-      ui_data.da_append(bottom);
-      ui_data.da_append(cp->uv_top_left.x);
-      ui_data.da_append(cp->uv_bottom_right.y);
-
-      ui_data.da_append(right);
-      ui_data.da_append(top);
-      ui_data.da_append(cp->uv_bottom_right.x);
-      ui_data.da_append(cp->uv_top_left.y);
-
-      ui_data.da_append(right);
-      ui_data.da_append(top);
-      ui_data.da_append(cp->uv_bottom_right.x);
-      ui_data.da_append(cp->uv_top_left.y);
-
-      ui_data.da_append(left);
-      ui_data.da_append(bottom);
-      ui_data.da_append(cp->uv_top_left.x);
-      ui_data.da_append(cp->uv_bottom_right.y);
-
-      ui_data.da_append(right);
-      ui_data.da_append(bottom);
-      ui_data.da_append(cp->uv_bottom_right.x);
-      ui_data.da_append(cp->uv_bottom_right.y);
-
-      x += scale * cp->advance;
-      if (nc) {
-         x += scale * stbtt_GetCodepointKernAdvance(&g_font.fontinfo, *c, *nc);
-      }
-      if (isspace(*c) && !isspace(*nc)) {
-        float word_length = 0.0f;
-        while (*nc && !isspace(*nc)) {
-          word_length += scale * stbtt_GetCodepointKernAdvance(&g_font.fontinfo, *(nc - 1), *nc);
-          word_length += scale * g_font.codepoints[*nc].advance;
-          ++nc;
-        }
-        if (x + word_length > c_max_w) {
-          y += g_font.line_space;
-          x = c_x_left;
-        }
-      }
-    }
-
-    memcpy((U8*)m_vertex_buffer.cpu_p + m_text_subbuffer.offset, &ui_data[0], ui_data.da_len() * sizeof(float));
-    m_text_vb_view.BufferLocation = m_vertex_buffer.buffer->GetGPUVirtualAddress() + m_text_subbuffer.offset;
-    m_text_vb_view.SizeInBytes = ui_data.da_len() * sizeof(float);
-    m_text_vb_view.StrideInBytes = 4 * sizeof(float);
-    m_vertex_buffer.buffer->Unmap(0, NULL);
+    add_text_at_((const char*)m_console.m_f_buf.m_p, 0.0f, 0.0f, m_console.m_width, &m_text_subbuffer, &m_text_vb_view);
   }
 
-  m_cam.cam_update();
+  m_cam.update();
   m_final_shared_cb.view = m_cam.m_view_mat;
   memcpy(m_final_shared_cb_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
 
@@ -1071,9 +965,9 @@ void Dx12_window::loop() {
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->IASetVertexBuffers(0, 1, &m_vertices_vb_view);
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_per_obj_cbv_descriptors[0].gpu_handle);
-  m_cmd_list->DrawInstanced(m_obj_vertices_nums[0], 1, 0, 0);
+  m_cmd_list->DrawInstanced(m_obj_vertices_counts[0], 1, 0, 0);
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_per_obj_cbv_descriptors[1].gpu_handle);
-  m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
+  m_cmd_list->DrawInstanced(m_obj_vertices_counts[1], 1, m_obj_vertices_counts[0], 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -1091,9 +985,18 @@ void Dx12_window::loop() {
   m_cmd_list->IASetVertexBuffers(0, 1, &m_vertices_vb_view);
   m_cmd_list->IASetVertexBuffers(1, 1, &m_normals_vb_view);
   m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[0].gpu_handle);
-  m_cmd_list->DrawInstanced(m_obj_vertices_nums[0], 1, 0, 0);
+  m_cmd_list->DrawInstanced(m_obj_vertices_counts[0], 1, 0, 0);
   m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[1].gpu_handle);
-  m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
+  m_cmd_list->DrawInstanced(m_obj_vertices_counts[1], 1, m_obj_vertices_counts[0], 0);
+
+  m_cmd_list->SetPipelineState(m_console_pso);
+  m_cmd_list->SetGraphicsRootSignature(m_console_root_sig);
+  m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
+  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shared_ui_cbv_descriptor.gpu_handle);
+  m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
+  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
+  m_cmd_list->DrawInstanced(6, 1, 0, 0);
 
   m_cmd_list->SetPipelineState(m_ui_texture_pso);
   m_cmd_list->SetGraphicsRootSignature(m_ui_root_sig);
@@ -1104,15 +1007,6 @@ void Dx12_window::loop() {
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->IASetVertexBuffers(0, 1, &m_text_vb_view);
   m_cmd_list->DrawInstanced(m_visible_text_len * 6, 1, 0, 0);
-
-  m_cmd_list->SetPipelineState(m_console_pso);
-  m_cmd_list->SetGraphicsRootSignature(m_console_root_sig);
-  m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
-  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shared_ui_cbv_descriptor.gpu_handle);
-  m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
-  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
-  m_cmd_list->DrawInstanced(6, 1, 0, 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
@@ -1132,11 +1026,11 @@ void Dx12_window::loop() {
 }
 
 void Dx12_window::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
-  m_cam.cam_mouse_event(mouse, x, y, is_down);
+  m_cam.mouse_event(mouse, x, y, is_down);
 }
 
 void Dx12_window::on_mouse_move(int x, int y) {
-  m_cam.cam_mouse_move(x, y);
+  m_cam.mouse_move(x, y);
 }
 
 void Dx12_window::on_key_event(E_key key, bool is_down) {
@@ -1146,7 +1040,7 @@ void Dx12_window::on_key_event(E_key key, bool is_down) {
 }
 
 void Dx12_window::on_char_event(wchar_t c) {
-  qc_append_codepoint((U32)c);
+  // append_codepoint((U32)c);
 }
 
 void Dx12_window::wait_for_gpu() {
@@ -1163,7 +1057,7 @@ void Dx12_window::wait_for_gpu() {
   ++m_fence_vals[m_frame_no];
 }
 
-void Dx12_window::create_pso_(ID3D12PipelineState** pso, ID3D12RootSignature* root_sig, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_ELEMENT_DESC* element_desc, int num_elements, E_enable_depth_ enable_depth) {
+void Dx12_window::create_pso_(ID3D12PipelineState** pso, ID3D12RootSignature* root_sig, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_ELEMENT_DESC* element_desc, int element_count, E_enable_depth_ enable_depth) {
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
   pso_desc.pRootSignature = root_sig;
   pso_desc.VS.pShaderBytecode = vs->GetBufferPointer();
@@ -1177,7 +1071,7 @@ void Dx12_window::create_pso_(ID3D12PipelineState** pso, ID3D12RootSignature* ro
   pso_desc.RasterizerState = s_default_rasterizer_desc;
   pso_desc.DepthStencilState = {};
   pso_desc.InputLayout.pInputElementDescs = element_desc;
-  pso_desc.InputLayout.NumElements = num_elements;
+  pso_desc.InputLayout.NumElements = element_count;
   pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
   pso_desc.NumRenderTargets = 1;
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1193,22 +1087,112 @@ void Dx12_window::create_pso_(ID3D12PipelineState** pso, ID3D12RootSignature* ro
 }
 
 void Dx12_window::create_root_sig_(ID3D12RootSignature** root_sig,
-                                 UINT num_root_params,
+                                 UINT root_param_count,
                                  const D3D12_ROOT_PARAMETER1* root_params,
-                                 UINT num_static_samplers,
+                                 UINT static_sampler_count,
                                  const D3D12_STATIC_SAMPLER_DESC* static_samplers,
                                  D3D12_ROOT_SIGNATURE_FLAGS flags) {
   D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = {};
   desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-  desc.Desc_1_1.NumParameters = num_root_params;
+  desc.Desc_1_1.NumParameters = root_param_count;
   desc.Desc_1_1.pParameters = root_params;
-  desc.Desc_1_1.NumStaticSamplers = num_static_samplers;
+  desc.Desc_1_1.NumStaticSamplers = static_sampler_count;
   desc.Desc_1_1.pStaticSamplers = static_samplers;
   desc.Desc_1_1.Flags = flags;
   ID3DBlob* signature;
   ID3DBlob* error;
   M_dx_check_return_(D3D12SerializeVersionedRootSignature(&desc, &signature, &error));
   M_dx_check_return_(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(root_sig)));
+}
+
+void Dx12_window::add_text_at_(const char* text, F32 x_left, F32 y_top, F32 wrap_width, Dx12_subbuffer* subbuffer, D3D12_VERTEX_BUFFER_VIEW* vb_view) {
+  Linear_allocator<> temp_allocator("text_allocator");
+  temp_allocator.init();
+  M_scope_exit(temp_allocator.destroy());
+  m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
+  Dynamic_array<float> ui_data;
+  ui_data.init(&temp_allocator);
+  float x = x_left;
+  float y = y_top;
+  int text_len = strlen(text);
+  m_visible_text_len = 0;
+  float scale = g_font.scale;
+  int line_count = 0;
+  for (int i = 0; i < text_len; ++i) {
+    const char* c = &text[i];
+    if (*c == '\n') {
+      if (++line_count > 10) {
+        break;
+      }
+      y += g_font.line_space;
+      x = x_left;
+      continue;
+    }
+    ++m_visible_text_len;
+    const char* nc = &text[i + 1];
+    Code_point_* cp = &g_font.codepoints[*c];
+    float left = x + cp->x_left;
+    float right = x + cp->x_right;
+    if (right > wrap_width) {
+      y += g_font.line_space;
+      x = x_left;
+      left = x + cp->x_left;
+      right = x + cp->x_right;
+    }
+    float top = y - g_font.baseline + cp->y_bottom;
+    float bottom = y - g_font.baseline + cp->y_top;
+    ui_data.append(left);
+    ui_data.append(top);
+    ui_data.append(cp->uv_top_left.x);
+    ui_data.append(cp->uv_top_left.y);
+
+    ui_data.append(left);
+    ui_data.append(bottom);
+    ui_data.append(cp->uv_top_left.x);
+    ui_data.append(cp->uv_bottom_right.y);
+
+    ui_data.append(right);
+    ui_data.append(top);
+    ui_data.append(cp->uv_bottom_right.x);
+    ui_data.append(cp->uv_top_left.y);
+
+    ui_data.append(right);
+    ui_data.append(top);
+    ui_data.append(cp->uv_bottom_right.x);
+    ui_data.append(cp->uv_top_left.y);
+
+    ui_data.append(left);
+    ui_data.append(bottom);
+    ui_data.append(cp->uv_top_left.x);
+    ui_data.append(cp->uv_bottom_right.y);
+
+    ui_data.append(right);
+    ui_data.append(bottom);
+    ui_data.append(cp->uv_bottom_right.x);
+    ui_data.append(cp->uv_bottom_right.y);
+
+    x += scale * cp->advance;
+    if (nc) {
+       x += scale * stbtt_GetCodepointKernAdvance(&g_font.fontinfo, *c, *nc);
+    }
+    if (isspace(*c) && !isspace(*nc)) {
+      float word_length = 0.0f;
+      while (*nc && !isspace(*nc)) {
+        word_length += scale * stbtt_GetCodepointKernAdvance(&g_font.fontinfo, *(nc - 1), *nc);
+        word_length += scale * g_font.codepoints[*nc].advance;
+        ++nc;
+      }
+      if (x + word_length > wrap_width) {
+        y += g_font.line_space;
+        x = x_left;
+      }
+    }
+  }
+  memcpy((U8*)m_vertex_buffer.cpu_p + subbuffer->offset, &ui_data[0], ui_data.len() * sizeof(float));
+  vb_view->BufferLocation = m_vertex_buffer.buffer->GetGPUVirtualAddress() + subbuffer->offset;
+  vb_view->SizeInBytes = ui_data.len() * sizeof(float);
+  vb_view->StrideInBytes = 4 * sizeof(float);
+  m_vertex_buffer.buffer->Unmap(0, NULL);
 }
 
 int main() {
@@ -1219,6 +1203,6 @@ int main() {
   return 0;
 }
 
-#if M_is_clang()
+#if M_compiler_is_clang()
 #pragma clang diagnostic pop
 #endif
