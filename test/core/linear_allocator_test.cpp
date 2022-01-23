@@ -136,6 +136,6 @@ void linear_allocator_test() {
     // Previous top of the stack pointer
     allocator.free(p1);
     M_test(allocator.realloc(p2, 64) == p2);
-    M_test(allocator.realloc(p2, 256) == p1);
+    M_test(allocator.realloc(p2, 256) == p2);
   }
 }

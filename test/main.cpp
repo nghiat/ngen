@@ -22,8 +22,8 @@ int main(int argc, const char** argv) {
   cl.parse(argc, argv);
 
   g_tests_.init(g_persistent_allocator);
-  // M_register_test(dynamic_array_test);
   M_register_test(linear_allocator_test);
+  M_register_test(hash_map_test);
   for (auto& test : g_tests_) {
     M_logi("Running test %s", test.key);
     test.value();

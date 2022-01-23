@@ -11,10 +11,12 @@
 * Conditional
   - Always use braces even one-liner if -> consistent, and you won't forget when adding more statements.
   - else is on the same line as the closing brace of if
-* Function declaration:
+* Function param declaration:
   - out -> in + out -> in
     Reason: you can put default arguments at the end
 * Prefer zeroed-init which means that the struct deafult state should be zero
+* Declartion order in header:
+  - enum -> function -> struct/class -> macro
 
 * Naming conventions
 - General:
@@ -67,3 +69,14 @@
 * Constructor and Destrustor
 - Both should do no real work
 - Real work should be done in *init()/*destroy()
+
+* Template implementation
+- Use these macro to shorten template implementation outside of declaration
+```
+#define M_hash_table_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
+#define M_hash_table_c_ Hash_table_<T_key, T_value, T_data, T_hash, T_equal>
+
+M_hash_table_t_
+bool M_hash_table_c_::init(Allocator* allocator) {
+}
+```
