@@ -13,7 +13,7 @@ void linear_allocator_test() {
   {
     // In this test we alloc multiple 1 bytes and assign different values for
     // each bytes.
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     constexpr int c_num = 64;
@@ -32,7 +32,7 @@ void linear_allocator_test() {
 
   // Zero size
   {
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     size_t current_used_size = allocator.m_used_size;
@@ -43,7 +43,7 @@ void linear_allocator_test() {
 
   // Aligned Allocation
   {
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
 
@@ -56,7 +56,7 @@ void linear_allocator_test() {
 
   // Non power of two alignment and zero alignment
   {
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     M_test(allocator.aligned_alloc(1, 0) == NULL);
@@ -65,7 +65,7 @@ void linear_allocator_test() {
 
   // alloc & free
   {
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     size_t c_initial_used_size = allocator.m_used_size;
@@ -104,7 +104,7 @@ void linear_allocator_test() {
 
   // alloc bigger than the stack page
   {
-    Linear_allocator<128> allocator("test");
+    Linear_allocator_t<128> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     void* p = allocator.alloc(1);
@@ -117,7 +117,7 @@ void linear_allocator_test() {
 
   // realloc
   {
-    Linear_allocator<> allocator("test");
+    Linear_allocator_t<> allocator("test");
     allocator.init();
     M_scope_exit(allocator.destroy());
     void* p1 = allocator.alloc(128);

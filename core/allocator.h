@@ -8,9 +8,9 @@
 
 #include "core/ng_types.h"
 
-class Allocator {
+class Allocator_t {
 public:
-  Allocator(const char* name, Sz total_size) : m_name(name), m_total_size(total_size) {}
+  Allocator_t(const char* name, Sz total_size) : m_name(name), m_total_size(total_size) {}
   virtual void destroy() = 0;
   virtual void* aligned_alloc(Sip size, Sip alignment) = 0;
   virtual void* realloc(void* p, Sip size) = 0;

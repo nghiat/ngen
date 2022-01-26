@@ -6,12 +6,12 @@
 
 #pragma once
 
-class Allocator;
+class Allocator_t;
 
 // Allocate once and will never change.
-extern Allocator* g_persistent_allocator;
+extern Allocator_t* g_persistent_allocator;
 
 // General purpose allocator.
-extern Allocator* g_general_allocator;
+extern Allocator_t* g_general_allocator;
 
 bool core_allocators_init();

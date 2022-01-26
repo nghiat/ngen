@@ -8,15 +8,15 @@
 
 #include <dlfcn.h>
 
-bool Dynamic_lib::open(const char* name) {
+bool Dynamic_lib_t::open(const char* name) {
   m_handle = dlopen(name, RTLD_LAZY | RTLD_LOCAL);
   return m_handle != nullptr;
 }
 
-void Dynamic_lib::close() {
+void Dynamic_lib_t::close() {
   dlclose(m_handle);
 }
 
-void* Dynamic_lib::get_proc(const char* name) {
+void* Dynamic_lib_t::get_proc(const char* name) {
   return dlsym(m_handle, name);
 }

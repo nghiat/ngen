@@ -8,36 +8,36 @@
 
 #include "core/log.h"
 
-Value::Value() {}
+Value_t::Value_t() {}
 
-Value::Value(bool v) : m_bool(v), m_value_type(e_value_type_bool) {}
+Value_t::Value_t(bool v) : m_bool(v), m_value_type(e_value_type_bool) {}
 
-Value::Value(int v) : m_int(v), m_value_type(e_value_type_int) {}
+Value_t::Value_t(int v) : m_int(v), m_value_type(e_value_type_int) {}
 
-Value::Value(float v) : m_float(v), m_value_type(e_value_type_float) {}
+Value_t::Value_t(float v) : m_float(v), m_value_type(e_value_type_float) {}
 
-Value::Value(char* v) : m_string(v), m_value_type(e_value_type_string) {}
+Value_t::Value_t(char* v) : m_string(v), m_value_type(e_value_type_string) {}
 
-bool Value::is_valid() const {
+bool Value_t::is_valid() const {
   return m_value_type == e_value_type_none;
 }
 
-bool Value::get_bool() const {
+bool Value_t::get_bool() const {
   M_check(m_value_type == e_value_type_bool);
   return m_bool;
 }
 
-int Value::get_int() const {
+int Value_t::get_int() const {
   M_check(m_value_type == e_value_type_int);
   return m_int;
 }
 
-float Value::get_float() const {
+float Value_t::get_float() const {
   M_check(m_value_type == e_value_type_float);
   return m_float;
 }
 
-const char* Value::get_string() const {
+const char* Value_t::get_string() const {
   M_check(m_value_type == e_value_type_string);
   return m_string;
 }

@@ -11,12 +11,12 @@
 #include "core/math/triangle.h"
 #include "core/math/vec3.h"
 
-struct Ray {
-  V3 origin;
-  V3 dir;
+struct Ray_t {
+  V3_t origin;
+  V3_t dir;
 };
 
-V3 ray_at(const Ray& r, F32 t);
-bool ray_hit_plane(F32* out_t, const Ray& r, const ngPlane& p);
-bool ray_hit_sphere(F32* out_t, const Ray& r, const Sphere& s);
-bool ray_hit_triangle(const Ray& r, const Triangle& t);
+V3_t ray_at(const Ray_t& r, F32 t);
+bool ray_hit_plane(F32* out_t, const Ray_t& r, const Plane_t& p);
+bool ray_hit_sphere(F32* out_t, const Ray_t& r, const Sphere_t& s);
+bool ray_hit_triangle(const Ray_t& r, const Triangle_t& t);

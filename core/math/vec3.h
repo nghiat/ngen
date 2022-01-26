@@ -8,10 +8,10 @@
 
 #include "core/ng_types.h"
 
-struct V4;
+struct V4_t;
 
-struct V3 {
-  V3& operator=(const V4& v);
+struct V3_t {
+  V3_t& operator=(const V4_t& v);
 
   union {
     struct {
@@ -23,19 +23,19 @@ struct V3 {
   };
 };
 
-V3 operator+(const V3& v1, const V3& v2);
-V3 operator-(const V3& v1, const V3& v2);
-V3 operator*(const V3& v, F32 f);
-V3 operator/(const V3& v, F32 f);
+V3_t operator+(const V3_t& v1, const V3_t& v2);
+V3_t operator-(const V3_t& v1, const V3_t& v2);
+V3_t operator*(const V3_t& v, F32 f);
+V3_t operator/(const V3_t& v, F32 f);
 
-V3& operator+=(V3& v1, const V3& v2);
-V3& operator-=(V3& v1, const V3& v2);
-V3& operator*=(V3& v, F32 f);
-V3& operator/=(V3& v, F32 f);
+V3_t& operator+=(V3_t& v1, const V3_t& v2);
+V3_t& operator-=(V3_t& v1, const V3_t& v2);
+V3_t& operator*=(V3_t& v, F32 f);
+V3_t& operator/=(V3_t& v, F32 f);
 
-bool operator==(const V3& v1, const V3& v2);
+bool operator==(const V3_t& v1, const V3_t& v2);
 
-V3 v3_cross(const V3& v1, const V3& v2);
-F32 v3_dot(const V3& v1, const V3& v2);
-F32 v3_len(const V3& v);
-V3 v3_normalize(const V3& v);
+V3_t v3_cross(const V3_t& v1, const V3_t& v2);
+F32 v3_dot(const V3_t& v1, const V3_t& v2);
+F32 v3_len(const V3_t& v);
+V3_t v3_normalize(const V3_t& v);

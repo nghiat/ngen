@@ -9,17 +9,17 @@
 #include "core/math/vec4.h"
 
 // Row-major
-struct M4 {
+struct M4_t {
   union {
-    V4 v[4] = {};
+    V4_t v[4] = {};
     F32 a[4][4];
   };
 };
 
-M4 m4_identity();
+M4_t m4_identity();
 
-V4 operator*(const M4& m, const V4& v);
-M4 operator*(const M4& m1, const M4& m2);
-bool operator==(const M4& m1, const M4& m2);
+V4_t operator*(const M4_t& m, const V4_t& v);
+M4_t operator*(const M4_t& m1, const M4_t& m2);
+bool operator==(const M4_t& m1, const M4_t& m2);
 
-M4& operator*=(M4& m1, const M4& m2);
+M4_t& operator*=(M4_t& m1, const M4_t& m2);

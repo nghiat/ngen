@@ -12,25 +12,25 @@
 #include "core/utils.h"
 
 #define M_hash_table_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
-#define M_hash_table_c_ Hash_table_<T_key, T_value, T_data, T_hash, T_equal>
+#define M_hash_table_c_ Hash_table_t_<T_key, T_value, T_data, T_hash, T_equal>
 
 M_hash_table_t_
-void M_hash_table_c_::Iterator_::operator++() {
+void M_hash_table_c_::Iterator_t_::operator++() {
   while (++m_idx < m_ht->m_bucket_count && m_ht->m_states_p[m_idx] != e_slot_state_alive) {}
 }
 
 M_hash_table_t_
-T_data& M_hash_table_c_::Iterator_::operator*() {
+T_data& M_hash_table_c_::Iterator_t_::operator*() {
   return m_ht->m_data_p[m_idx];
 }
 
 M_hash_table_t_
-bool M_hash_table_c_::Iterator_::operator!=(const M_hash_table_c_::Iterator_& rhs) {
+bool M_hash_table_c_::Iterator_t_::operator!=(const M_hash_table_c_::Iterator_t_& rhs) {
   return m_ht != rhs.m_ht || m_idx != rhs.m_idx;
 }
 
 M_hash_table_t_
-bool M_hash_table_c_::init(Allocator* allocator) {
+bool M_hash_table_c_::init(Allocator_t* allocator) {
   m_allocator = allocator;
   bool rv = m_data.init(allocator);
   return rv;
@@ -122,11 +122,11 @@ void M_hash_table_c_::reserve(int key_count) {
 }
 
 M_hash_table_t_
-typename M_hash_table_c_::Iterator_ M_hash_table_c_::begin() const {
+typename M_hash_table_c_::Iterator_t_ M_hash_table_c_::begin() const {
   if (m_count == 0) {
     return end();
   }
-  Iterator_ it;
+  Iterator_t_ it;
   it.m_ht = this;
   it.m_idx = 0;
   if (m_states_p[0] != e_slot_state_alive) {
@@ -136,8 +136,8 @@ typename M_hash_table_c_::Iterator_ M_hash_table_c_::begin() const {
 }
 
 M_hash_table_t_
-typename M_hash_table_c_::Iterator_ M_hash_table_c_::end() const {
-  Iterator_ it;
+typename M_hash_table_c_::Iterator_t_ M_hash_table_c_::end() const {
+  Iterator_t_ it;
   it.m_ht = this;
   it.m_idx = m_bucket_count;
   return it;

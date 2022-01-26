@@ -10,13 +10,13 @@
 #include "core/log.h"
 #include "core/utils.h"
 
-struct ColormapSpec_ {
+struct Colormap_spec_t_ {
   U16 first_entry_index;
   U16 color_map_length;
   U8 color_map_entry_size;
 } ;
 
-struct ImageSpec_ {
+struct Image_spec_t_ {
   U16 x_origin;
   U16 y_origin;
   U16 width;
@@ -26,7 +26,7 @@ struct ImageSpec_ {
 };
 
 bool tga_write(const U8* data, int width, int height, const Os_char* path) {
-  File f;
+  File_t f;
   M_check_log_return_val(f.open(path, e_file_mode_write), false, "Can't open " M_os_txt_pr " to write tga",  path);
   M_scope_exit(f.close());
   {
@@ -42,11 +42,11 @@ bool tga_write(const U8* data, int width, int height, const Os_char* path) {
     f.write(NULL, &image_type, sizeof(image_type));
   }
   {
-    ColormapSpec_ spec = {};
+    Colormap_spec_t_ spec = {};
     f.write(NULL, &spec, sizeof(spec));
   }
   {
-    ImageSpec_ spec;
+    Image_spec_t_ spec;
     spec.x_origin = 0;
     spec.y_origin = 0;
     spec.width = width;

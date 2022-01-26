@@ -11,18 +11,18 @@
 Sz fnv1(const U8* key, int len);
 
 template <typename T>
-struct Ng_hash {
+struct Hash_t {
   Sz operator()(const T& key) const {
     return fnv1((U8*)&key, sizeof(T));
   }
 };
 
 template <>
-struct Ng_hash<int> {
+struct Hash_t<int> {
   Sz operator()(const int& key) const;
 };
 
 template <>
-struct Ng_hash<const char*> {
+struct Hash_t<const char*> {
   Sz operator()(const char* const& key) const;
 };

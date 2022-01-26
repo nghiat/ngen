@@ -22,7 +22,7 @@ typedef pthread_t ngThread_handle_;
 
 typedef void (*ngThread_func)(void*);
 
-class ngThread {
+class Thread_t {
 public:
   bool init(ngThread_func start_func, void* args);
   void wait_for();

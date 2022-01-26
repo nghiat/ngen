@@ -8,15 +8,15 @@
 
 #include <Windows.h>
 
-bool Dynamic_lib::open(const char* name) {
+bool Dynamic_lib_t::open(const char* name) {
   m_handle = (void*)LoadLibraryA(name);
   return m_handle != NULL;
 }
 
-void Dynamic_lib::close() {
+void Dynamic_lib_t::close() {
   FreeLibrary((HMODULE)m_handle);
 }
 
-void* Dynamic_lib::get_proc(const char* name) {
+void* Dynamic_lib_t::get_proc(const char* name) {
   return (void*)GetProcAddress((HMODULE)m_handle, name);
 }

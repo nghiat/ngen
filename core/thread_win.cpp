@@ -11,12 +11,12 @@
 #include <Windows.h>
 
 static DWORD platform_thread_start(void* args) {
-  ngThread* thread = (ngThread*)args;
+  Thread_t* thread = (Thread_t*)args;
   thread->m_start_func(thread->m_args);
   return 0;
 }
 
-bool ngThread::init(ngThread_func start_func, void* args) {
+bool Thread_t::init(ngThread_func start_func, void* args) {
   m_start_func = start_func;
   m_args = args;
   m_handle = CreateThread(NULL, 0, platform_thread_start, (void*)this, 0, NULL);
@@ -24,11 +24,11 @@ bool ngThread::init(ngThread_func start_func, void* args) {
   return true;
 }
 
-void ngThread::wait_for() {
+void Thread_t::wait_for() {
   WaitForSingleObject(m_handle, INFINITE);
 }
 
-int ngThread::get_total_thread_count() {
+int Thread_t::get_total_thread_count() {
   SYSTEM_INFO info;
   GetSystemInfo(&info);
   return info.dwNumberOfProcessors;

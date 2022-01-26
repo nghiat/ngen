@@ -10,10 +10,10 @@
 #include "core/dynamic_array.inl"
 
 #define M_hash_table2_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash>
-#define M_hash_table2_c_ Hash_table2_<T_key, T_value, T_data, T_hash>
+#define M_hash_table2_c_ Hash_table2_t_<T_key, T_value, T_data, T_hash>
 
 M_hash_table2_t_
-bool M_hash_table2_c_::init(Allocator* allocator) {
+bool M_hash_table2_c_::init(Allocator_t* allocator) {
   m_allocator = allocator;
   bool rv = m_buckets.init(allocator);
   return rv;
@@ -45,7 +45,7 @@ T_value& M_hash_table2_c_::operator[](const T_key& key) {
     }
     m_buckets.resize(new_bucket_count);
     for (int i = bucket_count; i < new_bucket_count; ++i) {
-      m_buckets[i] = Bucket_();
+      m_buckets[i] = Bucket_t_();
     }
     if (bucket_count) {
       rehash(bucket_count);
@@ -60,7 +60,7 @@ M_hash_table2_t_
 T_value* M_hash_table2_c_::find(const T_key& key) {
   if (m_buckets.len()) {
     Sip bucket_idx = get_bucket_index(key);
-    Bucket_& bucket = m_buckets[bucket_idx];
+    Bucket_t_& bucket = m_buckets[bucket_idx];
     if (bucket.len) {
       for (int i = 0; i < bucket.len; ++i) {
         if (bucket.chain[i].key == key) {
@@ -81,7 +81,7 @@ void M_hash_table2_c_::reserve(int key_count) {
   }
   m_buckets.resize(new_bucket_count);
   for (int i = bucket_count; i < new_bucket_count; ++i) {
-    m_buckets[i] = Bucket_();
+    m_buckets[i] = Bucket_t_();
   }
   if (bucket_count) {
     rehash(bucket_count);
@@ -96,7 +96,7 @@ Sz M_hash_table2_c_::get_bucket_index(const T_key& key) {
 M_hash_table2_t_
 void M_hash_table2_c_::rehash(int bucket_count) {
   for (int i = 0; i < bucket_count; ++i) {
-    Bucket_& bucket = m_buckets[i];
+    Bucket_t_& bucket = m_buckets[i];
     if (bucket.len == 0) {
       continue;
     }
@@ -119,7 +119,7 @@ void M_hash_table2_c_::rehash(int bucket_count) {
 
 M_hash_table2_t_
 T_value& M_hash_table2_c_::insert_without_checking(int bucket_idx, const T_key& key) {
-  Bucket_& bucket = m_buckets[bucket_idx];
+  Bucket_t_& bucket = m_buckets[bucket_idx];
   ++bucket.len;
   if (bucket.chain == nullptr) {
     bucket.chain = (T_data*)m_allocator->alloc(sizeof(T_data));

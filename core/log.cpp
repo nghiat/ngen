@@ -26,14 +26,14 @@ static const char* gc_log_level_strings_[] = {
 };
 
 bool g_is_log_in_testing = false;
-static File g_log_file_;
+static File_t g_log_file_;
 static bool g_log_inited_ = false;
 
 void ng_log_(E_log_level_ level, const char* file, int line, const char* format, ...) {
   if (!g_log_inited_) {
     return;
   }
-  Linear_allocator<> temp_allocator("log_temp_allocator");
+  Linear_allocator_t<> temp_allocator("log_temp_allocator");
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
@@ -42,9 +42,9 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   const char* log_prefix_format = "%s(%d): %s: ";
   const char* level_str = gc_log_level_strings_[(int)level];
   int prefix_len = snprintf(NULL, 0, log_prefix_format, file, line, level_str);
-  char* log_buffer = (char*)temp_allocator.alloc(log_len + 1);
-  snprintf(log_buffer, prefix_len + 1, log_prefix_format, file, line, level_str);
   log_len += prefix_len;
+  char* log_buffer = (char*)temp_allocator.alloc(log_len + 1);
+  snprintf(log_buffer, log_len + 1, log_prefix_format, file, line, level_str);
 
   va_list argptr, argptr2;
   va_start(argptr, format);
@@ -52,7 +52,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
   // +1 for new line char.
   int msg_len = vsnprintf(NULL, 0, format, argptr) + 1;
   va_end(argptr);
-  temp_allocator.realloc(log_buffer, log_len + msg_len + 1);
+  log_buffer = (char*)temp_allocator.realloc(log_buffer, log_len + msg_len + 1);
   va_start(argptr2, format);
   vsnprintf(log_buffer + log_len, msg_len + 1, format, argptr2);
   va_end(argptr2);
@@ -65,7 +65,7 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
     char trace[M_max_stack_trace_length_];
     debug_get_stack_trace(trace, M_max_stack_trace_length_);
     int trace_len = snprintf(NULL, 0, trace_format, trace);
-    temp_allocator.realloc(log_buffer, log_len + trace_len + 1);
+    log_buffer = (char*)temp_allocator.realloc(log_buffer, log_len + trace_len + 1);
     snprintf(log_buffer + log_len, trace_len + 1, trace_format, trace);
     log_len += trace_len;
   }

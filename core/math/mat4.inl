@@ -12,8 +12,8 @@
 
 #include <string.h>
 
-inline M4 m4_identity() {
-  M4 m;
+inline M4_t m4_identity() {
+  M4_t m;
   m.a[0][0] = 1.0f;
   m.a[1][1] = 1.0f;
   m.a[2][2] = 1.0f;
@@ -21,16 +21,16 @@ inline M4 m4_identity() {
   return m;
 }
 
-inline V4 operator*(const M4& m, const V4& v) {
-  V4 result;
+inline V4_t operator*(const M4_t& m, const V4_t& v) {
+  V4_t result;
   for (int i = 0; i < 4; ++i) {
     result.a[i] = v4_dot(m.v[i], v);
   }
   return result;
 }
 
-inline M4 operator*(const M4& m1, const M4& m2) {
-  M4 result;
+inline M4_t operator*(const M4_t& m1, const M4_t& m2) {
+  M4_t result;
   // Multiply |each row of m1| with m2.
   for (int i = 0; i < 4; ++i) {
     // Each row of result is the sum of products of m1 row with every m2 row.
@@ -43,11 +43,11 @@ inline M4 operator*(const M4& m1, const M4& m2) {
   return result;
 }
 
-inline bool operator==(const M4& m1, const M4& m2) {
-  return !memcmp(m1.a, m2.a, sizeof(M4));
+inline bool operator==(const M4_t& m1, const M4_t& m2) {
+  return !memcmp(m1.a, m2.a, sizeof(M4_t));
 }
 
-inline M4& operator*=(M4& m1, const M4& m2) {
+inline M4_t& operator*=(M4_t& m1, const M4_t& m2) {
   m1 = m1 * m2;
   return m1;
 }

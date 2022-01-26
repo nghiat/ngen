@@ -17,7 +17,7 @@
 static const int gc_max_buffer = 16;
 static const int gc_max_buffer_size = 8 * 1024;
 
-struct FileBuffer {
+struct File_buffer_t {
   U8* buffer = NULL;
   Sz len = 0;
   // offset from the start of the buffer.
@@ -26,9 +26,9 @@ struct FileBuffer {
   bool is_writing : 1;
 };
 
-static FileBuffer g_buffers[gc_max_buffer];
+static File_buffer_t g_buffers[gc_max_buffer];
 
-bool File::init() {
+bool File_t::init() {
   for (int i = 0; i < gc_max_buffer; ++i) {
     g_buffers[i].buffer = (U8*)g_persistent_allocator->alloc(gc_max_buffer_size);
     g_buffers[i].is_in_used = false;
@@ -40,9 +40,9 @@ bool File::init() {
   return true;
 }
 
-Dynamic_array<U8> File::read_whole_file_as_text(Allocator* allocator, const Os_char* path) {
-  Dynamic_array<U8> buffer;
-  File f;
+Dynamic_array_t<U8> File_t::read_whole_file_as_text(Allocator_t* allocator, const Os_char* path) {
+  Dynamic_array_t<U8> buffer;
+  File_t f;
   f.open(path, e_file_mode_read);
   M_check_return_val(f.is_valid(), buffer);
   Sip file_size = f.get_size();
@@ -54,7 +54,7 @@ Dynamic_array<U8> File::read_whole_file_as_text(Allocator* allocator, const Os_c
   return buffer;
 }
 
-bool File::open(const Os_char* path, enum E_file_mod mode) {
+bool File_t::open(const Os_char* path, enum E_file_mod mode) {
   bool rv = open_plat_(path, mode);
   if (!rv) {
     return false;
@@ -73,7 +73,7 @@ bool File::open(const Os_char* path, enum E_file_mod mode) {
   return true;
 }
 
-void File::close() {
+void File_t::close() {
   flush();
   close_plat_();
   if (m_internal_buffer) {
@@ -88,9 +88,9 @@ void File::close() {
   M_check_return(!m_internal_buffer);
 }
 
-bool File::read(void* out, Sip* bytes_read, Sip size) {
+bool File_t::read(void* out, Sip* bytes_read, Sip size) {
   M_check_return_val(size, false)
-  FileBuffer* fbuf = m_internal_buffer;
+  File_buffer_t* fbuf = m_internal_buffer;
   M_check_return_val(fbuf, false)
 
   Sip bytes_left = fbuf->len - fbuf->offset;
@@ -133,9 +133,9 @@ bool File::read(void* out, Sip* bytes_read, Sip size) {
   return true;
 }
 
-bool File::write(Sip* bytes_written, const void* in, Sip size) {
+bool File_t::write(Sip* bytes_written, const void* in, Sip size) {
   M_check_return_val(size, false);
-  FileBuffer* fbuf = m_internal_buffer;
+  File_buffer_t* fbuf = m_internal_buffer;
   M_check_return_val(fbuf, false);
 
   Sip bytes_left = fbuf->len - fbuf->offset;
@@ -176,8 +176,8 @@ bool File::write(Sip* bytes_written, const void* in, Sip size) {
   return true;
 }
 
-void File::seek(enum E_file_from from, Sip distance) {
-  FileBuffer* fbuf = m_internal_buffer;
+void File_t::seek(enum E_file_from from, Sip distance) {
+  File_buffer_t* fbuf = m_internal_buffer;
   if (!fbuf) {
     seek_plat_(from, distance);
     return;
@@ -198,7 +198,7 @@ void File::seek(enum E_file_from from, Sip distance) {
       // We are seeking from fbuf->offset after flushing.
       seek_plat_(from, distance);
     } else {
-      // We are seeking from the end of the FileBuffer.
+      // We are seeking from the end of the File_buffer_t.
       seek_plat_(from, distance - bytes_left);
     }
     return;
@@ -211,8 +211,8 @@ void File::seek(enum E_file_from from, Sip distance) {
   fbuf->offset += distance;
 }
 
-void File::flush() {
-  FileBuffer* fbuf = m_internal_buffer;
+void File_t::flush() {
+  File_buffer_t* fbuf = m_internal_buffer;
   if (fbuf) {
     if (fbuf->is_writing && fbuf->offset > 0) {
       M_check_return(write_plat_(NULL, fbuf->buffer, fbuf->offset));

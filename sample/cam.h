@@ -10,21 +10,21 @@
 #include "core/math/vec3.h"
 #include "core/window/input.h"
 
-class ngWindow;
+class Window_t;
 
-class ngCam {
+class Cam_t {
 public:
-  bool init(const V3& eye, const V3& target, ngWindow* w);
+  bool init(const V3_t& eye, const V3_t& target, Window_t* w);
   bool update();
   void mouse_move(int x, int y);
   void mouse_event(E_mouse mouse, int x, int y, bool is_down);
 
-  M4 m_view_mat;
-  V3 m_eye;
-  V3 m_forward;
-  V3 m_up;
+  M4_t m_view_mat;
+  V3_t m_eye;
+  V3_t m_forward;
+  V3_t m_up;
 
-  ngWindow* m_w;
+  Window_t* m_w;
   F32 m_dist;
   bool m_is_mouse_down;
 };

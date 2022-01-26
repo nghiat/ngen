@@ -10,12 +10,12 @@
 #include "core/math/vec4.h"
 #include "core/os_string.h"
 
-struct Allocator;
+struct Allocator_t;
 
-class Dae_loader {
+class Dae_loader_t {
 public:
-  bool init(Allocator* allocator, const Os_char* path);
+  bool init(Allocator_t* allocator, const Os_char* path);
   void destroy();
 
-  Dynamic_array<V4> m_vertices;
+  Dynamic_array_t<V4_t> m_vertices;
 };

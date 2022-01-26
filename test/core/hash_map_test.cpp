@@ -10,7 +10,7 @@
 #include "test/test.h"
 
 void hash_map_test() {
-  FreeList_allocator allocator("hash_map_test_allocator", 1024000);
+  Free_list_allocator_t allocator("hash_map_test_allocator", 1024000);
   allocator.init();
   M_scope_exit(allocator.destroy());
 

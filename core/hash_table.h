@@ -15,7 +15,7 @@
 #include <type_traits>
 
 template <typename T>
-class Ng_equal {
+class Equal_t {
 public:
   bool operator()(const T& lhs, const T& rhs) {
     return lhs == rhs;
@@ -23,7 +23,7 @@ public:
 };
 
 template <>
-class Ng_equal<const char*> {
+class Equal_t<const char*> {
 public:
   bool operator()(const char* const& lhs, const char* const& rhs) {
     return strcmp(lhs, rhs) == 0;
@@ -34,19 +34,19 @@ public:
 // There is another implementation in hash_table2.h which uses separate chaining.
 // But in a preliminary benchmark, Hash_table2 showed is significantly slower, even when it uses array for chaining instead of linked list.
 template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>
-class Hash_table_ {
+class Hash_table_t_ {
 public:
-  class Iterator_ {
+  class Iterator_t_ {
   public:
     void operator++();
     T_data& operator*();
-    bool operator!=(const Iterator_& rhs);
+    bool operator!=(const Iterator_t_& rhs);
 
-    const Hash_table_<T_key, T_value, T_data, T_hash, T_equal>* m_ht;
+    const Hash_table_t_<T_key, T_value, T_data, T_hash, T_equal>* m_ht;
     Sz m_idx;
   };
 
-  bool init(Allocator* allocator);
+  bool init(Allocator_t* allocator);
   void destroy();
   T_value& operator[](const T_key& key);
   T_value* find(const T_key& key);
@@ -54,8 +54,8 @@ public:
   void reserve(int key_count);
 
 // iterator (for each)
-  Iterator_ begin() const;
-  Iterator_ end() const;
+  Iterator_t_ begin() const;
+  Iterator_t_ end() const;
 
 // private:
   enum E_slot_state : U8 {
@@ -68,11 +68,11 @@ public:
   void rehash(int bucket_count);
   T_value& insert_without_checking(int bucket_idx, const T_key& key);
 
-  Allocator* m_allocator = nullptr;
+  Allocator_t* m_allocator = nullptr;
   // |m_data| contains 2 array: data array and state array.
   // The state array comes after the data array so we can resize both of them using only one realloc call.
-  // Which works well with the Linear_allocator because it can only realloc to a bigger size when the pointer is at the top.
-  Dynamic_array<U8> m_data;
+  // Which works well with the Linear_allocator_t because it can only realloc to a bigger size when the pointer is at the top.
+  Dynamic_array_t<U8> m_data;
   T_data* m_data_p = nullptr;
   E_slot_state* m_states_p = nullptr;
   Sz m_bucket_count = 0;
@@ -83,7 +83,7 @@ public:
 };
 
 template <typename T_key, typename T_value>
-struct Pair_ {
+struct Pair_t_ {
   T_key key;
   T_value value;
 };
@@ -94,8 +94,8 @@ union FakePair_ {
   T value;
 };
 
-template <typename T_key, typename T_value, typename T_hash = Ng_hash<std::remove_const_t<T_key>>, typename T_equal = Ng_equal<T_key>>
-using Hash_map = Hash_table_<T_key, T_value, Pair_<T_key, T_value>, T_hash, T_equal>;
+template <typename T_key, typename T_value, typename T_hash = Hash_t<std::remove_const_t<T_key>>, typename T_equal = Equal_t<T_key>>
+using Hash_map = Hash_table_t_<T_key, T_value, Pair_t_<T_key, T_value>, T_hash, T_equal>;
 
-template <typename T_key, typename T_hash = Ng_hash<std::remove_const_t<T_key>>, typename T_equal = Ng_equal<T_key>>
-using Hash_set = Hash_table_<T_key, T_key, Pair_<T_key, T_key>, T_hash, T_equal>;
+template <typename T_key, typename T_hash = Hash_t<std::remove_const_t<T_key>>, typename T_equal = Equal_t<T_key>>
+using Hash_set = Hash_table_t_<T_key, T_key, Pair_t_<T_key, T_key>, T_hash, T_equal>;

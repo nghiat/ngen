@@ -9,7 +9,7 @@
 #include "core/allocator.h"
 #include "core/ng_types.h"
 
-struct LAPage_;
+struct Linear_allocator_page_t_;
 
 // The idea of this allocator is simple.
 // It contains a linked list of pages.
@@ -18,9 +18,9 @@ struct LAPage_;
 // The first page is stack memory which will probably fit most of its usage.
 // Realloc and free only works with the last allocation to keep it simple.
 template <Sz T_initial_size = 4096>
-class Linear_allocator : public Allocator {
+class Linear_allocator_t : public Allocator_t {
 public:
-  Linear_allocator(const char* name) : Allocator(name, T_initial_size) {}
+  Linear_allocator_t(const char* name) : Allocator_t(name, T_initial_size) {}
   bool init();
   void destroy() override;
   void* aligned_alloc(Sip size, Sip alignment) override;
@@ -29,7 +29,7 @@ public:
 
   static const Sip sc_default_page_size = 1024 * 1024;
   U8 m_stack_page[T_initial_size];
-  LAPage_* m_current_page;
+  Linear_allocator_page_t_* m_current_page;
   U8* m_top;
 
 private:

@@ -10,65 +10,65 @@
 
 #include <math.h>
 
-inline V2 operator+(const V2& v1, const V2& v2) {
+inline V2_t operator+(const V2_t& v1, const V2_t& v2) {
   return {v1.x + v2.x, v1.y + v2.y};
 }
 
-inline V2 operator-(const V2& v1, const V2& v2) {
+inline V2_t operator-(const V2_t& v1, const V2_t& v2) {
   return {v1.x - v2.x, v1.y - v2.y};
 }
 
-inline V2 operator*(const V2& v1, const V2& v2) {
+inline V2_t operator*(const V2_t& v1, const V2_t& v2) {
   return {v1.x * v2.x, v1.y * v2.y};
 }
 
-inline V2 operator/(const V2& v1, const V2& v2) {
+inline V2_t operator/(const V2_t& v1, const V2_t& v2) {
   return {v1.x / v2.x, v1.y / v2.y};
 }
 
-inline V2 operator*(const V2& v, F32 f) {
+inline V2_t operator*(const V2_t& v, F32 f) {
   return {v.x * f, v.y * f};
 }
 
-inline V2 operator/(const V2& v, F32 f) {
+inline V2_t operator/(const V2_t& v, F32 f) {
   return {v.x / f, v.y / f};
 }
 
-inline V2& operator+=(V2& v1, const V2& v2) {
+inline V2_t& operator+=(V2_t& v1, const V2_t& v2) {
   v1 = v1 + v2;
   return v1;
 }
 
-inline V2& operator-=(V2& v1, const V2& v2) {
+inline V2_t& operator-=(V2_t& v1, const V2_t& v2) {
   v1 = v1 - v2;
   return v1;
 }
 
-inline V2& operator*=(V2& v1, const V2& v2) {
+inline V2_t& operator*=(V2_t& v1, const V2_t& v2) {
   v1 = v1 * v2;
   return v1;
 }
 
-inline V2& operator/=(V2& v1, const V2& v2) {
+inline V2_t& operator/=(V2_t& v1, const V2_t& v2) {
   v1 = v1 / v2;
   return v1;
 }
 
-inline V2& operator*=(V2& v, F32 f) {
+inline V2_t& operator*=(V2_t& v, F32 f) {
   v = v * f;
   return v;
 }
 
-inline V2& operator/=(V2& v, F32 f) {
+inline V2_t& operator/=(V2_t& v, F32 f) {
   v = v / f;
   return v;
 }
 
-inline F32 v2_dot(const V2& v1, const V2& v2) {
+inline F32 v2_dot(const V2_t& v1, const V2_t& v2) {
   return v1.x * v2.x + v1.y * v2.y;
 }
 
-inline V2 v2_normalize(const V2& v) {
+inline V2_t v2_normalize(const V2_t& v) {
   F32 len = sqrt(v.x * v.x + v.x * v.x);
   return v / len;
 }

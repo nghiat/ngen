@@ -27,7 +27,7 @@ static void init_key_codes_map_() {
   g_vk_to_key_[VK_OEM_3] = e_key_below_esc;
 }
 
-static void update_mouse_val_(ngWindow* w, LPARAM l_param, E_mouse mouse, bool is_down) {
+static void update_mouse_val_(Window_t* w, LPARAM l_param, E_mouse mouse, bool is_down) {
   int x = GET_X_LPARAM(l_param);
   int y = GET_Y_LPARAM(l_param);
   w->m_mouse_down[mouse] = is_down;
@@ -37,7 +37,7 @@ static void update_mouse_val_(ngWindow* w, LPARAM l_param, E_mouse mouse, bool i
 }
 
 static LRESULT CALLBACK wnd_proc_(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_param, _In_ LPARAM l_param) {
-  ngWindow* w = (ngWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  Window_t* w = (Window_t*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   switch (msg) {
   case WM_CLOSE:
     DestroyWindow(hwnd);
@@ -82,7 +82,7 @@ static LRESULT CALLBACK wnd_proc_(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_p
   return 0;
 }
 
-bool ngWindow::init() {
+bool Window_t::init() {
   HINSTANCE hinstance;
   WNDCLASSEX wcex;
   HWND hwnd;
@@ -111,11 +111,11 @@ bool ngWindow::init() {
   return true;
 }
 
-void ngWindow::destroy() {
+void Window_t::destroy() {
   DestroyWindow(m_platform_data.hwnd);
 }
 
-void ngWindow::os_loop() {
+void Window_t::os_loop() {
   MSG msg;
   while (true) {
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -129,7 +129,7 @@ void ngWindow::os_loop() {
   }
 }
 
-void ngWindow::show_cursor(bool show) {
+void Window_t::show_cursor(bool show) {
   ShowCursor(show);
   this->m_is_cursor_visible = show;
   if (show) {
@@ -147,7 +147,7 @@ void ngWindow::show_cursor(bool show) {
   }
 }
 
-void ngWindow::set_cursor_pos(int x, int y) {
+void Window_t::set_cursor_pos(int x, int y) {
   POINT p{x, y};
   ClientToScreen(m_platform_data.hwnd, &p);
   SetCursorPos(p.x, p.y);

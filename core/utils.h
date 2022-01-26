@@ -33,9 +33,9 @@ void swap(T* a, T* b) {
 }
 
 template <typename T>
-struct Scope_exit {
-  Scope_exit(T f) : f(f) {}
-  ~Scope_exit() {
+struct Scope_exit_t {
+  Scope_exit_t(T f) : f(f) {}
+  ~Scope_exit_t() {
     f();
   }
   T f;
@@ -43,7 +43,7 @@ struct Scope_exit {
 
 template <typename T>
 auto make_scope_exit_(T f) {
-  return Scope_exit<T>(f);
+  return Scope_exit_t<T>(f);
 }
 
 #define M_unused(a) (void)a

@@ -6,7 +6,7 @@
 
 #pragma once
 
-class Dynamic_lib {
+class Dynamic_lib_t {
 public:
   bool open(const char* name);
   void close();

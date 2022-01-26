@@ -13,15 +13,15 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-struct XMLNode_ {
+struct Xml_node_t_ {
   char* tag_name;
   char* text;
-  Dynamic_array<char*> attr_names;
-  Dynamic_array<char*> attr_vals;
-  Dynamic_array<struct XMLNode_*> children;
+  Dynamic_array_t<char*> attr_names;
+  Dynamic_array_t<char*> attr_vals;
+  Dynamic_array_t<struct Xml_node_t_*> children;
 };
 
-static char* alloc_string_(Allocator* allocator, const char* start, const char* end) {
+static char* alloc_string_(Allocator_t* allocator, const char* start, const char* end) {
   int len = end - start;
   char* str = (char*)allocator->alloc(end - start + 1);
   memcpy(str, start, len);
@@ -29,9 +29,9 @@ static char* alloc_string_(Allocator* allocator, const char* start, const char* 
   return str;
 }
 
-static XMLNode_* parse_xml_(const char** last_pos, Allocator* allocator, const char* start, const char* end) {
+static Xml_node_t_* parse_xml_(const char** last_pos, Allocator_t* allocator, const char* start, const char* end) {
   const char* p = start;
-  XMLNode_* node = (XMLNode_*)allocator->alloc(sizeof(XMLNode_));
+  Xml_node_t_* node = (Xml_node_t_*)allocator->alloc(sizeof(Xml_node_t_));
   node->text = NULL;
   while (p != end) {
     while (p != end && *p != '<') {
@@ -165,14 +165,14 @@ static XMLNode_* parse_xml_(const char** last_pos, Allocator* allocator, const c
   return node;
 }
 
-static XMLNode_* dae_find_node_(XMLNode_* node, const char* name) {
-  XMLNode_* curr = node;
+static Xml_node_t_* dae_find_node_(Xml_node_t_* node, const char* name) {
+  Xml_node_t_* curr = node;
   while (1) {
     int name_len = strlen(name);
     const char* slash = (const char*)memchr(name, '/', name_len);
     int sub_elem_len = slash ? slash - name : strlen(name);
     for (int i = 0; i < curr->children.len(); ++i) {
-      XMLNode_* child = curr->children[i];
+      Xml_node_t_* child = curr->children[i];
       if (sub_elem_len == strlen(child->tag_name) && !memcmp(name, child->tag_name, sub_elem_len)) {
         curr = child;
         break;
@@ -191,14 +191,14 @@ static XMLNode_* dae_find_node_(XMLNode_* node, const char* name) {
   return curr;
 }
 
-bool Dae_loader::init(Allocator* allocator, const Os_char* path) {
-  Linear_allocator<> file_allocator("xml_file_allocator");
+bool Dae_loader_t::init(Allocator_t* allocator, const Os_char* path) {
+  Linear_allocator_t<> file_allocator("xml_file_allocator");
   file_allocator.init();
-  Dynamic_array<U8> buffer = File::read_whole_file_as_text(&file_allocator, path);
-  XMLNode_* root = parse_xml_(NULL, allocator, (char*)&buffer[0], (char*)&buffer[0] + buffer.len());
+  Dynamic_array_t<U8> buffer = File_t::read_whole_file_as_text(&file_allocator, path);
+  Xml_node_t_* root = parse_xml_(NULL, allocator, (char*)&buffer[0], (char*)&buffer[0] + buffer.len());
   file_allocator.destroy();
 
-  XMLNode_* mesh_position = dae_find_node_(root, "library_geometries/geometry/mesh/source/float_array");
+  Xml_node_t_* mesh_position = dae_find_node_(root, "library_geometries/geometry/mesh/source/float_array");
   int arr_len = atoi(mesh_position->attr_vals[1]);
   M_check_log_return_val(arr_len % 3 == 0, false, "Invalid vertex number");
   m_vertices.init(allocator);
@@ -214,5 +214,5 @@ bool Dae_loader::init(Allocator* allocator, const Os_char* path) {
   return true;
 }
 
-void Dae_loader::destroy() {
+void Dae_loader_t::destroy() {
 }

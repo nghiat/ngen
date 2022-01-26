@@ -8,9 +8,9 @@
 
 #include "core/ng_types.h"
 
-struct V3;
+struct V3_t;
 
-struct V4 {
+struct V4_t {
   union {
     struct {
       F32 x;
@@ -22,20 +22,20 @@ struct V4 {
   };
 };
 
-V4 V3o_v4(const V3& v, F32 w);
+V4_t V3o_v4(const V3_t& v, F32 w);
 
-V4 operator+(const V4& v1, const V4& v2);
-V4 operator-(const V4& v1, const V4& v2);
-V4 operator*(const V4& v, F32 f);
-V4 operator/(const V4& v, F32 f);
+V4_t operator+(const V4_t& v1, const V4_t& v2);
+V4_t operator-(const V4_t& v1, const V4_t& v2);
+V4_t operator*(const V4_t& v, F32 f);
+V4_t operator/(const V4_t& v, F32 f);
 
-V4& operator+=(V4& v1, const V4& v2);
-V4& operator-=(V4& v1, const V4& v2);
-V4& operator*=(V4& v, F32 f);
-V4& operator/=(V4& v, F32 f);
+V4_t& operator+=(V4_t& v1, const V4_t& v2);
+V4_t& operator-=(V4_t& v1, const V4_t& v2);
+V4_t& operator*=(V4_t& v, F32 f);
+V4_t& operator/=(V4_t& v, F32 f);
 
-bool operator==(const V4& v1, const V4& v2);
+bool operator==(const V4_t& v1, const V4_t& v2);
 
-F32 vec4_dot(const V4& lhs, const V4& rhs);
-F32 vec4_len(const V4& v);
-V4 vec4_normalize(const V4& v);
+F32 vec4_dot(const V4_t& lhs, const V4_t& rhs);
+F32 vec4_len(const V4_t& v);
+V4_t vec4_normalize(const V4_t& v);

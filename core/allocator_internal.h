@@ -24,7 +24,7 @@
 /// used for alignment). In a case when space between the current allocation
 /// and the next allocation is not enough for any allocation then the current
 /// allocation will acquire the remaining space (suffix padding).
-struct Alloc_header_ {
+struct Alloc_header_t_ {
   U8* start;
   Sip size;
   Sip alignment;
@@ -33,7 +33,7 @@ struct Alloc_header_ {
 #endif
 };
 
-Alloc_header_* get_allocation_header_(void* p);
+Alloc_header_t_* get_allocation_header_(void* p);
 U8* align_forward_(U8* p, Sip alignment);
 bool check_aligned_alloc_(Sip size, Sip alignment);
 bool check_p_in_dev_(void* p);

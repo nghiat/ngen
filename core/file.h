@@ -27,14 +27,14 @@ enum E_file_from {
   e_file_from_end
 };
 
-struct Allocator;
-struct FileBuffer;
+struct Allocator_t;
+struct File_buffer_t;
 
-class File {
+class File_t {
 public:
   static bool init();
   static void delete_path(const Os_char* path);
-  static Dynamic_array<U8> read_whole_file_as_text(Allocator* allocator, const Os_char* path);
+  static Dynamic_array_t<U8> read_whole_file_as_text(Allocator_t* allocator, const Os_char* path);
 
   bool open(const Os_char* path, enum E_file_mod mode);
   void close();
@@ -62,7 +62,7 @@ public:
 #error "?"
 #endif
   const Os_char* m_path;
-  FileBuffer* m_internal_buffer = NULL;
+  File_buffer_t* m_internal_buffer = NULL;
 
 private:
   bool open_plat_(const Os_char* path, E_file_mod mode);

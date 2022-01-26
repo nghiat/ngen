@@ -10,11 +10,11 @@
 
 #include <math.h>
 
-V3 ray_at(Ray r, F32 t) {
+V3_t ray_at(Ray_t r, F32 t) {
   return r.origin + r.dir * t;
 }
 
-bool ray_hit_plane(F32* out_t, Ray r, ngPlane p) {
+bool ray_hit_plane(F32* out_t, Ray_t r, Plane_t p) {
   F32 denominator = v3_dot(r.dir, p.normal);
   if (!float_equal_0(denominator)) {
     // Solve vec3_dot((o + td - p) , n) = 0;
@@ -29,7 +29,7 @@ bool ray_hit_plane(F32* out_t, Ray r, ngPlane p) {
   return false;
 }
 
-bool ray_hit_sphere(F32* out_t, Ray r, Sphere s) {
+bool ray_hit_sphere(F32* out_t, Ray_t r, Sphere_t s) {
   // This equation of t has roots: (r.o + t*r.d.x - s.c.x)^2 + ... = s.r^2
   F32 temp_x = r.origin.x - s.center.x;
   F32 temp_y = r.origin.y - s.center.y;
@@ -50,21 +50,21 @@ bool ray_hit_sphere(F32* out_t, Ray r, Sphere s) {
   return false;
 }
 
-bool ray_hit_triangle(Ray r, Triangle tri) {
+bool ray_hit_triangle(Ray_t r, Triangle_t tri) {
   // Möller-Trumbore
   // Same variable names as the original paper.
-  V3 e1 = tri.vertices[1] - tri.vertices[0];
-  V3 e2 = tri.vertices[2] - tri.vertices[0];
-  V3 p = v3_cross(r.dir, e2);
+  V3_t e1 = tri.vertices[1] - tri.vertices[0];
+  V3_t e2 = tri.vertices[2] - tri.vertices[0];
+  V3_t p = v3_cross(r.dir, e2);
   F32 det = v3_dot(e1, p);
   if (float_equal_0(det))
     return false;
   F32 inv_det = 1.f / det;
-  V3 t = r.origin - tri.vertices[0];
-  F32 u = V3(t, p) * inv_det;
+  V3_t t = r.origin - tri.vertices[0];
+  F32 u = V3_t(t, p) * inv_det;
   if (u < 0.f || u > 1.f)
     return false;
-  V3 q = v3_cross(t, e1);
+  V3_t q = v3_cross(t, e1);
   F32 v = v3_dot(r.dir, q) * inv_det;
   if (v < 0.f || u + v > 1.f)
     return false;

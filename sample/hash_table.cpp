@@ -18,7 +18,7 @@ int main(int argc, const char** argv) {
   int num = 1000000;
   int lookup_loop = 100;
 
-  std::unordered_map<int, int, Ng_hash<int>> std_hash_table;
+  std::unordered_map<int, int, Hash_t<int>> std_hash_table;
   std_hash_table.reserve(num);
   F64 std_hash_table_insert_time = time_func([&]() {
     for (int i = 0; i < num; ++i) {
@@ -37,7 +37,7 @@ int main(int argc, const char** argv) {
   M_logi("  insert time: %f s", std_hash_table_insert_time);
   M_logi("  lookup time: %f s", std_hash_table_lookup_time);
 
-  Linear_allocator<> allocator("hash_table_allocator");
+  Linear_allocator_t<> allocator("hash_table_allocator");
   allocator.init();
   Hash_map<int, int> hash_table;
   hash_table.init(&allocator);
@@ -60,7 +60,7 @@ int main(int argc, const char** argv) {
   M_logi("  insert time: %f s", hash_table_insert_time);
   M_logi("  lookup time: %f s", hash_table_lookup_time);
 
-  Linear_allocator<> allocator2("hash_table2_allocator");
+  Linear_allocator_t<> allocator2("hash_table2_allocator");
   allocator2.init();
   Hash_map2<int, int> hash_table2;
   hash_table2.init(&allocator2);

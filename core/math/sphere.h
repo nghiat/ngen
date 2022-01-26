@@ -8,7 +8,7 @@
 
 #include "math/vec3.h"
 
-struct Sphere {
-  V3 center;
+struct Sphere_t {
+  V3_t center;
   float radius;
 };

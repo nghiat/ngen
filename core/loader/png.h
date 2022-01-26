@@ -8,14 +8,14 @@
 
 #include "core/os_string.h"
 
-struct Allocator;
+struct Allocator_t;
 
-struct Png_loader {
+struct Png_loader_t {
 public:
-  bool init(Allocator* allocator, const Os_char* path);
+  bool init(Allocator_t* allocator, const Os_char* path);
   void destroy();
 
-  Allocator* m_allocator;
+  Allocator_t* m_allocator;
   U8* m_data = NULL;
   U32 m_width = 0;
   U32 m_height = 0;

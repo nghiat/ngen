@@ -9,7 +9,7 @@
 #include "core/math/vec3.h"
 
 // dot((p - p0), n) = 0
-struct ngPlane {
-  V3 normal;
-  V3 p0;
+struct Plane_t {
+  V3_t normal;
+  V3_t p0;
 };

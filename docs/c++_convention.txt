@@ -35,8 +35,8 @@
 - Global variable: g_lower_case
 - Constant variable: c_lower_case
 - Class/Struct:
-  - Public struct/class name: Class_name (Only the first letter is capitalized, even when the first word is an abbreviation, e.g. Udp instead of UDP)
-  - Internal struct/class name: Class_name_
+  - Public struct/class name: Class_name_t (Only the first letter is capitalized, even when the first word is an abbreviation, e.g. Udp instead of UDP)
+  - Internal struct/class name: Class_name_t_
   - Public member function: lower_case (I tried adding abbriviated class name as prefix to member function which made grep way easier but it didn't work well with inheritance and template)
   - Protected/Private member function: lower_case_
   - Struct member: lower_case
@@ -47,7 +47,8 @@
   - Static member: s_lower_case
 - Prefix precedence: g -> s -> c (m is discarded if there is any other prefix)
 - Template parameter: T (or T_type_name)
-- To summarize:
+- To summarize prefixes and suffixes:
+  - _t: Class/Struct name
   - M_: macro
   - E_, e_: enum name / enum value
   - T_: template parameter

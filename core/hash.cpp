@@ -17,10 +17,10 @@ Sz fnv1(const U8* key, int len) {
   return hash;
 }
 
-Sz Ng_hash<int>::operator()(const int& key) const {
+Sz Hash_t<int>::operator()(const int& key) const {
   return key;
 }
 
-Sz Ng_hash<const char*>::operator()(const char* const& key) const {
+Sz Hash_t<const char*>::operator()(const char* const& key) const {
   return fnv1((const U8*)key, strlen(key));
 }

@@ -18,15 +18,15 @@
 #include <xcb/xcb_keysyms.h>
 #endif
 
-struct Allocator;
+struct Allocator_t;
 
 #if M_os_is_win()
-struct Platform_data_ {
+struct Platform_data_t_ {
   HWND hwnd;
 };
 
 #elif M_os_is_linux()
-struct Platform_data_ {
+struct Platform_data_t_ {
   Display* xdisplay;
   xcb_connection_t* xcb_connection;
   xcb_intern_atom_reply_t* reply2;
@@ -35,9 +35,9 @@ struct Platform_data_ {
 };
 #endif
 
-class ngWindow {
+class Window_t {
 public:
-  ngWindow(const Os_char* title, int width, int height) : m_title(title), m_width(width), m_height(height) {}
+  Window_t(const Os_char* title, int width, int height) : m_title(title), m_width(width), m_height(height) {}
   bool init();
   virtual void destroy();
 
@@ -60,5 +60,5 @@ public:
   int m_width;
   int m_height;
 
-  Platform_data_ m_platform_data;
+  Platform_data_t_ m_platform_data;
 };

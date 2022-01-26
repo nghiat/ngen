@@ -54,7 +54,7 @@ static const int gc_dist_extra_bits_[] = {0, 0, 0,  0,  1,  1,  2,  2,  3,  3,
 // |codes| contains codes of that length.
 // |min| is the smallest codes of that length.
 // |count| is the number of codes.
-struct CodesForLen_ {
+struct Codes_for_length_t_ {
   U16 codes[gc_max_code_];
   U16 min;
   U16 count;
@@ -62,14 +62,14 @@ struct CodesForLen_ {
 
 // |cfl| is a pointer to array of where the index is the length and value is the
 // codes for that length.
-struct Alphabet_ {
-  CodesForLen_* cfl;
+struct Alphabet_t_ {
+  Codes_for_length_t_* cfl;
   U8 min_len;
   U8 max_len;
 };
 
 // Build an alphabet based on lengths of codes from 0 to |count| - 1.
-static void build_alphabet_(U8* lens, int count, Alphabet_* alphabet) {
+static void build_alphabet_(U8* lens, int count, Alphabet_t_* alphabet) {
   U8 len_counts[gc_max_code__len_] = {};
   for (int i = 0; i < count; ++i) {
     if (lens[i]) {
@@ -101,7 +101,7 @@ static void build_alphabet_(U8* lens, int count, Alphabet_* alphabet) {
   }
 }
 
-static int decode_(Bit_stream* bs, const Alphabet_* c_alphabet) {
+static int decode_(Bit_stream_t* bs, const Alphabet_t_* c_alphabet) {
   int code = bs->consume_msb(c_alphabet->min_len);
   for (U8 i = c_alphabet->min_len; i <= c_alphabet->max_len; ++i) {
     int delta_to_min = code - c_alphabet->cfl[i].min;
@@ -114,7 +114,7 @@ static int decode_(Bit_stream* bs, const Alphabet_* c_alphabet) {
   return -1;
 }
 
-static void decode_len_and_dist_(U8** o_deflated, int len_code, Bit_stream* bs, const Alphabet_* c_dist_alphabet) {
+static void decode_len_and_dist_(U8** o_deflated, int len_code, Bit_stream_t* bs, const Alphabet_t_* c_dist_alphabet) {
   int len_idx = len_code % 257;
   int len_base = gc_len_bases_[len_idx];
   int len_extra_bits = gc_len_extra_bits_[len_idx];
@@ -142,13 +142,13 @@ static int paeth_(int a, int b, int c) {
   return c;
 }
 
-bool Png_loader::init(Allocator* allocator, const Os_char* path) {
+bool Png_loader_t::init(Allocator_t* allocator, const Os_char* path) {
   m_allocator = allocator;
 
-  Linear_allocator<> temp_allocator("PNG_loader_temp_allocator");
+  Linear_allocator_t<> temp_allocator("PNG_loader_temp_allocator");
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
-  Dynamic_array<U8> data = File::read_whole_file_as_text(&temp_allocator, path);
+  Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
   for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
@@ -197,7 +197,7 @@ bool Png_loader::init(Allocator* allocator, const Os_char* path) {
       break;
     }
     case FOURCC_("IDAT"): {
-      Bit_stream bs;
+      Bit_stream_t bs;
       bs.init(p);
       // 2 bytes of zlib header.
       U32 zlib_compress_method = bs.consume_lsb(4);
@@ -249,8 +249,8 @@ bool Png_loader::init(Allocator* allocator, const Os_char* path) {
         for (int j = 0; j < hclen; ++j) {
           len_of_len[c_len_alphabet[j]] = bs.consume_lsb(3);
         }
-        CodesForLen_ code_lens_cfl[8];
-        Alphabet_ code_len_alphabet = {code_lens_cfl, 0, 0};
+        Codes_for_length_t_ code_lens_cfl[8];
+        Alphabet_t_ code_len_alphabet = {code_lens_cfl, 0, 0};
         build_alphabet_(len_of_len, 19, &code_len_alphabet);
         int index = 0;
         U8 lit_and_dist_lens[gc_max_code_];
@@ -275,11 +275,11 @@ bool Png_loader::init(Allocator* allocator, const Os_char* path) {
           M_check_log_return_val(index <= hlit + hdist, false, "Can't decode_ literal and length alphabet, overflowed");
         }
         M_check_log_return_val(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
-        CodesForLen_ lit_or_len_cfl[gc_max_code__len_];
-        Alphabet_ lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
+        Codes_for_length_t_ lit_or_len_cfl[gc_max_code__len_];
+        Alphabet_t_ lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
         build_alphabet_(lit_and_dist_lens, hlit, &lit_or_len_alphabet);
-        CodesForLen_ dist_cfl[gc_max_code__len_];
-        Alphabet_ dist_alphabet = {dist_cfl, 0, 0};
+        Codes_for_length_t_ dist_cfl[gc_max_code__len_];
+        Alphabet_t_ dist_alphabet = {dist_cfl, 0, 0};
         build_alphabet_(lit_and_dist_lens + hlit, hdist, &dist_alphabet);
         for (;;) {
           int lit_or_len_code = decode_(&bs, &lit_or_len_alphabet);
@@ -375,6 +375,6 @@ bool Png_loader::init(Allocator* allocator, const Os_char* path) {
   return true;
 }
 
-void Png_loader::destroy() {
+void Png_loader_t::destroy() {
   m_allocator->free(m_data);
 }

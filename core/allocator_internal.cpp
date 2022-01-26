@@ -8,8 +8,8 @@
 
 #include "core/log.h"
 
-Alloc_header_* get_allocation_header_(void* p) {
-  return (Alloc_header_*)p - 1;
+Alloc_header_t_* get_allocation_header_(void* p) {
+  return (Alloc_header_t_*)p - 1;
 }
 
 U8* align_forward_(U8* p, Sip alignment) {
@@ -32,7 +32,7 @@ bool check_p_in_dev_(void* p) {
   M_check_return_val(p, false);
 
 #if M_is_dev()
-  Alloc_header_* header = get_allocation_header_(p);
+  Alloc_header_t_* header = get_allocation_header_(p);
   if (header->p != p) {
     return false;
   }

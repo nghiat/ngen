@@ -9,7 +9,7 @@
 #include "core/ng_types.h"
 
 // Provide methods to read bits value from a bytes array.
-class Bit_stream {
+class Bit_stream_t {
 public:
   bool init(const U8* data);
 

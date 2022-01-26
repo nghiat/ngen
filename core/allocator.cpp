@@ -8,11 +8,11 @@
 
 #include <string.h>
 
-void* Allocator::alloc(Sip size) {
+void* Allocator_t::alloc(Sip size) {
   return aligned_alloc(size, 16);
 }
 
-void* Allocator::alloc_zero(Sip size) {
+void* Allocator_t::alloc_zero(Sip size) {
   void* p = aligned_alloc(size, 16);
   memset(p, 0, size);
   return p;

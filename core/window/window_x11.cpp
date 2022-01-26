@@ -17,7 +17,7 @@
 static E_key g_xcb_key_code_to_key_[e_key_count];
 static E_mouse g_xcb_button_to_mouse_[e_mouse_count];
 
-static void init_input_(ngWindow* w) {
+static void init_input_(Window_t* w) {
   // key
   static_assert (XKB_KEY_NoSymbol == e_key_none && e_key_none == 0, "g_xcb_key_code_to_key_ is default initialized to 0s");
   int key_to_xkb[e_key_count] = {};
@@ -46,14 +46,14 @@ static void init_input_(ngWindow* w) {
   g_xcb_button_to_mouse_[XCB_BUTTON_INDEX_3] = e_mouse_middle;
 }
 
-static void update_mouse_val_(ngWindow* w, E_mouse mouse, int x, int y, bool is_down) {
+static void update_mouse_val_(Window_t* w, E_mouse mouse, int x, int y, bool is_down) {
   w->m_mouse_down[mouse] = is_down;
   w->on_mouse_event(mouse, x, y, is_down);
   w->m_old_mouse_x[mouse] = x;
   w->m_old_mouse_y[mouse] = y;
 }
 
-bool ngWindow::init() {
+bool Window_t::init() {
   Display* xdisplay = XOpenDisplay(0);
   M_check_log_return_val(xdisplay, false, "XOpenDisplay failed");
   xcb_connection_t* xcb_connection = XGetXCBConnection(xdisplay);
@@ -91,12 +91,12 @@ bool ngWindow::init() {
   return true;
 }
 
-void ngWindow::destroy() {
+void Window_t::destroy() {
   xcb_destroy_window(m_platform_data.xcb_connection, m_platform_data.xcb_window_id);
   xcb_key_symbols_free(m_platform_data.key_symbols);
 }
 
-void ngWindow::os_loop() {
+void Window_t::os_loop() {
   bool running = true;
   while (running) {
     xcb_generic_event_t* event;

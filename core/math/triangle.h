@@ -8,6 +8,6 @@
 
 #include "core/math/vec3.h"
 
-struct Triangle {
-  V3 vertices[3];
+struct Triangle_t {
+  V3_t vertices[3];
 };

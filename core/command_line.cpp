@@ -12,21 +12,21 @@
 
 #include <ctype.h>
 
-Command_line::Command_line() : m_default_flag_allocator("Command_line default flag allocator") {}
+Command_line_t::Command_line_t() : m_default_flag_allocator("Command_line_t default flag allocator") {}
 
-bool Command_line::init(Allocator* allocator) {
+bool Command_line_t::init(Allocator_t* allocator) {
   bool rv = m_flags.init(allocator);
   rv &= m_default_flag_allocator.init();
   rv &= m_default_flag_values.init(&m_default_flag_allocator);
   return rv;
 }
 
-void Command_line::destroy() {
+void Command_line_t::destroy() {
   m_flags.destroy();
   m_default_flag_allocator.destroy();
 }
 
-void Command_line::add_flag(const char* short_flag, const char* long_flag, E_value_type value_type) {
+void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_value_type value_type) {
   M_check_return(short_flag || long_flag);
   if (short_flag) {
     M_check_log_return(strlen(short_flag) == 2 && short_flag[0] == '-' && isdigit(short_flag[1]) || isalpha(short_flag[1]), "Invalid short_flag");
@@ -41,9 +41,9 @@ void Command_line::add_flag(const char* short_flag, const char* long_flag, E_val
     }
   }
 
-  Value v;
+  Value_t v;
   if (value_type == e_value_type_bool) {
-    v = Value(false);
+    v = Value_t(false);
   }
 
   if (short_flag) {
@@ -63,8 +63,8 @@ void Command_line::add_flag(const char* short_flag, const char* long_flag, E_val
   }
 }
 
-void Command_line::parse(int argc, const char** argv) {
-  Value* pending_value = nullptr;
+void Command_line_t::parse(int argc, const char** argv) {
+  Value_t* pending_value = nullptr;
   for (int i = 1; i < argc; ++i) {
     const char* arg = argv[i];
     if (pending_value) {
@@ -73,7 +73,7 @@ void Command_line::parse(int argc, const char** argv) {
       continue;
     }
     int arg_len = strlen(arg);
-    Value* v = nullptr;
+    Value_t* v = nullptr;
     if (arg_len == 0) {
       m_default_flag_values.append(arg);
       continue;

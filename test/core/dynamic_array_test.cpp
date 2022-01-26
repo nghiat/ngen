@@ -10,16 +10,16 @@
 #include "test/test.h"
 
 void dynamic_array_test() {
-  FreeList_allocator allocator("dynamic_array_test_allocator", 1024 * 1024 * 1024);
+  Free_list_allocator_t allocator("dynamic_array_test_allocator", 1024 * 1024 * 1024);
   allocator.init();
   {
-    Dynamic_array<int> array;
+    Dynamic_array_t<int> array;
     array.init(&allocator);
     M_test(allocator.m_used_size == 0);
   }
 
   {
-    Dynamic_array<S8> s8_array;
+    Dynamic_array_t<S8> s8_array;
     s8_array.init(&allocator);
     const int elem_count = 10;
     s8_array.reserve(elem_count);
@@ -130,17 +130,17 @@ void dynamic_array_test() {
   //   }
   // }
   // {
-  //   struct NonTrivial {
-  //     NonTrivial(int* n) : _number(n) {
+  //   struct Non_trivial_t {
+  //     Non_trivial_t(int* n) : _number(n) {
   //     }
-  //     ~NonTrivial() {
+  //     ~Non_trivial_t() {
   //       *_number = 0;
   //     };
   //     int* _number;
   //   };
   //   int n = 1;
   //   {
-  //     DynamicArray<NonTrivial> array(&allocator);
+  //     DynamicArray<Non_trivial_t> array(&allocator);
   //     array.Append(&n);
   //   }
   //   REQUIRE(n == 0);

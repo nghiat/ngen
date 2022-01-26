@@ -42,8 +42,8 @@ static inline int parse_index_(int index, int len) {
   return index + len;
 }
 
-bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
-  Linear_allocator<> temp_allocator("Obj_loader_allocator");
+bool Obj_loader_t::init(Allocator_t* allocator, const Os_char* path) {
+  Linear_allocator_t<> temp_allocator("Obj_loader_allocator");
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
@@ -51,7 +51,7 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
   int uv_count = 0;
   int n_count = 0;
   int elems_count = 0;
-  Dynamic_array<U8> f = File::read_whole_file_as_text(&temp_allocator, path);
+  Dynamic_array_t<U8> f = File_t::read_whole_file_as_text(&temp_allocator, path);
   char* s = (char*)&f[0];
   char* e = (char*)&f[0] + f.len();
   for (;;) {
@@ -77,9 +77,9 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
       break;
     }
   }
-  Dynamic_array<V4> vs;
-  Dynamic_array<V2> uvs;
-  Dynamic_array<V4> ns;
+  Dynamic_array_t<V4_t> vs;
+  Dynamic_array_t<V2_t> uvs;
+  Dynamic_array_t<V4_t> ns;
   vs.init(&temp_allocator);
   uvs.init(&temp_allocator);
   ns.init(&temp_allocator);
@@ -102,16 +102,16 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
       ++s;
     }
     if (s[0] == 'v' && s[1] == ' ') {
-      V4 v;
+      V4_t v;
       string_to_vec_(&s, 3, &v.x);
       v.w = 1.0f;
       vs.append(v);
     } else if (s[0] == 'v' && s[1] == 't') {
-      V2 v;
+      V2_t v;
       string_to_vec_(&s, 2, &v.x);
       uvs.append(v);
     } else if (s[0] == 'v' && s[1] == 'n') {
-      V3 v;
+      V3_t v;
       string_to_vec_(&s, 3, &v.x);
       v = v3_normalize(v);
       ns.append({v.x, v.y, v.z, 0.0f});
@@ -141,7 +141,7 @@ bool Obj_loader::init(Allocator* allocator, const Os_char* path) {
   return true;
 }
 
-void Obj_loader::destroy() {
+void Obj_loader_t::destroy() {
   m_normals.destroy();
   m_uvs.destroy();
   m_vertices.destroy();

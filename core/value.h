@@ -17,13 +17,13 @@ enum E_value_type {
   e_value_type_count
 };
 
-class Value {
+class Value_t {
 public:
-  Value();
-  Value(bool v);
-  Value(int v);
-  Value(float v);
-  Value(char* v);
+  Value_t();
+  Value_t(bool v);
+  Value_t(int v);
+  Value_t(float v);
+  Value_t(char* v);
 
   bool is_valid() const;
   bool get_bool() const;
