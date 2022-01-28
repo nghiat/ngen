@@ -50,8 +50,10 @@ auto make_scope_exit_(T f) {
 
 #define M_string_join_expanded_(arg1, arg2) arg1 ## arg2
 #define M_string_join_(arg1, arg2) M_string_join_expanded_(arg1, arg2)
-#define M_scope_exit(code) \
-  auto M_string_join_(zz_scope_exit_at_line_, __LINE__) = make_scope_exit_([&]() { \
-    code; \
-  }); \
+#define M_scope_exit_lambda(lambda) \
+  auto M_string_join_(zz_scope_exit_at_line_, __LINE__) = make_scope_exit_(lambda); \
   M_unused(M_string_join_(zz_scope_exit_at_line_, __LINE__))
+#define M_scope_exit(code) \
+  M_scope_exit_lambda([&]() {\
+      code; \
+  })
