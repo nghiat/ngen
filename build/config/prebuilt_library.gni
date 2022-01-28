@@ -1,0 +1,37 @@
+##----------------------------------------------------------------------------##
+## This file is distributed under the MIT License.                            ##
+## See LICENSE.txt for details.                                               ##
+## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
+##----------------------------------------------------------------------------##
+
+template("prebuilt_library") {
+  static_libs = []
+  if (defined(invoker.static_libs)) {
+    static_libs += invoker.static_libs
+  }
+  shared_libs = []
+  if (defined(invoker.shared_libs)) {
+    shared_libs += invoker.shared_libs
+  }
+
+  config_name = target_name + "_config"
+  config(config_name) {
+    libs = static_libs
+    forward_variables_from(invoker, "*")
+  }
+
+  copy_dll_name = target_name + "_dll"
+  copy(copy_dll_name) {
+    sources = shared_libs
+
+    outputs = [
+      "$root_out_dir/{{source_file_part}}"
+    ]
+  }
+
+  # Dummy target
+  source_set(target_name) {
+    public_configs = [ ":" + config_name ]
+    deps = [ ":" + copy_dll_name ]
+  }
+}
