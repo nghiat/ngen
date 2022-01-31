@@ -4,3 +4,6 @@
 [submodule "assets"]
 	path = assets
 	url = https://github.com/nghiat/ngen_assets
+[submodule "third_party/libclang/llvm-project"]
+	path = third_party/libclang/llvm-project
+	url = https://github.com/nghiat/llvm-project

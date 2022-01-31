@@ -10,6 +10,34 @@ group("sample") {
   ]
 }
 
+executable("reflection_sample") {
+  sources = [
+    "reflection.cpp",
+  ]
+
+  deps = [
+    "//core",
+    "//third_party/libclang",
+  ]
+}
+
+executable("net_sample") {
+  sources = [
+    "net.cpp",
+  ]
+
+  deps = [
+    "//core",
+    "//third_party/libclang",
+  ]
+
+  if (is_win) {
+    libs = [
+      "Ws2_32.lib",
+    ]
+  }
+}
+
 executable("dx12_sample") {
   sources = [
     "cam.cpp",
@@ -23,6 +51,7 @@ executable("dx12_sample") {
     ":dx12_shader",
     "//assets",
     "//core",
+    "//third_party/libclang",
   ]
 
   libs = [
