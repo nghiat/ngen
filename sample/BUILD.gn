@@ -4,31 +4,23 @@
 ## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
 ##----------------------------------------------------------------------------##
 
+import("//core/reflection/reflection.gni")
+
 group("sample") {
   deps = [
     ":dx12_sample",
   ]
 }
 
-executable("reflection_sample") {
-  sources = [
-    "reflection.cpp",
-  ]
-
-  deps = [
-    "//core",
-    "//third_party/libclang",
-  ]
-}
-
 executable("net_sample") {
   sources = [
     "net.cpp",
+    "reflection.hpp",
   ]
 
   deps = [
     "//core",
-    "//third_party/libclang",
+    ":test_reflection",
   ]
 
   if (is_win) {
@@ -36,6 +28,12 @@ executable("net_sample") {
       "Ws2_32.lib",
     ]
   }
+}
+
+reflection("test_reflection") {
+  headers = [
+    "test_reflection_class.hpp",
+  ]
 }
 
 executable("dx12_sample") {

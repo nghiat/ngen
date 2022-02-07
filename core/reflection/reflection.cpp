@@ -4,10 +4,13 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
+#include "core/core_allocators.h"
 #include "core/core_init.h"
+#include "core/command_line.h"
 #include "core/dynamic_array.inl"
 #include "core/linear_allocator.inl"
 #include "core/log.h"
+#include "core/mono_time.h"
 #include "core/string.inl"
 #include "core/utils.h"
 
@@ -16,18 +19,15 @@
 
 #include <string.h>
 
-#define R_class __attribute__((annotate("reflected")))
-#define R_field __attribute__((annotate("reflected")))
-#define R_method __attribute__((annotate("reflected")))
-
-class R_class Reflected_class_t_ {
-public:
-  R_method
-  void reflected_method() {}
-
-  R_field
-  int reflected_field;
-};
+static char* copy_string(Allocator_t* allocator, const char* str) {
+  char* rv = NULL;
+  String_t<char> str2(str);
+  rv = (char*)allocator->alloc(str2.m_length + 1);
+  M_check_return_val(rv, NULL);
+  memcpy(rv, str, str2.m_length);
+  rv[str2.m_length] = 0;
+  return rv;
+}
 
 enum CXChildVisitResult get_attr_cursor_(CXCursor cursor, CXCursor parent, CXClientData client_data) {
   if (clang_isAttribute(clang_getCursorKind(cursor))) {
@@ -68,8 +68,16 @@ enum CXChildVisitResult visit_reflected_class_(CXCursor cursor, CXCursor parent,
   return CXChildVisit_Recurse;
 }
 
-int main() {
+int main(int argc, char** argv) {
   core_init(M_os_txt("reflection.log"));
+
+  Command_line_t cl;
+  cl.init(g_persistent_allocator);
+  M_scope_exit(cl.destroy());
+  cl.add_flag(NULL, "--reflection-path", e_value_type_string);
+  cl.add_flag(NULL, "--cc-out-dir", e_value_type_string);
+  cl.parse(argc, argv);
+
   Linear_allocator_t<> clang_allocator("clang_allocator");
   clang_allocator.init();
   M_scope_exit(clang_allocator.destroy());
@@ -96,9 +104,14 @@ int main() {
       args.reserve(arg_count);
       for (int j = 0; j < arg_count; ++j) {
         CXString arg = clang_CompileCommand_getArg(command, j);
-        const char* arg_cstr = clang_getCString(arg);
+        M_scope_exit(clang_disposeString(arg));
+        char* arg_cstr = copy_string(&clang_allocator, clang_getCString(arg));
         if (strstr(arg_cstr, "showIncludes")) {
           continue;
+        }
+
+        if (char* dot_p = strstr(arg_cstr, ".cpp")) {
+          dot_p[1] = 'h';
         }
         args.append(arg_cstr);
       }
@@ -110,6 +123,7 @@ int main() {
       //   }
       // });
 
+      S64 t = mono_time_now();
       CXTranslationUnit unit;
       // TODO: Remember to change the working directory
       CXErrorCode tu_error = clang_parseTranslationUnit2(index, NULL, args.m_p, arg_count, nullptr, 0, CXTranslationUnit_None, &unit);
@@ -127,17 +141,19 @@ int main() {
       CXCursor tu_cursor = clang_getTranslationUnitCursor(unit);
       clang_visitChildren(tu_cursor, [](CXCursor cursor, CXCursor parent, CXClientData client_data) -> enum CXChildVisitResult {
         CXCursorKind kind = clang_getCursorKind(cursor);
+        CXString cursor_name = clang_getCursorSpelling(cursor);
+        const char* cursor_name_cstr = clang_getCString(cursor_name);
+        M_scope_exit(clang_disposeString(cursor_name));
         if (kind == CXCursor_StructDecl || kind == CXCursor_ClassDecl) {
           if (check_cursor_attribute_(cursor, "reflected")) {
-            CXString class_name = clang_getCursorSpelling(cursor);
-            M_scope_exit(clang_disposeString(class_name));
-            M_logi("class %s", clang_getCString(class_name));
+            M_logi("class %s", cursor_name_cstr);
             clang_visitChildren(cursor, &visit_reflected_class_, NULL);
           }
           return CXChildVisit_Continue;
         }
         return CXChildVisit_Recurse;
       }, NULL);
+      M_logi("parse time: %f", mono_time_to_ms(mono_time_now() - t));
     }
 
 

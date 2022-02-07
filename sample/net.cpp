@@ -11,9 +11,6 @@
 #include "core/string.inl"
 #include "core/utils.h"
 
-#include "third_party/libclang/include/clang-c/CXCompilationDatabase.h"
-#include "third_party/libclang/include/clang-c/Index.h"
-
 #include <string.h>
 
 #include <ws2tcpip.h>

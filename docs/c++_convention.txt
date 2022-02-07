@@ -19,6 +19,8 @@
   - enum -> function -> struct/class -> macro
 * Avoid single-line statement:
   Reason: Easier to debug (step next)
+* Macro for condition should be function
+  Reason: avoid typo
 
 * Naming conventions
 - General:

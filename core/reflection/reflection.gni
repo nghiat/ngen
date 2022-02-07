@@ -1,0 +1,85 @@
+##----------------------------------------------------------------------------##
+## This file is distributed under the MIT License.                            ##
+## See LICENSE.txt for details.                                               ##
+## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
+##----------------------------------------------------------------------------##
+
+template("reflection") {
+  headers = invoker.headers
+
+  reflection_in_dir = rebase_path(get_path_info(headers[0], "dir"), ".")
+
+  # Absolute path to the directory of current BUILD.gn file excluding "//".
+  reflection_out_dir = rebase_path(".", "//")
+  if (reflection_in_dir != ".") {
+    reflection_out_dir += "/$reflection_in_dir"
+  }
+  cc_out_dir = "$root_gen_dir/" + reflection_out_dir
+  rel_cc_out_dir = rebase_path(cc_out_dir, root_build_dir)
+
+  rel_headers = rebase_path(headers, reflection_in_dir)
+  reflection_gens_cc = []
+
+  # List output files.
+  foreach(header, rel_headers) {
+    header_dir = get_path_info(header, "dir")
+    header_name = get_path_info(header, "name")
+    header_path = header_dir + "/" + header_name
+
+    reflection_gens_cc += [
+      "$cc_out_dir/$header_path.reflection.h",
+      "$cc_out_dir/$header_path.reflection.cc",
+    ]
+  }
+
+  action_name = "${target_name}_gen"
+  source_set_name = "$target_name"
+  action(action_name) {
+    visibility = [ ":$source_set_name" ]
+    script = "//core/reflection/reflection_wrapper.py"
+    sources = headers
+    outputs = get_path_info(reflection_gens_cc, "abspath")
+    args = rel_headers
+
+    reflection_label = "//core:reflection_parser"
+    reflection_exe_path = get_label_info(reflection_label, "root_out_dir") + "/reflection_parser.exe"
+    args += [
+      "--reflection-parser-exe",
+      "./" + rebase_path(reflection_exe_path, root_build_dir),
+      "--reflection-in-dir",
+      rebase_path(reflection_in_dir, root_build_dir),
+      "--cc-out-dir",
+      rel_cc_out_dir,
+    ]
+
+    inputs = [ reflection_exe_path ]
+    deps = [ reflection_label ]
+  }
+
+  config_name = "${target_name}_config"
+  config(config_name) {
+    include_dirs = []
+  }
+
+  source_set(source_set_name) {
+    forward_variables_from(invoker, [ "defines", "testonly", "visibility"])
+
+    sources = get_path_info(reflection_gens_cc, "abspath")
+    public_configs = [
+      ":$config_name",
+    ]
+    public_deps = [ ":$action_name" ]
+
+    deps = [ "//core" ]
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+
+    if (defined(invoker.removed_configs)) {
+      configs -= invoker.removed_configs
+    }
+    if (defined(invoker.extra_configs)) {
+      configs += invoker.extra_configs
+    }
+  }
+}

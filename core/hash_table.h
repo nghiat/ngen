@@ -49,7 +49,7 @@ public:
   bool init(Allocator_t* allocator);
   void destroy();
   T_value& operator[](const T_key& key);
-  T_value* find(const T_key& key);
+  T_value* find(const T_key& key) const;
   Sip len() const;
   void reserve(int key_count);
 
@@ -64,7 +64,7 @@ public:
     e_slot_state_moving, // only when rehashing
     e_slot_state_dead,
   };
-  Sz get_bucket_index(const T_key& key);
+  Sz get_bucket_index(const T_key& key) const;
   void rehash(int bucket_count);
   T_value& insert_without_checking(int bucket_idx, const T_key& key);
 

@@ -12,18 +12,18 @@
 
 #include <ctype.h>
 
-Command_line_t::Command_line_t() : m_default_flag_allocator("Command_line_t default flag allocator") {}
+Command_line_t::Command_line_t() : m_unnamed_args_allocator("Command_line_t default flag allocator") {}
 
 bool Command_line_t::init(Allocator_t* allocator) {
   bool rv = m_flags.init(allocator);
-  rv &= m_default_flag_allocator.init();
-  rv &= m_default_flag_values.init(&m_default_flag_allocator);
+  rv &= m_unnamed_args_allocator.init();
+  rv &= m_unnamed_args.init(&m_unnamed_args_allocator);
   return rv;
 }
 
 void Command_line_t::destroy() {
   m_flags.destroy();
-  m_default_flag_allocator.destroy();
+  m_unnamed_args_allocator.destroy();
 }
 
 void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_value_type value_type) {
@@ -44,6 +44,8 @@ void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_v
   Value_t v;
   if (value_type == e_value_type_bool) {
     v = Value_t(false);
+  } else {
+    v.m_value_type = value_type;
   }
 
   if (short_flag) {
@@ -63,7 +65,7 @@ void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_v
   }
 }
 
-void Command_line_t::parse(int argc, const char** argv) {
+void Command_line_t::parse(int argc, char** argv) {
   Value_t* pending_value = nullptr;
   for (int i = 1; i < argc; ++i) {
     const char* arg = argv[i];
@@ -75,14 +77,14 @@ void Command_line_t::parse(int argc, const char** argv) {
     int arg_len = strlen(arg);
     Value_t* v = nullptr;
     if (arg_len == 0) {
-      m_default_flag_values.append(arg);
+      m_unnamed_args.append(arg);
       continue;
     } else if (arg_len == 1) {
-      m_default_flag_values.append(arg);
+      m_unnamed_args.append(arg);
       continue;
     } else if (arg_len == 2) {
       if (arg[0] != '-') {
-        m_default_flag_values.append(arg);
+        m_unnamed_args.append(arg);
         continue;
       }
 
@@ -91,7 +93,7 @@ void Command_line_t::parse(int argc, const char** argv) {
       v = m_flags.find(m_short_to_long_flag_map[arg[1]]);
     } else {
       if (arg[0] != '-') {
-        m_default_flag_values.append(arg);
+        m_unnamed_args.append(arg);
         continue;
       }
       M_check_log_return(arg[1] == '-' && arg_len > 3, "Invalid flag");
@@ -104,4 +106,14 @@ void Command_line_t::parse(int argc, const char** argv) {
       pending_value = v;
     }
   }
+}
+
+Value_t Command_line_t::get_flag_value(const char* flag) const {
+  Value_t* rv = m_flags.find(flag);
+  M_check(rv);
+  return *rv;
+}
+
+const Dynamic_array_t<const char*>& Command_line_t::get_unnamed_args() const {
+  return m_unnamed_args;
 }

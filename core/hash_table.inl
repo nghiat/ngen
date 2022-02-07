@@ -75,7 +75,7 @@ T_value& M_hash_table_c_::operator[](const T_key& key) {
 }
 
 M_hash_table_t_
-T_value* M_hash_table_c_::find(const T_key& key) {
+T_value* M_hash_table_c_::find(const T_key& key) const {
   if (!m_count) {
     return nullptr;
   }
@@ -144,7 +144,7 @@ typename M_hash_table_c_::Iterator_t_ M_hash_table_c_::end() const {
 }
 
 M_hash_table_t_
-Sz M_hash_table_c_::get_bucket_index(const T_key& key) {
+Sz M_hash_table_c_::get_bucket_index(const T_key& key) const {
   return T_hash()(key) % m_bucket_count;
 }
 

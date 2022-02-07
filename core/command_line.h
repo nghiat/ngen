@@ -26,14 +26,14 @@ public:
   // One of those two has to be not NULL.
   // If |value_type| is e_value_type_bool, then its default value is false and the flag will toggle the value.
   void add_flag(const char* short_flag, const char* long_flag, E_value_type value_type);
-  void parse(int argc, const char** argv);
+  void parse(int argc, char** argv);
   Value_t get_flag_value(const char* flag) const;
-  Value_t get_default_value() const;
+  const Dynamic_array_t<const char*>& get_unnamed_args() const;
 
 // private:
   static const U8 sc_max_printable_char = 'z';
   const char* m_short_to_long_flag_map[sc_max_printable_char] = {};
   Hash_map<const char*, Value_t> m_flags;
-  Linear_allocator_t<128> m_default_flag_allocator;
-  Dynamic_array_t<const char*> m_default_flag_values;
+  Linear_allocator_t<128> m_unnamed_args_allocator;
+  Dynamic_array_t<const char*> m_unnamed_args;
 };

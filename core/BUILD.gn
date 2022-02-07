@@ -111,3 +111,15 @@ static_library("core") {
 config("math_natvis") {
   ldflags = [ "/NATVIS:" + rebase_path("math/math.natvis", root_build_dir)]
 }
+
+executable("reflection_parser") {
+  sources = [
+    "reflection/reflection.cpp",
+    "reflection/reflection.h",
+  ]
+
+  deps = [
+    ":core",
+    "//third_party/libclang",
+  ]
+}
