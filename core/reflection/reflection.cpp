@@ -11,7 +11,7 @@
 #include "core/linear_allocator.inl"
 #include "core/log.h"
 #include "core/mono_time.h"
-#include "core/string.inl"
+#include "core/string.h"
 #include "core/utils.h"
 
 #include "third_party/libclang/include/clang-c/CXCompilationDatabase.h"
@@ -21,7 +21,7 @@
 
 static char* copy_string(Allocator_t* allocator, const char* str) {
   char* rv = NULL;
-  String_t<char> str2(str);
+  Cstring_t str2(str);
   rv = (char*)allocator->alloc(str2.m_length + 1);
   M_check_return_val(rv, NULL);
   memcpy(rv, str, str2.m_length);

@@ -26,9 +26,8 @@ bool core_init(const Os_char* log_path) {
   rv &= core_allocators_init();
   rv &= path_utils_init();
   rv &= File_t::init();
-  Os_char abs_log_path[M_max_path_len];
-  path_from_exe_dir(abs_log_path, log_path, M_max_path_len);
-  rv &= log_init(abs_log_path);
+  Path_t final_log_path = g_exe_dir.join(log_path);
+  rv &= log_init(final_log_path.m_path);
   rv &= debug_init();
 
   atexit(core_destroy_);

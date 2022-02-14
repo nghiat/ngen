@@ -4,16 +4,14 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#pragma once
+#include "core/string_utils.h"
 
-#include "core/ng_types.h"
-#include "core/os.h"
+#include <string.h>
 
-const Os_char* os_str_find_substr(const Os_char* str, const Os_char* substr);
-Sz os_str_get_len(const Os_char* str);
-bool os_str_compare(const Os_char* s1, const Os_char* s2);
-
-#if M_os_is_win()
-const Os_char* os_str_from_utf8_(const char* s, Os_char* buf, int buf_len);
-#endif
-
+template <>
+void string_utils_copy<char>(char* dest, const char* src, int dest_len) {
+  if (dest_len) {
+    strncpy(dest, src, dest_len);
+    dest[dest_len - 1] = 0;
+  }
+}

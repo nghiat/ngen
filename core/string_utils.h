@@ -4,18 +4,15 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/os_string.h"
+#pragma once
 
-#include <string.h>
+#include "core/types.h"
+#include "core/os.h"
 
-const char* os_str_find_substr(const char* str, const char* substr) {
-  return strstr(str, substr);
-}
+// memory functions
+template <typename T>
+void string_utils_copy(T* dest, const T* src, int dest_len);
 
-size_t os_str_get_len(const char* str) {
-  return strlen(str);
-}
-
-bool os_str_compare(const char* s1, const char* s2) {
-  return !strcmp(s1, s2);
-}
+// modification functions
+template <typename T>
+void string_utils_replace(T* str, const T* substr);

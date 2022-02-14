@@ -8,7 +8,7 @@
 #include "core/dynamic_array.inl"
 #include "core/linear_allocator.inl"
 #include "core/log.h"
-#include "core/string.inl"
+#include "core/string.h"
 #include "core/utils.h"
 
 #include <string.h>
@@ -50,8 +50,8 @@ int main() {
   while (int rv = recv(socket_fd, res_buf, 4096, 0)) {
     M_check(rv != -1);
     res.append_array(res_buf, rv);
-    String_t<char> res_str(res_buf, rv);
-    if (res_str.ends_with("\r\n", 2)) {
+    Cstring_t res_str(res_buf, rv);
+    if (res_str.ends_with("\r\n")) {
       break;
     }
   }

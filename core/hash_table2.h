@@ -8,7 +8,7 @@
 
 #include "core/dynamic_array.h"
 #include "core/hash.h"
-#include "core/ng_types.h"
+#include "core/types.h"
 
 // See comment in hash_table.h
 template <typename T_key, typename T_value, typename T_data, typename T_hash>

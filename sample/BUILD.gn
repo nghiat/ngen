@@ -20,7 +20,7 @@ executable("net_sample") {
 
   deps = [
     "//core",
-    ":test_reflection",
+    # ":test_reflection",
   ]
 
   if (is_win) {
