@@ -193,15 +193,16 @@ if (current_os == "win") {
 
 # Holds all configs used for running the compiler.
 default_compiler_configs = [
-  "//build/config:extra_flags",
-  "//build/config:compiler",
-  "//build/config:pthread",
-  "//build/config:default_include_dirs",
   "//build/config:c++14",
-  "//build/config:no_rtti",
-  "//build/config:no_exceptions",
+  "//build/config:compiler",
+  "//build/config:default_include_dirs",
   "//build/config:default_optimization",
   "//build/config:default_symbols",
+  "//build/config:extra_flags",
+  "//build/config:no_exceptions",
+  "//build/config:no_rtti",
+  "//build/config:pthread",
+  "//build/config:runtime_library",
 ]
 
 if (is_win) {

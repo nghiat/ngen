@@ -27,7 +27,10 @@ config("runtime_library") {
   cflags = []
 
   # Defines that set up the CRT.
-  defines = [ "_CRT_SECURE_NO_DEPRECATE" ]
+  defines = [
+    "_CRT_SECURE_NO_DEPRECATE",
+    "_CRT_SECURE_NO_WARNINGS",
+  ]
 
   # Defines that set up the Windows SDK.
   defines += [
