@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 template <typename T>
 void maybe_assign(T* t, T v) {
-  if (t)
+  if (t) {
     *t = v;
+  }
 }
 
 template <typename T>

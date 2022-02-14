@@ -7,9 +7,9 @@
 #pragma once
 
 #include "core/dynamic_array.h"
-#include "core/ng_types.h"
 #include "core/linear_allocator.h"
 #include "core/math/vec2.h"
+#include "core/types.h"
 
 struct Line_info_t_;
 

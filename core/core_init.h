@@ -6,6 +6,6 @@
 
 #pragma once
 
-#include "core/os_string.h"
+#include "core/types.h"
 
 bool core_init(const Os_char* log_path);

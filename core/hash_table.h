@@ -8,7 +8,7 @@
 
 #include "core/dynamic_array.h"
 #include "core/hash.h"
-#include "core/ng_types.h"
+#include "core/types.h"
 
 #include <string.h>
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/os_string.h"
+#include "core/types.h"
 
 struct Allocator_t;
 

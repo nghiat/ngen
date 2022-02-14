@@ -9,7 +9,7 @@
 #include "core/build.h"
 #include "core/compiler.h"
 #include "core/debug.h"
-#include "core/ng_types.h"
+#include "core/types.h"
 
 #include <stdio.h>
 #include <string.h>

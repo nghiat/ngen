@@ -8,7 +8,7 @@
 
 #include "core/dynamic_array.h"
 #include "core/math/vec4.h"
-#include "core/os_string.h"
+#include "core/types.h"
 
 struct Allocator_t;
 

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "core/os_string.h"
 #include "core/os.h"
+#include "core/types.h"
 #include "core/window/input.h"
 #include "core/windows_lite.h"
 

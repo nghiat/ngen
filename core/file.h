@@ -7,8 +7,8 @@
 #pragma once
 
 #include "core/dynamic_array.h"
-#include "core/ng_types.h"
 #include "core/os.h"
+#include "core/types.h"
 
 #if M_os_is_win()
 #  include "core/windows_lite.h"

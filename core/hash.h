@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 Sz fnv1(const U8* key, int len);
 

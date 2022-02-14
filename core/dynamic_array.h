@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 class Allocator_t;
 

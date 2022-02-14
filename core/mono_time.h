@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 bool mono_time_init();
 S64 mono_time_now();

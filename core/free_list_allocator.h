@@ -8,7 +8,7 @@
 
 #include "core/allocator.h"
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 struct Free_block_t_;
 

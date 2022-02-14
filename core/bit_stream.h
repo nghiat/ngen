@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/ng_types.h"
+#include "core/types.h"
 
 // Provide methods to read bits value from a bytes array.
 class Bit_stream_t {

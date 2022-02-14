@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/allocator.h"
-#include "core/ng_types.h"
+#include "core/types.h"
 
 struct Linear_allocator_page_t_;
 

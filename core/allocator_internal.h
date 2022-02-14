@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/build.h"
-#include "core/ng_types.h"
+#include "core/types.h"
 
 /// Here is the sketch for a general allocation.
 /// start                    p         size        end
