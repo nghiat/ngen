@@ -17,12 +17,13 @@ public:
   String_t_(T* str);
   String_t_(T* str, Sip len);
 
-
-  bool ends_with(const String_t_<const T>& str) const;
   bool equals(const String_t_<const T>& str) const;
-  T* find_substr_(const String_t_<const T>& substr) const;
-  T* find_char_(T c) const;
-  T* find_char_reverse_(T c) const;
+  bool ends_with(const String_t_<const T>& str) const;
+  String_t_<T> find_substr_(const String_t_<const T>& substr) const;
+  String_t_<T> find_char_(T c) const;
+  String_t_<T> find_char_reverse_(T c) const;
+
+  String_t_<T> get_substr_from_offset_pointer_(T* p) const;
 
   T* m_p = NULL;
   Sip m_length = 0;
@@ -40,7 +41,8 @@ template <typename T>
 class Const_string_t_ : public String_t_<T>, public String_crtp_t_<T, Const_string_t_<T>> {
 public:
   using String_t_<T>::String_t_;
-  Const_string_t_<T> get_substr_from_(T* offset_p) const;
+
+  Const_string_t_<T> convert_string_t_substr_to_this_(const String_t_<T>& str) const;
 };
 
 template <typename T>
@@ -53,11 +55,10 @@ public:
   operator String_t_<const T>() const;
 
   void replace(T c, T new_c);
-  void append(T c);
   void append(const String_t_<const T>& str);
   void copy(const String_t_<const T>& str);
 
-  Mutable_string_t_<T> get_substr_from_(T* offset_p) const;
+  Mutable_string_t_<T> convert_string_t_substr_to_this_(const String_t_<T>& str) const;
   void append_null_if_possible();
   Sip m_capacity = 0;
 

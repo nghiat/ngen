@@ -36,17 +36,17 @@ T* find_char_c_(T* str, T c, Sz len) {
 
 template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_substr(const String_t_<const T_char>& substr) const {
-  return ((T_string*)this)->get_substr_from_(((T_string*)this)->find_substr_(substr));
+  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_substr_(substr));
 }
 
 template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_char(T_char c) const {
-  return ((T_string*)this)->get_substr_from_(((T_string*)this)->find_char_(c));
+  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_char_(c));
 }
 
 template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_char_reverse(T_char c) const {
-  return ((T_string*)this)->get_substr_from_(((T_string*)this)->find_char_reverse_(c));
+  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_char_reverse_(c));
 }
 
 template <typename T>
@@ -80,36 +80,39 @@ bool String_t_<T>::equals(const String_t_<const T>& str) const {
 }
 
 template <typename T>
-T* String_t_<T>::find_substr_(const String_t_<const T>& substr) const {
+String_t_<T> String_t_<T>::find_substr_(const String_t_<const T>& substr) const {
+  String_t_<T> rv;
   if (m_length == 0 || substr.m_length == 0 || m_length < substr.m_length) {
-    return NULL;
+    return rv;
   }
-  T* substr_start = m_p;
-  while (true) {
-    substr_start = find_char_c_<T>(m_p, substr.m_p[0], m_length);
-    if (!substr_start) {
+  String_t_<T> temp = *this;
+  while (temp.m_length >= substr.m_length) {
+    temp = get_substr_from_offset_pointer_(find_char_c_<T>(temp.m_p, substr.m_p[0], temp.m_length));
+    if (!temp.m_p) {
       break;
     }
     if (substr.m_length == 1) {
+      rv = temp;
       break;
     }
-    if (m_length - (substr_start - m_p) < substr.m_length) {
+    if (temp.m_length < substr.m_length) {
       break;
     }
-    if (memcmp(substr_start, substr_start, substr.m_length * sizeof(T)) == 0) {
+    if (memcmp(temp.m_p, substr.m_p, substr.m_length * sizeof(T)) == 0) {
+      rv = temp;
       break;
     }
   }
-  return substr_start;
+  return rv;
 }
 
 template <typename T>
-T* String_t_<T>::find_char_(T c) const {
-  return find_char_c_<T>(m_p, c, m_length);
+String_t_<T> String_t_<T>::find_char_(T c) const {
+  return get_substr_from_offset_pointer_(find_char_c_<T>(m_p, c, m_length));
 }
 
 template <typename T>
-T* String_t_<T>::find_char_reverse_(T c) const {
+String_t_<T> String_t_<T>::find_char_reverse_(T c) const {
   T* p = NULL;
   for (int i = 0; i < m_length; ++i) {
     if (m_p[m_length - 1 - i] == c) {
@@ -117,16 +120,27 @@ T* String_t_<T>::find_char_reverse_(T c) const {
       break;
     }
   }
-  return p;
+  return get_substr_from_offset_pointer_(p);
 }
 
 template <typename T>
-Const_string_t_<T> Const_string_t_<T>::get_substr_from_(T* offset_p) const {
-  Const_string_t_<T> rv;
-  Sip offset = offset_p - this->m_p;
-  M_check_return_val(offset < this->m_length, rv);
-  rv.m_p = offset_p;
+String_t_<T> String_t_<T>::get_substr_from_offset_pointer_(T* p) const {
+  String_t_<T> rv;
+  if (!p) {
+    return rv;
+  }
+  Sip offset = p - this->m_p;
+  M_check_return_val(offset >= 0 && offset < this->m_length, rv);
+  rv.m_p = p;
   rv.m_length = this->m_length - offset;
+  return rv;
+}
+
+template <typename T>
+Const_string_t_<T> Const_string_t_<T>::convert_string_t_substr_to_this_(const String_t_<T>& str) const {
+  Const_string_t_<T> rv;
+  rv.m_p = str.m_p;
+  rv.m_length = str.m_length;
   return rv;
 }
 
@@ -157,14 +171,6 @@ void Mutable_string_t_<T>::replace(T c, T new_c) {
 }
 
 template <typename T>
-void Mutable_string_t_<T>::append(T c) {
-  M_check_return(this->m_length + 1 <= m_capacity);
-  this->m_p[this->m_length] = c;
-  ++this->m_length;
-  append_null_if_possible();
-}
-
-template <typename T>
 void Mutable_string_t_<T>::append(const String_t_<const T>& str) {
   M_check_return(this->m_length + str.m_length <= m_capacity);
   memcpy(this->m_p + this->m_length, str.m_p, str.m_length * sizeof(T));
@@ -181,13 +187,13 @@ void Mutable_string_t_<T>::copy(const String_t_<const T>& str) {
 }
 
 template <typename T>
-Mutable_string_t_<T> Mutable_string_t_<T>::get_substr_from_(T* offset_p) const {
+Mutable_string_t_<T> Mutable_string_t_<T>::convert_string_t_substr_to_this_(const String_t_<T>& str) const {
   Mutable_string_t_<T> rv;
-  Sip offset = offset_p - this->m_p;
-  M_check_return_val(offset < m_capacity, rv);
-  rv.m_p = offset_p;
-  rv.m_length = this->m_length - offset;
-  rv.m_capacity = m_capacity;
+  rv.m_p = str.m_p;
+  rv.m_length = str.m_length;
+  if (str.m_p) {
+    rv.m_capacity = m_capacity - (str.m_p - this->m_p);
+  }
   return rv;
 }
 

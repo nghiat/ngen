@@ -14,7 +14,7 @@ Hash_map<const char*, void (*)()> g_tests_;
 int g_total_test_count_ = 0;
 int g_passed_test_count_ = 0;
 
-int main(int argc, const char** argv) {
+int main(int argc, char** argv) {
   g_is_log_in_testing = true;
   core_init(M_os_txt("test.log"));
   Command_line_t cl;
@@ -24,6 +24,7 @@ int main(int argc, const char** argv) {
   g_tests_.init(g_persistent_allocator);
   M_register_test(linear_allocator_test);
   M_register_test(hash_map_test);
+  M_register_test(string_test);
   M_register_test(utils_test);
   for (auto& test : g_tests_) {
     M_logi("Running test %s", test.key);
