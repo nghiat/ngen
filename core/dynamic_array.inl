@@ -93,3 +93,8 @@ template <typename T>
 T& Dynamic_array_t<T>::operator[](Sz index) {
   return m_p[index];
 }
+
+template <typename T>
+const T& Dynamic_array_t<T>::operator[](Sz index) const {
+  return m_p[index];
+}

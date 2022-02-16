@@ -11,6 +11,8 @@
 #include "core/linear_allocator.inl"
 #include "core/log.h"
 #include "core/mono_time.h"
+#include "core/path.h"
+#include "core/path_utils.h"
 #include "core/string.h"
 #include "core/utils.h"
 
@@ -78,6 +80,11 @@ int main(int argc, char** argv) {
   cl.add_flag(NULL, "--cc-out-dir", e_value_type_string);
   cl.parse(argc, argv);
 
+  const Dynamic_array_t<const char*>& unnamed_args = cl.get_unnamed_args();
+  M_check(unnamed_args.len() == 1);
+  Path_t input_path = Path_t::from_char(unnamed_args[0]);
+  Path8_t input_path8 = input_path.get_path8();
+  Path_t input_path_parent = input_path.get_parent_dir();
   Linear_allocator_t<> clang_allocator("clang_allocator");
   clang_allocator.init();
   M_scope_exit(clang_allocator.destroy());
@@ -85,8 +92,9 @@ int main(int argc, char** argv) {
     CXIndex index = clang_createIndex(0, 0);
     M_scope_exit(clang_disposeIndex(index));
 
+    Path8_t exe_dir_path8 = g_exe_dir.get_path8();
     CXCompilationDatabase_Error error;
-    CXCompilationDatabase compile_db = clang_CompilationDatabase_fromDirectory("D:\\projects\\ngen\\out\\debug", &error);
+    CXCompilationDatabase compile_db = clang_CompilationDatabase_fromDirectory(exe_dir_path8.m_path, &error);
     M_scope_exit(clang_CompilationDatabase_dispose(compile_db));
     CXCompileCommands commands = clang_CompilationDatabase_getAllCompileCommands(compile_db);
     M_scope_exit(clang_CompileCommands_dispose(commands));
@@ -95,13 +103,20 @@ int main(int argc, char** argv) {
       CXCompileCommand command = clang_CompileCommands_getCommand(commands, i);
       CXString filename = clang_CompileCommand_getFilename(command);
       M_scope_exit(clang_disposeString(filename));
-      if (!strstr(clang_getCString(filename), "reflection.cpp")) {
+      Path_t filename_path = Path_t::from_char(clang_getCString(filename));
+      Path_t filename_path_parent = filename_path.get_parent_dir();
+      if (!filename_path_parent.equals(input_path_parent)) {
         continue;
       }
       int arg_count = clang_CompileCommand_getNumArgs(command);
       Dynamic_array_t<const char*> args;
+#if M_os_is_win()
+      const char* additional_args[] = { "/Tp" };
+#else
+      const char* additional_args[] = { "-x", "c++" };
+#endif
       args.init(&clang_allocator);
-      args.reserve(arg_count);
+      args.reserve(arg_count + static_array_size(additional_args));
       for (int j = 0; j < arg_count; ++j) {
         CXString arg = clang_CompileCommand_getArg(command, j);
         M_scope_exit(clang_disposeString(arg));
@@ -110,33 +125,50 @@ int main(int argc, char** argv) {
           continue;
         }
 
+        bool should_break = false;
         if (char* dot_p = strstr(arg_cstr, ".cpp")) {
-          dot_p[1] = 'h';
+          for (const char* additional_arg : additional_args) {
+            args.append(additional_arg);
+          }
+          arg_cstr = input_path8.m_path;
+          should_break = true;
         }
         args.append(arg_cstr);
+        if (should_break) {
+          break;
+        }
       }
-      // TODO Cleanup args
-      // M_scope_exit_lambda([&]() {
-      //   for (int j = 0; j < arg_count; ++j) {
-      //     CXString arg = clang_CompileCommand_getArg(command, j);
-      //     clang_disposeString(arg);
-      //   }
-      // });
+
+      char* full_arg = (char*)clang_allocator.alloc_zero(4000);
+      Mstring_t full_arg_str(full_arg, 4000);
+      for (int j = 0; j < args.len(); ++j) {
+        full_arg_str.append('"');
+        full_arg_str.append(args[j]);
+        full_arg_str.append('"');
+        full_arg_str.append(' ');
+      }
+      M_logi("%s", full_arg);
 
       S64 t = mono_time_now();
       CXTranslationUnit unit;
       // TODO: Remember to change the working directory
-      CXErrorCode tu_error = clang_parseTranslationUnit2(index, NULL, args.m_p, arg_count, nullptr, 0, CXTranslationUnit_None, &unit);
+      CXErrorCode tu_error = clang_parseTranslationUnit2(index, NULL, args.m_p, args.len(), nullptr, 0, CXTranslationUnit_None, &unit);
       M_check(tu_error == CXError_Success);
       M_check(unit);
       M_scope_exit(clang_disposeTranslationUnit(unit));
-      // int diagnostic_count = clang_getNumDiagnostics(unit);
-      // for (int j = 0; j < diagnostic_count; ++j) {
-      //     CXDiagnostic diagnostic = clang_getDiagnostic(unit, j);
-      //     CXString diagnostic_string = clang_formatDiagnostic(diagnostic,clang_defaultDiagnosticDisplayOptions());
-      //     M_scope_exit(clang_disposeString(diagnostic_string));
-      //     M_logi("%s", clang_getCString(diagnostic_string));
-      // }
+      int diagnostic_count = clang_getNumDiagnostics(unit);
+      bool has_errors = false;
+      for (int j = 0; j < diagnostic_count; ++j) {
+          CXDiagnostic diagnostic = clang_getDiagnostic(unit, j);
+          CXString diagnostic_string = clang_formatDiagnostic(diagnostic,clang_defaultDiagnosticDisplayOptions());
+          M_scope_exit(clang_disposeString(diagnostic_string));
+          CXDiagnosticSeverity severity = clang_getDiagnosticSeverity(diagnostic);
+          if (severity == CXDiagnostic_Error || severity == CXDiagnostic_Fatal) {
+            has_errors = true;
+            M_logf("%s", clang_getCString(diagnostic_string));
+          }
+      }
+      M_check_return_val(!has_errors, 1);
 
       CXCursor tu_cursor = clang_getTranslationUnitCursor(unit);
       clang_visitChildren(tu_cursor, [](CXCursor cursor, CXCursor parent, CXClientData client_data) -> enum CXChildVisitResult {
@@ -154,6 +186,7 @@ int main(int argc, char** argv) {
         return CXChildVisit_Recurse;
       }, NULL);
       M_logi("parse time: %f", mono_time_to_ms(mono_time_now() - t));
+      break;
     }
 
 

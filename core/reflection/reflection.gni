@@ -28,17 +28,19 @@ template("reflection") {
 
     reflection_gens_cc += [
       "$cc_out_dir/$header_path.reflection.h",
-      "$cc_out_dir/$header_path.reflection.cc",
+      # "$cc_out_dir/$header_path.reflection.cc",
     ]
   }
 
   action_name = "${target_name}_gen"
   source_set_name = "$target_name"
-  action(action_name) {
+  action_foreach(action_name) {
     visibility = [ ":$source_set_name" ]
     script = "//core/reflection/reflection_wrapper.py"
     sources = headers
-    outputs = get_path_info(reflection_gens_cc, "abspath")
+    outputs = [
+      "$cc_out_dir/{{source_name_part}}.reflection.h",
+    ]
     args = rel_headers
 
     reflection_label = "//core:reflection_parser"
@@ -51,7 +53,6 @@ template("reflection") {
       "--cc-out-dir",
       rel_cc_out_dir,
     ]
-
     inputs = [ reflection_exe_path ]
     deps = [ reflection_label ]
   }

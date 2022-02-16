@@ -20,7 +20,6 @@ executable("net_sample") {
 
   deps = [
     "//core",
-    # ":test_reflection",
   ]
 
   if (is_win) {
@@ -32,7 +31,7 @@ executable("net_sample") {
 
 reflection("test_reflection") {
   headers = [
-    "test_reflection_class.hpp",
+    "test_reflection_class.h",
   ]
 }
 
