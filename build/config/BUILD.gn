@@ -108,11 +108,11 @@ config("runtime_library") {
 
 # C++ standard to use ---------------------------------------------------------
 
-config("c++14") {
+config("c++17") {
   if (!is_win) {
-    cflags_cc = [ "-std=c++14" ]
-  } else if (msc_full_ver >= 190024210) {
-    cflags_cc = [ "/std:c++14" ]
+    cflags_cc = [ "-std=c++17" ]
+  } else {
+    cflags_cc = [ "/std:c++17" ]
   }
 }
 

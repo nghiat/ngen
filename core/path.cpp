@@ -10,57 +10,92 @@
 
 #include <wchar.h>
 
+#include <type_traits>
+
 #include <Windows.h>
 
-#if M_os_is_win()
-Os_char Path_t::s_native_separator_ = L'\\';
-#elif
-Os_char Path_t::s_native_separator_ = '/';
-#else
-#error "?"
-#endif
+template <>
+char Path_t_<char>::s_native_separator_ = '/';
 
-Path_t::Path_t() : m_path_str(m_path, M_max_path_len) {}
+template <>
+wchar_t Path_t_<wchar_t>::s_native_separator_ = L'\\';
 
-#if M_os_is_win()
-Path_t::Path_t(const Os_cstring_t& path) {
-  m_path_str = Os_mstring_t(m_path);
+template <typename T>
+Path_t_<T>::Path_t_() : m_path_str(m_path, M_max_path_len) {}
+
+template <typename T>
+Path_t_<T>::Path_t_(const Const_string_t_<const T>& path) {
+  m_path_str = Mutable_string_t_<T>(m_path, M_max_path_len);
   m_path_str.copy(path);
   replace_separator_();
 }
 
-Path_t::Path_t(const Cstring_t& path) {
+template <>
+Path_t_<char> Path_t_<char>::from_char(const Cstring_t& path) {
+  return Path_t_<char>(path);
+}
+
+template <>
+Path_t_<wchar_t> Path_t_<wchar_t>::from_char(const Cstring_t& path) {
+  Path_t_<wchar_t> rv;
   int len = MultiByteToWideChar(CP_UTF8, 0, path.m_p, path.m_length, NULL, 0);
-  M_check_return(len < M_max_path_len);
-  MultiByteToWideChar(CP_UTF8, 0, path.m_p, path.m_length, m_path, M_max_path_len);
-  m_path_str = Os_mstring_t(m_path);
-  replace_separator_();
+  M_check_return_val(len < M_max_path_len, rv);
+  MultiByteToWideChar(CP_UTF8, 0, path.m_p, path.m_length, rv.m_path, M_max_path_len);
+  rv.update_path_str();
+  rv.replace_separator_();
+  return rv;
 }
 
-void Path_t::replace_separator_() {
-  m_path_str.replace(L'/', s_native_separator_);
-}
-#endif
-
-void Path_t::update_path_str() {
-  m_path_str = Os_mstring_t(m_path, M_max_path_len);
+template <>
+Path_t_<char> Path_t_<char>::get_path8() const {
+  return *this;
 }
 
-bool Path_t::is_dir() const {
+template <>
+Path_t_<char> Path_t_<wchar_t>::get_path8() const {
+  Path_t_<char> rv;
+  int len = WideCharToMultiByte(CP_UTF8, 0, m_path_str.m_p, m_path_str.m_length, NULL, 0, NULL, NULL);
+  M_check_return_val(len < M_max_path_len, rv);
+  WideCharToMultiByte(CP_UTF8, 0, m_path_str.m_p, m_path_str.m_length, rv.m_path, M_max_path_len, NULL, NULL);
+  rv.update_path_str();
+  return rv;
+}
+
+template <typename T>
+void Path_t_<T>::replace_separator_() {
+  if constexpr (std::is_same_v<T, wchar_t>) {
+    m_path_str.replace(L'/', s_native_separator_);
+  }
+}
+
+template <typename T>
+void Path_t_<T>::update_path_str() {
+  m_path_str = Mutable_string_t_<T>(m_path, M_max_path_len);
+}
+
+template <typename T>
+bool Path_t_<T>::is_dir() const {
   return m_path_str.ends_with(s_native_separator_);
 }
 
-bool Path_t::is_file() const {
+template <typename T>
+bool Path_t_<T>::is_file() const {
   return !is_dir();
 }
 
-Path_t Path_t::get_parent_dir() const {
-  Path_t rv = *this;
-  Os_mstring_t& rv_str = rv.m_path_str;
+template <typename T>
+bool Path_t_<T>::equals(const Path_t_<T>& other) const {
+  return m_path_str.equals(other.m_path_str);
+}
+
+template <typename T>
+Path_t_<T> Path_t_<T>::get_parent_dir() const {
+  Path_t_<T> rv = *this;
+  Mutable_string_t_<T>& rv_str = rv.m_path_str;
   if (rv_str.m_length) {
     // We ignore the last char just in case it is a separator
     rv_str.m_length--;
-    Os_mstring_t temp = rv_str.find_char_reverse(s_native_separator_);
+    Mutable_string_t_<T> temp = rv_str.find_char_reverse(s_native_separator_);
     if (temp.m_p) {
       temp.m_p[0] = 0;
       rv_str.m_length -= temp.m_length;
@@ -69,10 +104,16 @@ Path_t Path_t::get_parent_dir() const {
   return rv;
 }
 
-Path_t Path_t::join(const Os_cstring_t& subpath) const {
-  Path_t rv = *this;
+template <typename T>
+Path_t_<T> Path_t_<T>::join(const Const_string_t_<const T>& subpath) const {
+  Path_t_<T> rv = *this;
   rv.m_path_str.m_p = rv.m_path;
   rv.m_path_str.append(s_native_separator_);
   rv.m_path_str.append(subpath);
   return rv;
 }
+
+template class Path_t_<char>;
+#if M_os_is_win()
+template class Path_t_<wchar_t>;
+#endif
