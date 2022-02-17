@@ -19,7 +19,7 @@ prebuilt_library("libclang") {
     ]
   } else if (is_linux) {
     static_libs = [
-      "libclang.a",
+      "clang",
     ]
   }
 }

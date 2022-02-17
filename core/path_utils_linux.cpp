@@ -6,27 +6,20 @@
 
 #include "core/path_utils.h"
 
-#include "core/allocator.h"
-
-#include <string.h>
+#include "core/log.h"
 
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-extern Os_char g_exe_path_[M_max_path_len];
-extern Os_char g_exe_dir_[M_max_path_len];
+Path_t g_exe_path;
+Path_t g_exe_dir;
 
 bool path_utils_init() {
-  char exe_path[M_max_path_len];
-  ssize_t len = readlink("/proc/self/exe", g_exe_path_, M_max_path_len);
-  for (ssize_t i = len - 1; i >= 0; --i) {
-    if (g_exe_path_[i] == '/') {
-      memcpy(g_exe_dir_, g_exe_path_, i + 2);
-      g_exe_dir_[i + 1] = 0;
-      break;
-    }
-  }
+  ssize_t len = readlink("/proc/self/exe", g_exe_path.m_path, M_max_path_len);
+  M_check_return_val(len < M_max_path_len, false);
+  g_exe_path.update_path_str();
+  g_exe_dir = g_exe_path.get_parent_dir();
   return true;
 }

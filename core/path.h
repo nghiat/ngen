@@ -18,6 +18,7 @@ class Path_t_ {
 public:
   Path_t_();
   Path_t_(const Const_string_t_<const T>& path);
+  Path_t_<T>& operator =(const Path_t_<T>& other);
 
   static Path_t_<T> from_char(const Cstring_t& path);
   Path_t_<char> get_path8() const;

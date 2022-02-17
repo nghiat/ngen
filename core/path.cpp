@@ -12,7 +12,9 @@
 
 #include <type_traits>
 
+#if M_os_is_win()
 #include <Windows.h>
+#endif
 
 template <>
 char Path_t_<char>::s_native_separator_ = '/';
@@ -30,11 +32,18 @@ Path_t_<T>::Path_t_(const Const_string_t_<const T>& path) {
   replace_separator_();
 }
 
+template <typename T>
+Path_t_<T>& Path_t_<T>::operator=(const Path_t_<T>& other) {
+  m_path_str.copy(other.m_path_str);
+  return *this;
+}
+
 template <>
 Path_t_<char> Path_t_<char>::from_char(const Cstring_t& path) {
   return Path_t_<char>(path);
 }
 
+#if M_os_is_win()
 template <>
 Path_t_<wchar_t> Path_t_<wchar_t>::from_char(const Cstring_t& path) {
   Path_t_<wchar_t> rv;
@@ -45,12 +54,14 @@ Path_t_<wchar_t> Path_t_<wchar_t>::from_char(const Cstring_t& path) {
   rv.replace_separator_();
   return rv;
 }
+#endif // M_os_is_win()
 
 template <>
 Path_t_<char> Path_t_<char>::get_path8() const {
   return *this;
 }
 
+#if M_os_is_win()
 template <>
 Path_t_<char> Path_t_<wchar_t>::get_path8() const {
   Path_t_<char> rv;
@@ -60,6 +71,7 @@ Path_t_<char> Path_t_<wchar_t>::get_path8() const {
   rv.update_path_str();
   return rv;
 }
+#endif // M_os_is_win()
 
 template <typename T>
 void Path_t_<T>::replace_separator_() {

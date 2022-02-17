@@ -44,7 +44,12 @@ template("reflection") {
     args = rel_headers
 
     reflection_label = "//core:reflection_parser"
-    reflection_exe_path = get_label_info(reflection_label, "root_out_dir") + "/reflection_parser.exe"
+    reflection_exe_path = get_label_info(reflection_label, "root_out_dir")
+    if (is_win) {
+      reflection_exe_path += "/reflection_parser.exe"
+    } else {
+      reflection_exe_path += "/reflection_parser"
+    }
     args += [
       "--reflection-parser-exe",
       "./" + rebase_path(reflection_exe_path, root_build_dir),
