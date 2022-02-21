@@ -8,18 +8,23 @@
 #include "core/core_init.h"
 #include "core/command_line.h"
 #include "core/dynamic_array.inl"
+#include "core/file.h"
 #include "core/linear_allocator.inl"
 #include "core/log.h"
 #include "core/mono_time.h"
 #include "core/path.h"
 #include "core/path_utils.h"
 #include "core/string.h"
+#include "core/string_utils.h"
 #include "core/utils.h"
 
 #include "third_party/libclang/include/clang-c/CXCompilationDatabase.h"
 #include "third_party/libclang/include/clang-c/Index.h"
 
 #include <string.h>
+
+static const char* gc_header_template_ = R"(// This file is generated from %s
+)";
 
 static char* copy_string(Allocator_t* allocator, const char* str) {
   char* rv = NULL;
@@ -79,6 +84,8 @@ int main(int argc, char** argv) {
   cl.add_flag(NULL, "--reflection-path", e_value_type_string);
   cl.add_flag(NULL, "--cc-out-dir", e_value_type_string);
   cl.parse(argc, argv);
+  Cstring_t reflection_path(cl.get_flag_value("reflection-path").get_string());
+  Cstring_t cc_out_dir(cl.get_flag_value("cc-out-dir").get_string());
 
   const Dynamic_array_t<const char*>& unnamed_args = cl.get_unnamed_args();
   M_check(unnamed_args.len() == 1);
@@ -185,11 +192,18 @@ int main(int argc, char** argv) {
         }
         return CXChildVisit_Recurse;
       }, NULL);
+      Path_t reflection_header_path = Path_t::from_char(cc_out_dir);
+      reflection_header_path = reflection_header_path.join(input_path.get_name());
+      reflection_header_path.m_path_str = reflection_header_path.m_path_str.get_substr_till(reflection_header_path.m_path_str.find_char_reverse(M_os_txt('.')));
+      reflection_header_path.m_path_str.append(M_os_txt(".reflection.h"));
+      File_t f;
+      f.open(reflection_header_path.m_path, e_file_mode_write);
+      M_scope_exit(f.close());
+      auto template_str = string_format(&clang_allocator, gc_header_template_, Path_t::from_char(reflection_path).join(input_path.get_name()).get_path8().m_path);
+      f.write(NULL, template_str.m_p, template_str.m_length);
       M_logi("parse time: %f", mono_time_to_ms(mono_time_now() - t));
       break;
     }
-
-
   }
 
   return 0;

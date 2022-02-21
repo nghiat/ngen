@@ -32,6 +32,8 @@ public:
 template <typename T_char, typename T_string>
 class String_crtp_t_ {
 public:
+  T_string get_substr_till(const String_t_<const T_char>& substr) const;
+  T_string get_substr_from_offset(int offset) const;
   T_string find_substr(const String_t_<const T_char>& substr) const;
   T_string find_char(T_char c) const;
   T_string find_char_reverse(T_char c) const;
@@ -57,6 +59,8 @@ public:
   void replace(T c, T new_c);
   void append(const String_t_<const T>& str);
   void copy(const String_t_<const T>& str);
+
+  Const_string_t_<const T> to_const() const;
 
   Mutable_string_t_<T> convert_string_t_substr_to_this_(const String_t_<T>& str) const;
   void append_null_if_possible();

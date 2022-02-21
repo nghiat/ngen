@@ -33,6 +33,11 @@ Path_t_<T>::Path_t_(const Const_string_t_<const T>& path) {
 }
 
 template <typename T>
+Path_t_<T>::Path_t_(const Path_t_<T>& other) : Path_t_() {
+  m_path_str.copy(other.m_path_str);
+}
+
+template <typename T>
 Path_t_<T>& Path_t_<T>::operator=(const Path_t_<T>& other) {
   m_path_str.copy(other.m_path_str);
   return *this;
@@ -101,6 +106,16 @@ bool Path_t_<T>::equals(const Path_t_<T>& other) const {
 }
 
 template <typename T>
+Const_string_t_<const T> Path_t_<T>::get_name() const {
+  Const_string_t_<const T> rv = m_path_str.to_const();
+  Const_string_t_<const T> temp = rv.find_char_reverse(s_native_separator_);
+  if (temp.m_p) {
+    rv = temp.get_substr_from_offset(1);
+  }
+  return rv;
+}
+
+template <typename T>
 Path_t_<T> Path_t_<T>::get_parent_dir() const {
   Path_t_<T> rv = *this;
   Mutable_string_t_<T>& rv_str = rv.m_path_str;
@@ -120,7 +135,9 @@ template <typename T>
 Path_t_<T> Path_t_<T>::join(const Const_string_t_<const T>& subpath) const {
   Path_t_<T> rv = *this;
   rv.m_path_str.m_p = rv.m_path;
-  rv.m_path_str.append(s_native_separator_);
+  if (is_file()) {
+    rv.m_path_str.append(s_native_separator_);
+  }
   rv.m_path_str.append(subpath);
   return rv;
 }

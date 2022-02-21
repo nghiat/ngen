@@ -35,18 +35,33 @@ T* find_char_c_(T* str, T c, Sz len) {
 }
 
 template <typename T_char, typename T_string>
+T_string String_crtp_t_<T_char, T_string>::get_substr_till(const String_t_<const T_char>& substr) const {
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(String_t_<T_char>(str->m_p, substr.m_p - str->m_p));
+}
+
+template <typename T_char, typename T_string>
+T_string String_crtp_t_<T_char, T_string>::get_substr_from_offset(int offset) const {
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(String_t_<T_char>(str->m_p + offset, str->m_length - offset));
+}
+
+template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_substr(const String_t_<const T_char>& substr) const {
-  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_substr_(substr));
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(str->find_substr_(substr));
 }
 
 template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_char(T_char c) const {
-  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_char_(c));
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(str->find_char_(c));
 }
 
 template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_char_reverse(T_char c) const {
-  return ((T_string*)this)->convert_string_t_substr_to_this_(((T_string*)this)->find_char_reverse_(c));
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(str->find_char_reverse_(c));
 }
 
 template <typename T>
@@ -184,6 +199,11 @@ void Mutable_string_t_<T>::copy(const String_t_<const T>& str) {
   memcpy(this->m_p, str.m_p, str.m_length * sizeof(T));
   this->m_length = str.m_length;
   this->m_p[this->m_length] = 0;
+}
+
+template <typename T>
+Const_string_t_<const T> Mutable_string_t_<T>::to_const() const {
+  return Const_string_t_<const T>(this->m_p, this->m_length);
 }
 
 template <typename T>

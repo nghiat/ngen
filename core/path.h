@@ -18,6 +18,7 @@ class Path_t_ {
 public:
   Path_t_();
   Path_t_(const Const_string_t_<const T>& path);
+  Path_t_(const Path_t_<T>& other);
   Path_t_<T>& operator =(const Path_t_<T>& other);
 
   static Path_t_<T> from_char(const Cstring_t& path);
@@ -31,6 +32,7 @@ public:
   bool is_file() const;
   bool equals(const Path_t_<T>& other) const;
 
+  Const_string_t_<const T> get_name() const;
   Path_t_ get_parent_dir() const;
   Path_t_ join(const Const_string_t_<const T>& subpath) const;
 

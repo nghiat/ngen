@@ -6,13 +6,9 @@
 
 #pragma once
 
-#include "core/types.h"
-#include "core/os.h"
+#include "core/string.h"
 
-// memory functions
-template <typename T>
-void string_utils_copy(T* dest, const T* src, int dest_len);
+class Allocator_t;
 
-// modification functions
 template <typename T>
-void string_utils_replace(T* str, const T* substr);
+Mutable_string_t_<T> string_format(Allocator_t* allocator, const T* format, ...);
