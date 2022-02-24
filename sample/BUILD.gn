@@ -29,6 +29,17 @@ executable("net_sample") {
   }
 }
 
+executable("reflection_sample") {
+  sources = [
+    "reflection_sample.cpp",
+  ]
+
+  deps = [
+    ":test_reflection",
+    "//core",
+  ]
+}
+
 reflection("test_reflection") {
   headers = [
     "test_reflection_class.h",

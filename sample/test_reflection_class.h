@@ -5,7 +5,6 @@
 //----------------------------------------------------------------------------//
 
 #include "core/reflection/reflection.h"
-#include "sample/test_reflection_class.reflection.h"
 
 class R_class Reflected_class_t_ {
 public:

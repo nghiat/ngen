@@ -4,17 +4,14 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#pragma once
+#include "core/core_init.h"
+#include "core/log.h"
+#include "core/reflection/reflection.h"
+#include "sample/test_reflection_class.h"
 
-#define R_class __attribute__((annotate("reflected")))
-#define R_field __attribute__((annotate("reflected")))
-#define R_method __attribute__((annotate("reflected")))
-
-class Class_info_t {
-public:
-  static const int sc_max_class_name_length = 64;
-  char m_class_name[sc_max_class_name_length] = {};
-};
-
-template <typename T>
-Class_info_t* get_class_info();
+int main() {
+  core_init(M_os_txt("reflection.log"));
+  Class_info_t* test_class = get_class_info<Reflected_class_t_>();
+  M_logi("%s", test_class->m_class_name);
+  return 0;
+}

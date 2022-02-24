@@ -23,7 +23,29 @@
 
 #include <string.h>
 
-static const char* gc_header_template_ = R"(// This file is generated from %s
+static char* g_class_name_ = NULL;
+static const char* gc_reflection_template_comment_ = "// This file is generated from %s";
+
+static const char* gc_reflection_template_body_ = R"(
+#include "%s"
+
+#include "core/reflection/reflection.h"
+
+#include "core/string.h"
+
+Class_info_t g_class_info_;
+bool g_is_init_ = false;
+
+template <>
+Class_info_t* get_class_info<%s>() {
+  if (g_is_init_) {
+    return &g_class_info_;
+  }
+  Mstring_t str(g_class_info_.m_class_name, Class_info_t::sc_max_class_name_length);
+  str.copy("%s");
+  g_is_init_ = true;
+  return &g_class_info_;
+}
 )";
 
 static char* copy_string(Allocator_t* allocator, const char* str) {
@@ -185,21 +207,25 @@ int main(int argc, char** argv) {
         M_scope_exit(clang_disposeString(cursor_name));
         if (kind == CXCursor_StructDecl || kind == CXCursor_ClassDecl) {
           if (check_cursor_attribute_(cursor, "reflected")) {
+            Allocator_t* allocator = (Allocator_t*)client_data;
+            g_class_name_ = copy_string(allocator, cursor_name_cstr);
             M_logi("class %s", cursor_name_cstr);
-            clang_visitChildren(cursor, &visit_reflected_class_, NULL);
+            clang_visitChildren(cursor, &visit_reflected_class_, client_data);
           }
           return CXChildVisit_Continue;
         }
         return CXChildVisit_Recurse;
-      }, NULL);
+      }, &clang_allocator);
       Path_t reflection_header_path = Path_t::from_char(cc_out_dir);
       reflection_header_path = reflection_header_path.join(input_path.get_name());
       reflection_header_path.m_path_str = reflection_header_path.m_path_str.get_substr_till(reflection_header_path.m_path_str.find_char_reverse(M_os_txt('.')));
-      reflection_header_path.m_path_str.append(M_os_txt(".reflection.h"));
+      reflection_header_path.m_path_str.append(M_os_txt(".reflection.cpp"));
       File_t f;
       f.open(reflection_header_path.m_path, e_file_mode_write);
       M_scope_exit(f.close());
-      auto template_str = string_format(&clang_allocator, gc_header_template_, Path_t::from_char(reflection_path).join(input_path.get_name()).get_path8().m_path);
+      auto template_str = string_format(&clang_allocator, gc_reflection_template_comment_, Path_t::from_char(reflection_path).join(input_path.get_name()).get_path8().m_path);
+      f.write(NULL, template_str.m_p, template_str.m_length);
+      template_str = string_format(&clang_allocator, gc_reflection_template_body_, input_path8.m_path_str.get_substr_from_offset(6).m_p, g_class_name_, g_class_name_);
       f.write(NULL, template_str.m_p, template_str.m_length);
       M_logi("parse time: %f", mono_time_to_ms(mono_time_now() - t));
       break;

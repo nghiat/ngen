@@ -27,8 +27,8 @@ template("reflection") {
     header_path = header_dir + "/" + header_name
 
     reflection_gens_cc += [
-      "$cc_out_dir/$header_path.reflection.h",
-      # "$cc_out_dir/$header_path.reflection.cc",
+      # "$cc_out_dir/$header_path.reflection.h",
+      "$cc_out_dir/$header_path.reflection.cpp",
     ]
   }
 
@@ -39,7 +39,8 @@ template("reflection") {
     script = "//core/reflection/reflection_wrapper.py"
     sources = headers
     outputs = [
-      "$cc_out_dir/{{source_name_part}}.reflection.h",
+      # "$cc_out_dir/{{source_name_part}}.reflection.h",
+      "$cc_out_dir/{{source_name_part}}.reflection.cpp",
     ]
     args = rel_headers
 
@@ -71,6 +72,9 @@ template("reflection") {
     forward_variables_from(invoker, [ "defines", "testonly", "visibility"])
 
     sources = get_path_info(reflection_gens_cc, "abspath")
+    include_dirs = [
+      "$root_gen_dir",
+    ]
     public_configs = [
       ":$config_name",
     ]
