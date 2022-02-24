@@ -10,7 +10,7 @@ template("prebuilt_library") {
     config_name = target_name + "_config"
     config(config_name) {
       libs = invoker.static_libs
-      forward_variables_from(invoker, "*")
+      forward_variables_from(invoker, [ "include_dirs" ])
     }
     local_public_configs = [ ":$config_name" ]
   }
