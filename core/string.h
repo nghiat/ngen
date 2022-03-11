@@ -73,6 +73,11 @@ private:
 using Os_cstring_t = Const_string_t_<const Os_char>;
 using Os_mstring_t = Mutable_string_t_<Os_char>;
 
+template <typename T>
+using Cstring_t_ = Const_string_t_<const T>;
+template <typename T>
+using Mstring_t_ = Mutable_string_t_<T>;
+
 using Cstring_t = Const_string_t_<const char>;
 using Mstring_t = Mutable_string_t_<char>;
 

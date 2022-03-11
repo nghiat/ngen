@@ -26,8 +26,8 @@ template <typename T>
 Path_t_<T>::Path_t_() : m_path_str(m_path, M_max_path_len) {}
 
 template <typename T>
-Path_t_<T>::Path_t_(const Const_string_t_<const T>& path) {
-  m_path_str = Mutable_string_t_<T>(m_path, M_max_path_len);
+Path_t_<T>::Path_t_(const Cstring_t_<T>& path) {
+  m_path_str = Mstring_t_<T>(m_path, M_max_path_len);
   m_path_str.copy(path);
   replace_separator_();
 }
@@ -87,7 +87,7 @@ void Path_t_<T>::replace_separator_() {
 
 template <typename T>
 void Path_t_<T>::update_path_str() {
-  m_path_str = Mutable_string_t_<T>(m_path, M_max_path_len);
+  m_path_str = Mstring_t_<T>(m_path, M_max_path_len);
 }
 
 template <typename T>
@@ -106,9 +106,9 @@ bool Path_t_<T>::equals(const Path_t_<T>& other) const {
 }
 
 template <typename T>
-Const_string_t_<const T> Path_t_<T>::get_name() const {
-  Const_string_t_<const T> rv = m_path_str.to_const();
-  Const_string_t_<const T> temp = rv.find_char_reverse(s_native_separator_);
+Cstring_t_<T> Path_t_<T>::get_name() const {
+  Cstring_t_<T> rv = m_path_str.to_const();
+  Cstring_t_<T> temp = rv.find_char_reverse(s_native_separator_);
   if (temp.m_p) {
     rv = temp.get_substr_from_offset(1);
   }
@@ -118,11 +118,11 @@ Const_string_t_<const T> Path_t_<T>::get_name() const {
 template <typename T>
 Path_t_<T> Path_t_<T>::get_parent_dir() const {
   Path_t_<T> rv = *this;
-  Mutable_string_t_<T>& rv_str = rv.m_path_str;
+  Mstring_t_<T>& rv_str = rv.m_path_str;
   if (rv_str.m_length) {
     // We ignore the last char just in case it is a separator
     rv_str.m_length--;
-    Mutable_string_t_<T> temp = rv_str.find_char_reverse(s_native_separator_);
+    Mstring_t_<T> temp = rv_str.find_char_reverse(s_native_separator_);
     if (temp.m_p) {
       temp.m_p[0] = 0;
       rv_str.m_length -= temp.m_length;
@@ -132,7 +132,7 @@ Path_t_<T> Path_t_<T>::get_parent_dir() const {
 }
 
 template <typename T>
-Path_t_<T> Path_t_<T>::join(const Const_string_t_<const T>& subpath) const {
+Path_t_<T> Path_t_<T>::join(const Cstring_t_<T>& subpath) const {
   Path_t_<T> rv = *this;
   rv.m_path_str.m_p = rv.m_path;
   if (is_file()) {

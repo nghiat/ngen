@@ -11,4 +11,4 @@
 class Allocator_t;
 
 template <typename T>
-Mutable_string_t_<T> string_format(Allocator_t* allocator, const T* format, ...);
+Mstring_t_<T> string_format(Allocator_t* allocator, const T* format, ...);

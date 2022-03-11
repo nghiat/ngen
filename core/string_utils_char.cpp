@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 template <>
-Mutable_string_t_<char> string_format(Allocator_t* allocator, const char* format, ...) {
+Mstring_t_<char> string_format(Allocator_t* allocator, const char* format, ...) {
   va_list argptr;
   va_start(argptr, format);
   va_list argptr2;
@@ -22,5 +22,5 @@ Mutable_string_t_<char> string_format(Allocator_t* allocator, const char* format
   char* str = (char*)allocator->alloc(len + 1);
   vsnprintf(str, len, format, argptr2);
   va_end(argptr2);
-  return Mutable_string_t_<char>(str, len + 1);
+  return Mstring_t_<char>(str, len + 1);
 }

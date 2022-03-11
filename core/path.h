@@ -17,7 +17,7 @@ template <typename T>
 class Path_t_ {
 public:
   Path_t_();
-  Path_t_(const Const_string_t_<const T>& path);
+  Path_t_(const Cstring_t_<T>& path);
   Path_t_(const Path_t_<T>& other);
   Path_t_<T>& operator =(const Path_t_<T>& other);
 
@@ -32,13 +32,13 @@ public:
   bool is_file() const;
   bool equals(const Path_t_<T>& other) const;
 
-  Const_string_t_<const T> get_name() const;
+  Cstring_t_<T> get_name() const;
   Path_t_ get_parent_dir() const;
-  Path_t_ join(const Const_string_t_<const T>& subpath) const;
+  Path_t_ join(const Cstring_t_<T>& subpath) const;
 
   static T s_native_separator_;
   T m_path[M_max_path_len] = {};
-  Mutable_string_t_<T> m_path_str;
+  Mstring_t_<T> m_path_str;
 };
 
 using Path_t = Path_t_<Os_char>;
