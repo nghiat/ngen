@@ -69,6 +69,8 @@ static_library("core") {
     "path.h",
     "path_utils.cpp",
     "path_utils.h",
+    "reflection/reflection.cpp",
+    "reflection/reflection.h",
     "string.cpp",
     "string.h",
     "string_utils.h",
@@ -118,8 +120,7 @@ config("math_natvis") {
 
 executable("reflection_parser") {
   sources = [
-    "reflection/reflection.cpp",
-    "reflection/reflection.h",
+    "reflection/reflection_parser.cpp",
   ]
 
   deps = [

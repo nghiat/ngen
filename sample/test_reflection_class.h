@@ -1,9 +1,3 @@
-//----------------------------------------------------------------------------//
-// This file is distributed under the MIT License.                            //
-// See LICENSE.txt for details.                                               //
-// Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
-//----------------------------------------------------------------------------//
-
 #include "core/reflection/reflection.h"
 
 class R_class Reflected_class_t_ {
@@ -12,5 +6,14 @@ public:
   void reflected_method() {}
 
   R_field
-  int reflected_field;
+  int reflected_field1;
+
+  R_field
+  int reflected_field2;
+
+  R_field
+  int reflected_field3;
+
+  R_field
+  int reflected_field4;
 };
