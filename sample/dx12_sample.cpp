@@ -593,14 +593,14 @@ bool Dx12_window_t::init() {
 
   {
     Os_char shader_path[M_max_path_len];
-    path_from_exe_dir(shader_path, M_os_txt("assets/shadow.hlsl"), M_max_path_len);
+    path_from_exe_dir(shader_path, M_txt("assets/shadow.hlsl"), M_max_path_len);
     compile_shader_(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
 
-    path_from_exe_dir(shader_path, M_os_txt("assets/shader.hlsl"), M_max_path_len);
+    path_from_exe_dir(shader_path, M_txt("assets/shader.hlsl"), M_max_path_len);
     compile_shader_(shader_path, "VSMain", "vs_5_0", &m_final_vs);
     compile_shader_(shader_path, "PSMain", "ps_5_0", &m_final_ps);
 
-    path_from_exe_dir(shader_path, M_os_txt("assets/ui.hlsl"), M_max_path_len);
+    path_from_exe_dir(shader_path, M_txt("assets/ui.hlsl"), M_max_path_len);
     compile_shader_(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
     compile_shader_(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
     compile_shader_(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
@@ -728,7 +728,7 @@ bool Dx12_window_t::init() {
   {
     stbtt_fontinfo font;
     Os_char font_path[M_max_path_len];
-    path_from_exe_dir(font_path, M_os_txt("assets/UbuntuMono-Regular.ttf"), M_max_path_len);
+    path_from_exe_dir(font_path, M_txt("assets/UbuntuMono-Regular.ttf"), M_max_path_len);
     Dynamic_array_t<U8> font_buf = File_t::read_whole_file_as_text(g_persistent_allocator, font_path);
     M_check_return_val(stbtt_InitFont(&font, &font_buf[0], stbtt_GetFontOffsetForIndex(&font_buf[0], 0)) != 0, false);
     g_font.fontinfo = font;
@@ -839,8 +839,8 @@ bool Dx12_window_t::init() {
     temp_allocator.init();
     M_scope_exit(temp_allocator.destroy());
     const Os_char* obj_paths[] = {
-        M_os_txt("assets/plane.obj"),
-        M_os_txt("assets/wolf.obj"),
+        M_txt("assets/plane.obj"),
+        M_txt("assets/wolf.obj"),
     };
     Sip vertices_offset = 0;
     Sip normals_offset = 0;
@@ -1196,8 +1196,8 @@ void Dx12_window_t::add_text_at_(const char* text, F32 x_left, F32 y_top, F32 wr
 }
 
 int main() {
-  core_init(M_os_txt("dx12_sample.log"));
-  Dx12_window_t w(M_os_txt("dx12_sample"), 1024, 768);
+  core_init(M_txt("dx12_sample.log"));
+  Dx12_window_t w(M_txt("dx12_sample"), 1024, 768);
   w.init();
   w.os_loop();
   return 0;

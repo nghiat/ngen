@@ -24,7 +24,7 @@
 #include <string.h>
 
 static char* g_class_name_ = NULL;
-static const char* gc_reflection_template_comment_ = "// This file is generated from " M_os_txt_pr;
+static const char* gc_reflection_template_comment_ = "// This file is generated from " M_txt_p;
 
 static const char* gc_reflection_template_body_ = R"(
 #include "%s"
@@ -117,7 +117,7 @@ enum CXChildVisitResult visit_reflected_class_(CXCursor cursor, CXCursor parent,
 Linear_allocator_t<> clang_allocator("clang_allocator");
 
 int main(int argc, char** argv) {
-  core_init(M_os_txt("reflection.log"));
+  core_init(M_txt("reflection.log"));
 
   Command_line_t cl;
   cl.init(g_persistent_allocator);
@@ -226,15 +226,15 @@ int main(int argc, char** argv) {
       }, &clang_allocator);
       Path_t reflection_header_path = Path_t::from_char(cc_out_dir);
       reflection_header_path = reflection_header_path.join(input_path.get_name());
-      reflection_header_path.m_path_str = reflection_header_path.m_path_str.get_substr_till(reflection_header_path.m_path_str.find_char_reverse(M_os_txt('.')));
-      reflection_header_path.m_path_str.append(M_os_txt(".reflection.cpp"));
+      reflection_header_path.m_path_str = reflection_header_path.m_path_str.get_substr_till(reflection_header_path.m_path_str.find_char_reverse(M_txt('.')));
+      reflection_header_path.m_path_str.append(M_txt(".reflection.cpp"));
       File_t f;
       f.open(reflection_header_path.m_path, e_file_mode_write);
       M_scope_exit(f.close());
       Os_cstring_t path_without_dot_dot;
       for (int j = 0; j < input_path.m_path_str.m_length; ++j) {
         char c = input_path.m_path_str.m_p[j];
-        if (c != M_os_txt('.') && c != M_os_txt('\\') && c != M_os_txt('/')) {
+        if (c != M_txt('.') && c != M_txt('\\') && c != M_txt('/')) {
           path_without_dot_dot = input_path.m_path_str.get_substr_from_offset(j).to_const();
           break;
         }

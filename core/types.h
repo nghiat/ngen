@@ -30,13 +30,13 @@ typedef double F64;
 typedef size_t Sz;
 
 #if M_os_is_win()
-#  define M_os_txt(x) L##x
-#  define M_os_txt_pr "%ls"
+#  define M_txt(x) L##x
+#  define M_txt_p "%ls"
 typedef wchar_t Os_char;
 
 #elif M_os_is_linux()
-#  define M_os_txt(x) x
-#  define M_os_txt_pr "%s"
+#  define M_txt(x) x
+#  define M_txt_p "%s"
 typedef char Os_char;
 
 #else

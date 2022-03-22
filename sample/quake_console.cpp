@@ -17,7 +17,7 @@ bool Quake_console_t::init(F32 width, F32 height) {
   m_codepoint_line_indices_buffer.init(&m_line_indices_allocator);
   m_f_allocator.init();
   Os_char shader_path[M_max_path_len];
-  path_from_exe_dir(shader_path, M_os_txt("assets/shadow.hlsl"), M_max_path_len);
+  path_from_exe_dir(shader_path, M_txt("assets/shadow.hlsl"), M_max_path_len);
   m_f_buf = File_t::read_whole_file_as_text(&m_f_allocator, shader_path);
 
   m_width = width;

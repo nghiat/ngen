@@ -14,7 +14,7 @@ F64 time_func(T f) {
 }
 
 int main(int argc, const char** argv) {
-  core_init(M_os_txt("hash_table.log"));
+  core_init(M_txt("hash_table.log"));
   int num = 1000000;
   int lookup_loop = 100;
 

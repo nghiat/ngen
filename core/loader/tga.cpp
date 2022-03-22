@@ -27,7 +27,7 @@ struct Image_spec_t_ {
 
 bool tga_write(const U8* data, int width, int height, const Os_char* path) {
   File_t f;
-  M_check_log_return_val(f.open(path, e_file_mode_write), false, "Can't open " M_os_txt_pr " to write tga",  path);
+  M_check_log_return_val(f.open(path, e_file_mode_write), false, "Can't open " M_txt_p " to write tga",  path);
   M_scope_exit(f.close());
   {
     uint8_t id_length = 0;

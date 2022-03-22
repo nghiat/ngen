@@ -17,7 +17,7 @@
 #include <winsock2.h>
 
 int main() {
-  core_init(M_os_txt("net.log"));
+  core_init(M_txt("net.log"));
   WORD wVersionRequested;
   WSADATA wsaData;
   wVersionRequested = MAKEWORD(2, 2);

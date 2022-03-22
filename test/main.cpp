@@ -16,7 +16,7 @@ int g_passed_test_count_ = 0;
 
 int main(int argc, char** argv) {
   g_is_log_in_testing = true;
-  core_init(M_os_txt("test.log"));
+  core_init(M_txt("test.log"));
   Command_line_t cl;
   cl.init(g_persistent_allocator);
   cl.parse(argc, argv);
