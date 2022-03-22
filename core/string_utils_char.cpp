@@ -20,7 +20,7 @@ Mstring_t_<char> string_format(Allocator_t* allocator, const char* format, ...) 
   int len = vsnprintf(NULL, 0, format, argptr);
   va_end(argptr);
   char* str = (char*)allocator->alloc(len + 1);
-  vsnprintf(str, len, format, argptr2);
+  vsnprintf(str, len + 1, format, argptr2);
   va_end(argptr2);
-  return Mstring_t_<char>(str, len + 1);
+  return Mstring_t_<char>(str, len);
 }

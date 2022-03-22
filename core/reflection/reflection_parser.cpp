@@ -24,7 +24,7 @@
 #include <string.h>
 
 static char* g_class_name_ = NULL;
-static const char* gc_reflection_template_comment_ = "// This file is generated from %s";
+static const char* gc_reflection_template_comment_ = "// This file is generated from " M_os_txt_pr;
 
 static const char* gc_reflection_template_body_ = R"(
 #include "%s"
@@ -51,7 +51,6 @@ Class_info_t* get_class_info<%s>() {
   g_is_init_ = true;
   return &g_class_info_;
 }
-
 )";
 
 static const char* gc_init_fields_start_ = R"(
@@ -61,8 +60,7 @@ static void init_fields_() {
 )";
 
 static const char* gc_init_fields_field_ = R"(
-  g_class_info_.m_fields.append("%s");
-)";
+  g_class_info_.m_fields.append("%s");)";
 
 static const char* gc_init_fields_end_ = "\n}";
 
@@ -107,9 +105,7 @@ enum CXChildVisitResult visit_reflected_class_(CXCursor cursor, CXCursor parent,
       CXString method_name = clang_getCursorSpelling(cursor);
       M_scope_exit(clang_disposeString(method_name));
       if (kind == CXCursor_CXXMethod) {
-        M_logi("  method %s", clang_getCString(method_name));
       } else {
-        M_logi("  field %s", clang_getCString(method_name));
         g_fields_.append(copy_string(g_general_allocator, clang_getCString(method_name)));
       }
     }
@@ -190,16 +186,6 @@ int main(int argc, char** argv) {
         }
       }
 
-      char* full_arg = (char*)clang_allocator.alloc_zero(4000);
-      Mstring_t full_arg_str(full_arg, 4000);
-      for (int j = 0; j < args.len(); ++j) {
-        full_arg_str.append('"');
-        full_arg_str.append(args[j]);
-        full_arg_str.append('"');
-        full_arg_str.append(' ');
-      }
-      M_logi("%s", full_arg);
-
       S64 t = mono_time_now();
       CXTranslationUnit unit;
       // TODO: Remember to change the working directory
@@ -231,7 +217,6 @@ int main(int argc, char** argv) {
           if (check_cursor_attribute_(cursor, "reflected")) {
             Allocator_t* allocator = (Allocator_t*)client_data;
             g_class_name_ = copy_string(allocator, cursor_name_cstr);
-            M_logi("class %s", cursor_name_cstr);
             g_fields_.init(&clang_allocator);
             clang_visitChildren(cursor, &visit_reflected_class_, client_data);
           }
@@ -246,7 +231,15 @@ int main(int argc, char** argv) {
       File_t f;
       f.open(reflection_header_path.m_path, e_file_mode_write);
       M_scope_exit(f.close());
-      auto template_str = string_format(&clang_allocator, gc_reflection_template_comment_, Path_t::from_char(reflection_path).join(input_path.get_name()).get_path8().m_path);
+      Os_cstring_t path_without_dot_dot;
+      for (int j = 0; j < input_path.m_path_str.m_length; ++j) {
+        char c = input_path.m_path_str.m_p[j];
+        if (c != M_os_txt('.') && c != M_os_txt('\\') && c != M_os_txt('/')) {
+          path_without_dot_dot = input_path.m_path_str.get_substr_from_offset(j).to_const();
+          break;
+        }
+      }
+      auto template_str = string_format(&clang_allocator, gc_reflection_template_comment_, path_without_dot_dot.m_p);
       f.write(NULL, template_str.m_p, template_str.m_length);
       template_str = string_format(&clang_allocator, gc_reflection_template_body_, input_path8.m_path_str.get_substr_from_offset(6).m_p, g_class_name_, g_class_name_);
       f.write(NULL, template_str.m_p, template_str.m_length);

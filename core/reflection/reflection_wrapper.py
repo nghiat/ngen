@@ -25,7 +25,6 @@ if __name__ == "__main__":
   reflection_cmd += ["--cc-out-dir", cc_out_dir]
 
   reflection_cmd += [os.path.join(reflection_dir, name) for name in headers]
-  print(reflection_cmd)
 
   ret = subprocess.call(reflection_cmd)
   if ret != 0:
