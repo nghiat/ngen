@@ -348,10 +348,10 @@ static Dx12_subbuffer_t_ allocate_subbuffer_(Dx12_buffer_t_* buffer, Sip size, S
   return subbuffer;
 }
 
-static bool compile_shader_(const Os_char* path, const char* entry, const char* target, ID3DBlob** shader) {
+static bool compile_shader_(const Path_t& path, const char* entry, const char* target, ID3DBlob** shader) {
   UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
   ID3DBlob* error;
-  if (D3DCompileFromFile(path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
+  if (D3DCompileFromFile(path.m_path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
     M_logf("%s", (const char*)error->GetBufferPointer());
     return false;
   }
@@ -592,15 +592,14 @@ bool Dx12_window_t::init() {
   }
 
   {
-    Os_char shader_path[M_max_path_len];
-    path_from_exe_dir(shader_path, M_txt("assets/shadow.hlsl"), M_max_path_len);
+    Path_t shader_path = g_exe_dir.join(M_txt("assets/shadow.hlsl"));
     compile_shader_(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
 
-    path_from_exe_dir(shader_path, M_txt("assets/shader.hlsl"), M_max_path_len);
+    shader_path = g_exe_dir.join(M_txt("assets/shader.hlsl"));
     compile_shader_(shader_path, "VSMain", "vs_5_0", &m_final_vs);
     compile_shader_(shader_path, "PSMain", "ps_5_0", &m_final_ps);
 
-    path_from_exe_dir(shader_path, M_txt("assets/ui.hlsl"), M_max_path_len);
+    shader_path = g_exe_dir.join(M_txt("assets/ui.hlsl"));
     compile_shader_(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
     compile_shader_(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
     compile_shader_(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
@@ -727,9 +726,8 @@ bool Dx12_window_t::init() {
 
   {
     stbtt_fontinfo font;
-    Os_char font_path[M_max_path_len];
-    path_from_exe_dir(font_path, M_txt("assets/UbuntuMono-Regular.ttf"), M_max_path_len);
-    Dynamic_array_t<U8> font_buf = File_t::read_whole_file_as_text(g_persistent_allocator, font_path);
+    Path_t font_path = g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf"));
+    Dynamic_array_t<U8> font_buf = File_t::read_whole_file_as_text(g_persistent_allocator, font_path.m_path);
     M_check_return_val(stbtt_InitFont(&font, &font_buf[0], stbtt_GetFontOffsetForIndex(&font_buf[0], 0)) != 0, false);
     g_font.fontinfo = font;
     const int c_tex_w = 2048;
@@ -866,8 +864,8 @@ bool Dx12_window_t::init() {
     m_console_subbuffer = allocate_subbuffer_(&m_vertex_buffer, 6 * sizeof(V2_t), 16);
     for (int i = 0; i < m_obj_count; ++i) {
       Obj_loader_t obj;
-      Os_char full_obj_path[M_max_path_len];
-      obj.init(&temp_allocator, path_from_exe_dir(full_obj_path, obj_paths[i], M_max_path_len));
+      Path_t full_obj_path = g_exe_dir.join(obj_paths[i]);
+      obj.init(&temp_allocator, full_obj_path.m_path);
       m_obj_vertices_counts[i] = obj.m_vertices.len();
       int vertices_size = m_obj_vertices_counts[i] * sizeof(obj.m_vertices[0]);
       int normals_size = m_obj_vertices_counts[i] * sizeof(obj.m_normals[0]);
