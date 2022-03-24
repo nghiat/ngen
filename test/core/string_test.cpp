@@ -6,35 +6,8 @@
 
 #include "core/string.h"
 
+#include "core/string_utils.h"
 #include "test/test.h"
-
-template <typename T>
-const T* c_or_w_(const char* c, const wchar_t* w);
-
-template <>
-const char* c_or_w_(const char* c, const wchar_t* w) {
-  return c;
-}
-
-template <>
-const wchar_t* c_or_w_(const char* c, const wchar_t* w) {
-  return w;
-}
-
-template <typename T>
-T c_or_w_(char c, wchar_t w);
-
-template <>
-char c_or_w_(char c, wchar_t w) {
-  return c;
-}
-
-template <>
-wchar_t c_or_w_(char c, wchar_t w) {
-  return w;
-}
-
-#define M_c_or_w_(str, type) c_or_w_<type>(str, L##str)
 
 template <typename T_string, typename T_char>
 void template_cstring_test_() {
@@ -45,68 +18,68 @@ void template_cstring_test_() {
     M_test(cstr.m_length == 0);
   }
   {
-    T_string cstr(M_c_or_w_('a', T));
+    T_string cstr(M_c_or_w(T, 'a'));
     M_test(cstr.m_length == 1);
-    M_test(cstr.m_p[0] == M_c_or_w_('a', T));
+    M_test(cstr.m_p[0] == M_c_or_w(T, 'a'));
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
+    T_string cstr(M_c_or_w(T, "abc"));
     M_test(cstr.m_length == 3);
   }
   {
-    T_string cstr(M_c_or_w_("abc", T), 2);
+    T_string cstr(M_c_or_w(T, "abc"), 2);
     M_test(cstr.m_length == 2);
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.ends_with(M_c_or_w_("c", T)));
-    M_test(cstr.ends_with(M_c_or_w_('c', T)));
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.ends_with(M_c_or_w(T, "c")));
+    M_test(cstr.ends_with(M_c_or_w(T, 'c')));
   }
   {
-    T_string cstr(M_c_or_w_("abc", T), 4);
-    M_test(cstr.ends_with(M_c_or_w_('\0', T)));
+    T_string cstr(M_c_or_w(T, "abc"), 4);
+    M_test(cstr.ends_with(M_c_or_w(T, '\0')));
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.equals(M_c_or_w_("abc", T)));
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.equals(M_c_or_w(T, "abc")));
     M_test(cstr.equals(cstr));
-    cstr = T_string(M_c_or_w_("abc", T), 4);
-    M_test(!cstr.equals(M_c_or_w_("abc", T)));
+    cstr = T_string(M_c_or_w(T, "abc"), 4);
+    M_test(!cstr.equals(M_c_or_w(T, "abc")));
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.find_substr(M_c_or_w_("c", T)).m_p);
-    M_test(cstr.find_substr(M_c_or_w_("c", T)).m_length);
-    M_test(cstr.find_substr(T_string(M_c_or_w_("c", T), 2)).m_p == NULL);
-    M_test(cstr.find_substr(T_string(M_c_or_w_("c", T), 2)).m_length == 0);
-    cstr = T_string(M_c_or_w_("abc", T), 4);
-    M_test(cstr.find_substr(T_string(M_c_or_w_("c", T), 2)).m_p);
-    M_test(cstr.find_substr(T_string(M_c_or_w_("c", T), 2)).m_length);
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.find_substr(M_c_or_w(T, "c")).m_p);
+    M_test(cstr.find_substr(M_c_or_w(T, "c")).m_length);
+    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_p == NULL);
+    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_length == 0);
+    cstr = T_string(M_c_or_w(T, "abc"), 4);
+    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_p);
+    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_length);
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.find_substr(M_c_or_w_("a", T)).m_p == cstr.m_p);
-    M_test(cstr.find_substr(M_c_or_w_("ab", T)).m_p == cstr.m_p);
-    M_test(cstr.find_substr(M_c_or_w_("b", T)).m_p == cstr.m_p + 1);
-    M_test(cstr.find_substr(M_c_or_w_('\0', T)).m_p == NULL);
-    cstr = T_string(M_c_or_w_("abc", T), 4);
-    M_test(cstr.find_substr(M_c_or_w_('\0', T)).m_p == cstr.m_p + 3);
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.find_substr(M_c_or_w(T, "a")).m_p == cstr.m_p);
+    M_test(cstr.find_substr(M_c_or_w(T, "ab")).m_p == cstr.m_p);
+    M_test(cstr.find_substr(M_c_or_w(T, "b")).m_p == cstr.m_p + 1);
+    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == NULL);
+    cstr = T_string(M_c_or_w(T, "abc"), 4);
+    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.find_char(M_c_or_w_('a', T)).m_p == cstr.m_p);
-    M_test(cstr.find_char(M_c_or_w_('b', T)).m_p == cstr.m_p + 1);
-    M_test(cstr.find_char(M_c_or_w_('\0', T)).m_p == NULL);
-    cstr = T_string(M_c_or_w_("abc", T), 4);
-    M_test(cstr.find_substr(M_c_or_w_('\0', T)).m_p == cstr.m_p + 3);
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.find_char(M_c_or_w(T, 'a')).m_p == cstr.m_p);
+    M_test(cstr.find_char(M_c_or_w(T, 'b')).m_p == cstr.m_p + 1);
+    M_test(cstr.find_char(M_c_or_w(T, '\0')).m_p == NULL);
+    cstr = T_string(M_c_or_w(T, "abc"), 4);
+    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
   }
   {
-    T_string cstr(M_c_or_w_("abc", T));
-    M_test(cstr.find_char_reverse(M_c_or_w_('a', T)).m_p == cstr.m_p);
-    M_test(cstr.find_char_reverse(M_c_or_w_('b', T)).m_p == cstr.m_p + 1);
+    T_string cstr(M_c_or_w(T, "abc"));
+    M_test(cstr.find_char_reverse(M_c_or_w(T, 'a')).m_p == cstr.m_p);
+    M_test(cstr.find_char_reverse(M_c_or_w(T, 'b')).m_p == cstr.m_p + 1);
     M_test(cstr.find_char_reverse('\0').m_p == NULL);
-    cstr = T_string(M_c_or_w_("abc", T), 4);
-    M_test(cstr.find_char_reverse(M_c_or_w_('\0', T)).m_p == cstr.m_p + 3);
+    cstr = T_string(M_c_or_w(T, "abc"), 4);
+    M_test(cstr.find_char_reverse(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
   }
 }
 
@@ -116,14 +89,14 @@ void template_mstring_test_() {
   {
     T buffer[100] = {};
     T_string mstr(buffer, 100);
-    mstr.append(M_c_or_w_('a', T));
-    M_test(mstr.equals(M_c_or_w_("a", T)));
-    mstr.append(M_c_or_w_("bc", T));
-    M_test(mstr.equals(M_c_or_w_("abc", T)));
-    mstr.copy(M_c_or_w_("aaa", T));
-    M_test(mstr.equals(M_c_or_w_("aaa", T)));
-    mstr.replace(M_c_or_w_('a', T), M_c_or_w_('b', T));
-    M_test(mstr.equals(M_c_or_w_("bbb", T)));
+    mstr.append(M_c_or_w(T, 'a'));
+    M_test(mstr.equals(M_c_or_w(T, "a")));
+    mstr.append(M_c_or_w(T, "bc"));
+    M_test(mstr.equals(M_c_or_w(T, "abc")));
+    mstr.copy(M_c_or_w(T, "aaa"));
+    M_test(mstr.equals(M_c_or_w(T, "aaa")));
+    mstr.replace(M_c_or_w(T, 'a'), M_c_or_w(T, 'b'));
+    M_test(mstr.equals(M_c_or_w(T, "bbb")));
   }
 }
 

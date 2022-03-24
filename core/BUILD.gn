@@ -73,6 +73,7 @@ static_library("core") {
     "reflection/reflection.h",
     "string.cpp",
     "string.h",
+    "string_utils.cpp",
     "string_utils.h",
     "string_utils_char.cpp",
     "types.h",
@@ -125,6 +126,16 @@ executable("reflection_parser") {
 
   deps = [
     ":core",
+    ":reflection_template",
     "//third_party/libclang",
+  ]
+}
+
+copy("reflection_template") {
+  sources = [
+    "reflection/template.reflection.cpp",
+  ]
+  outputs = [
+    "$root_out_dir/template/{{source_file_part}}"
   ]
 }

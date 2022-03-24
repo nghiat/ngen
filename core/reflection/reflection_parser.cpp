@@ -9,6 +9,7 @@
 #include "core/command_line.h"
 #include "core/dynamic_array.inl"
 #include "core/file.h"
+#include "core/hash_table.inl"
 #include "core/linear_allocator.inl"
 #include "core/log.h"
 #include "core/mono_time.h"
@@ -24,45 +25,8 @@
 #include <string.h>
 
 static char* g_class_name_ = NULL;
-static const char* gc_reflection_template_comment_ = "// This file is generated from " M_txt_p;
-
-static const char* gc_reflection_template_body_ = R"(
-#include "%s"
-
-#include "core/reflection/reflection.h"
-
-#include "core/core_allocators.h"
-#include "core/dynamic_array.inl"
-#include "core/string.h"
-#include "core/string_utils.h"
-
-Class_info_t g_class_info_;
-bool g_is_init_ = false;
-
-static void init_fields_();
-
-template <>
-Class_info_t* get_class_info<%s>() {
-  if (g_is_init_) {
-    return &g_class_info_;
-  }
-  g_class_info_.m_class_name = string_format(g_general_allocator, "%%s", "%s").to_const();
-  init_fields_();
-  g_is_init_ = true;
-  return &g_class_info_;
-}
+static const char* gc_init_fields_field_ = R"(  g_class_info_.m_fields.append("%s");
 )";
-
-static const char* gc_init_fields_start_ = R"(
-static void init_fields_() {
-  g_class_info_.m_fields.init(g_general_allocator);
-  g_class_info_.m_fields.reserve(%d);
-)";
-
-static const char* gc_init_fields_field_ = R"(
-  g_class_info_.m_fields.append("%s");)";
-
-static const char* gc_init_fields_end_ = "\n}";
 
 static char* copy_string(Allocator_t* allocator, const char* str) {
   char* rv = NULL;
@@ -231,26 +195,41 @@ int main(int argc, char** argv) {
       File_t f;
       f.open(reflection_header_path.m_path, e_file_mode_write);
       M_scope_exit(f.close());
-      Os_cstring_t path_without_dot_dot;
-      for (int j = 0; j < input_path.m_path_str.m_length; ++j) {
-        char c = input_path.m_path_str.m_p[j];
+      Cstring_t path_without_dot_dot;
+      for (int j = 0; j < input_path8.m_path_str.m_length; ++j) {
+        char c = input_path8.m_path_str.m_p[j];
         if (c != M_txt('.') && c != M_txt('\\') && c != M_txt('/')) {
-          path_without_dot_dot = input_path.m_path_str.get_substr_from_offset(j).to_const();
+          path_without_dot_dot = input_path8.m_path_str.get_substr_from_offset(j).to_const();
           break;
         }
       }
-      auto template_str = string_format(&clang_allocator, gc_reflection_template_comment_, path_without_dot_dot.m_p);
-      f.write(NULL, template_str.m_p, template_str.m_length);
-      template_str = string_format(&clang_allocator, gc_reflection_template_body_, input_path8.m_path_str.get_substr_from_offset(6).m_p, g_class_name_, g_class_name_);
-      f.write(NULL, template_str.m_p, template_str.m_length);
-      template_str = string_format(&clang_allocator, gc_init_fields_start_, g_fields_.len());
-      f.write(NULL, template_str.m_p, template_str.m_length);
+
+      Path_t template_path = g_exe_dir.join(M_txt("template")).join(M_txt("template.reflection.cpp"));
+      Dynamic_array_t<U8> template_format = File_t::read_whole_file_as_text(&clang_allocator, template_path.m_path);
+
+      auto dict = string_format_setup<char>(&clang_allocator, (char*)template_format.m_p, NULL);
+      dict["source_header_path"] = path_without_dot_dot.m_p;
+      dict["class_name"] = g_class_name_;
+      const int c_field_count_buffer_size = 10;
+      char field_count_str[c_field_count_buffer_size];
+      M_check(snprintf(NULL, 0, "%lld", g_fields_.len()) < c_field_count_buffer_size - 1);
+      snprintf(field_count_str, c_field_count_buffer_size, "%lld", g_fields_.len());
+      dict["field_count"] = field_count_str;
+
+      Dynamic_array_t<char> init_fields;
+      init_fields.init(&clang_allocator);
+      init_fields.append(0);
       for (int j = 0; j < g_fields_.len(); ++j) {
-        template_str = string_format(&clang_allocator, gc_init_fields_field_, g_fields_[j].m_p);
-        f.write(NULL, template_str.m_p, template_str.m_length);
+        int field_str_len = snprintf(NULL, 0, gc_init_fields_field_, g_fields_[j].m_p);
+        int init_fields_old_len = init_fields.len();
+        init_fields.resize(init_fields_old_len + field_str_len);
+        // | - 1| to exclude null character
+        snprintf(init_fields.m_p + init_fields_old_len - 1, field_str_len + 1, gc_init_fields_field_, g_fields_[j].m_p);
       }
-      f.write(NULL, gc_init_fields_end_, strlen(gc_init_fields_end_));
+      dict["fields"] = init_fields.m_p;
       M_logi("parse time: %f", mono_time_to_ms(mono_time_now() - t));
+      auto final_template = string_format<char>(&clang_allocator, (char*)template_format.m_p, dict);
+      f.write(NULL, final_template.m_p, final_template.m_length);
       break;
     }
   }

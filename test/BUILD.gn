@@ -17,6 +17,7 @@ executable("core_test") {
     "core/linear_allocator_test.cpp",
     "core/path_test.cpp",
     "core/string_test.cpp",
+    "core/string_utils_test.cpp",
     "core/utils_test.cpp",
     "main.cpp",
   ]

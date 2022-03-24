@@ -47,6 +47,12 @@ T_string String_crtp_t_<T_char, T_string>::get_substr_from_offset(int offset) co
 }
 
 template <typename T_char, typename T_string>
+T_string String_crtp_t_<T_char, T_string>::get_substr_from_offset(int offset, int length) const {
+  T_string* str = (T_string*)this;
+  return str->convert_string_t_substr_to_this_(String_t_<T_char>(str->m_p + offset, length));
+}
+
+template <typename T_char, typename T_string>
 T_string String_crtp_t_<T_char, T_string>::find_substr(const String_t_<const T_char>& substr) const {
   T_string* str = (T_string*)this;
   return str->convert_string_t_substr_to_this_(str->find_substr_(substr));
@@ -84,6 +90,11 @@ bool String_t_<T>::ends_with(const String_t_<const T>& str) const {
     return false;
   }
   return memcmp(m_p + m_length - str.m_length, str.m_p, str.m_length * sizeof(T)) == 0;
+}
+
+template <typename T>
+bool String_t_<T>::operator==(const String_t_<const T>& str) const {
+  return equals(str);
 }
 
 template <typename T>
@@ -160,6 +171,11 @@ Const_string_t_<T> Const_string_t_<T>::convert_string_t_substr_to_this_(const St
 }
 
 template <typename T>
+Sz Hash_t<Const_string_t_<T>>::operator()(const Const_string_t_<T>& key) const {
+  return fnv1((const U8*)key.m_p, key.m_length * sizeof(T));
+}
+
+template <typename T>
 Mutable_string_t_<T>::Mutable_string_t_() {}
 
 template <typename T>
@@ -167,6 +183,9 @@ Mutable_string_t_<T>::Mutable_string_t_(T* str) : String_t_<T>(str), m_capacity(
 
 template <typename T>
 Mutable_string_t_<T>::Mutable_string_t_(T* str, Sip cap) : String_t_<T>(str), m_capacity(cap) {}
+
+template <typename T>
+Mutable_string_t_<T>::Mutable_string_t_(T* str, Sip len, Sip cap) : String_t_<T>(str, len), m_capacity(cap) {}
 
 template <typename T>
 Mutable_string_t_<T>::operator String_t_<const T>() const {
@@ -236,6 +255,8 @@ template class String_t_<wchar_t>;
 
 template class Const_string_t_<const char>;
 template class Const_string_t_<const wchar_t>;
+template class Hash_t<Const_string_t_<const char>>;
+template class Hash_t<Const_string_t_<const wchar_t>>;
 template class Mutable_string_t_<char>;
 template class Mutable_string_t_<wchar_t>;
 

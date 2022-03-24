@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 template <>
-Mstring_t_<char> string_format(Allocator_t* allocator, const char* format, ...) {
+Mstring_t_<char> string_printf(Allocator_t* allocator, const char* format, ...) {
   va_list argptr;
   va_start(argptr, format);
   va_list argptr2;

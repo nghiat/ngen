@@ -26,6 +26,7 @@ int main(int argc, char** argv) {
   M_register_test(hash_map_test);
   M_register_test(path_test);
   M_register_test(string_test);
+  M_register_test(string_utils_test);
   M_register_test(utils_test);
   for (auto& test : g_tests_) {
     M_logi("Running test %s", test.key);

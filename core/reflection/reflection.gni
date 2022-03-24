@@ -60,7 +60,10 @@ template("reflection") {
       rel_cc_out_dir,
     ]
     inputs = [ reflection_exe_path ]
-    deps = [ reflection_label ]
+    deps = [
+      reflection_label,
+      "//core:reflection_template"
+    ]
   }
 
   config_name = "${target_name}_config"

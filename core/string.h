@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/os.h"
+#include "core/hash.h"
 #include "core/types.h"
 
 template <typename T>
@@ -17,6 +18,7 @@ public:
   String_t_(T* str);
   String_t_(T* str, Sip len);
 
+  bool operator==(const String_t_<const T>& str) const;
   bool equals(const String_t_<const T>& str) const;
   bool ends_with(const String_t_<const T>& str) const;
   String_t_<T> find_substr_(const String_t_<const T>& substr) const;
@@ -34,6 +36,7 @@ class String_crtp_t_ {
 public:
   T_string get_substr_till(const String_t_<const T_char>& substr) const;
   T_string get_substr_from_offset(int offset) const;
+  T_string get_substr_from_offset(int offset, int length) const;
   T_string find_substr(const String_t_<const T_char>& substr) const;
   T_string find_char(T_char c) const;
   T_string find_char_reverse(T_char c) const;
@@ -48,11 +51,17 @@ public:
 };
 
 template <typename T>
+struct Hash_t<Const_string_t_<T>> {
+  Sz operator()(const Const_string_t_<T>& key) const;
+};
+
+template <typename T>
 class Mutable_string_t_ : public String_t_<T>, public String_crtp_t_<T, Mutable_string_t_<T>> {
 public:
   Mutable_string_t_();
   Mutable_string_t_(T* str);
   Mutable_string_t_(T* str, Sip cap);
+  Mutable_string_t_(T* str, Sip len, Sip cap);
 
   operator String_t_<const T>() const;
 
