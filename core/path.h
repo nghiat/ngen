@@ -34,6 +34,7 @@ public:
 
   Cstring_t_<T> get_name() const;
   Path_t_ get_parent_dir() const;
+  Path_t_ get_absolute_path() const;
   Path_t_ join(const Cstring_t_<T>& subpath) const;
 
   static T s_native_separator_;

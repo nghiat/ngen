@@ -92,6 +92,7 @@ static_library("core") {
       "mono_time_win.cpp",
       "string_utils_wchar.cpp",
       "path_utils_win.cpp",
+      "path_win.cpp",
       "thread_win.cpp",
       "window/window_win.cpp",
     ]
@@ -109,6 +110,7 @@ static_library("core") {
       "file_linux.cpp",
       "mono_time_linux.cpp",
       "path_utils_linux.cpp",
+      "path_linux.cpp",
       "thread_unix.cpp",
       "window/window_x11.cpp",
     ]

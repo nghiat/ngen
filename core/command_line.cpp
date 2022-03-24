@@ -26,7 +26,7 @@ void Command_line_t::destroy() {
   m_unnamed_args_allocator.destroy();
 }
 
-void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_value_type value_type) {
+void Command_line_t::register_flag(const char* short_flag, const char* long_flag, E_value_type value_type) {
   M_check_return(short_flag || long_flag);
   if (short_flag) {
     M_check_log_return(strlen(short_flag) == 2 && short_flag[0] == '-' && isdigit(short_flag[1]) || isalpha(short_flag[1]), "Invalid short_flag");
@@ -65,7 +65,7 @@ void Command_line_t::add_flag(const char* short_flag, const char* long_flag, E_v
   }
 }
 
-void Command_line_t::parse(int argc, char** argv) {
+bool Command_line_t::parse(int argc, const char* const* argv) {
   Value_t* pending_value = nullptr;
   for (int i = 1; i < argc; ++i) {
     const char* arg = argv[i];
@@ -88,16 +88,17 @@ void Command_line_t::parse(int argc, char** argv) {
         continue;
       }
 
-      M_check_log_return(arg[1] != '-', "Invalid flag");
-      M_check_log_return(m_short_to_long_flag_map[arg[1]] != nullptr, "%s is an invalid flag", arg);
+      M_check_log_return_val(arg[1] != '-', false, "-- is an invalid flag");
+      M_check_log_return_val(m_short_to_long_flag_map[arg[1]] != nullptr, false, "%s is an unregistered flag", arg);
       v = m_flags.find(m_short_to_long_flag_map[arg[1]]);
     } else {
       if (arg[0] != '-') {
         m_unnamed_args.append(arg);
         continue;
       }
-      M_check_log_return(arg[1] == '-' && arg_len > 3, "Invalid flag");
+      M_check_log_return_val(arg[1] == '-' && arg_len > 3, false, "Short flag can only have two characters and long flag has to have two - and more than one character after that");
       v = m_flags.find(arg + 2);
+      M_check_log_return_val(v, false, "%s is an unregistered flag", arg);
     }
 
     if (v->m_value_type == e_value_type_bool) {
@@ -106,12 +107,26 @@ void Command_line_t::parse(int argc, char** argv) {
       pending_value = v;
     }
   }
+  M_check_log_return_val(!pending_value, false, "Flag %s requires a value", argv[argc - 1]);
+  return true;
 }
 
-Value_t Command_line_t::get_flag_value(const char* flag) const {
-  Value_t* rv = m_flags.find(flag);
-  M_check(rv);
-  return *rv;
+Value_t Command_line_t::get_flag_value(const Cstring_t& flag) const {
+  Value_t rv;
+  Value_t* rv_p;
+  M_check_return_val(flag.m_length > 1, rv);
+  M_check_return_val(flag.m_p[0] == '-', rv);
+  if (flag.m_length == 2) {
+    M_check_return_val(flag.m_p[1] != '-', rv);
+    rv_p = m_flags.find(m_short_to_long_flag_map[flag.m_p[1]]);
+  }
+  if (flag.m_length > 2) {
+    M_check_return_val(flag.m_p[1] == '-', rv);
+    M_check_return_val(flag.m_length > 3, rv);
+    rv_p = m_flags.find(flag.m_p + 2);
+  }
+  M_check_log_return_val(rv_p, rv, "Unregistered flag");
+  return *rv_p;
 }
 
 const Dynamic_array_t<const char*>& Command_line_t::get_unnamed_args() const {

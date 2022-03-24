@@ -86,11 +86,11 @@ int main(int argc, char** argv) {
   Command_line_t cl;
   cl.init(g_persistent_allocator);
   M_scope_exit(cl.destroy());
-  cl.add_flag(NULL, "--reflection-path", e_value_type_string);
-  cl.add_flag(NULL, "--cc-out-dir", e_value_type_string);
+  cl.register_flag(NULL, "--reflection-path", e_value_type_string);
+  cl.register_flag(NULL, "--cc-out-dir", e_value_type_string);
   cl.parse(argc, argv);
-  Cstring_t reflection_path(cl.get_flag_value("reflection-path").get_string());
-  Cstring_t cc_out_dir(cl.get_flag_value("cc-out-dir").get_string());
+  Cstring_t reflection_path(cl.get_flag_value("--reflection-path").get_string());
+  Cstring_t cc_out_dir(cl.get_flag_value("--cc-out-dir").get_string());
 
   const Dynamic_array_t<const char*>& unnamed_args = cl.get_unnamed_args();
   M_check(unnamed_args.len() == 1);
