@@ -21,7 +21,6 @@
 #include "core/path_utils.h"
 #include "core/utils.h"
 #include "core/window/window.h"
-#include "core/window/window.h"
 #include "sample/cam.h"
 #include "sample/quake_console.h"
 

@@ -7,3 +7,6 @@
 [submodule "third_party/libclang/llvm-project"]
 	path = third_party/libclang/llvm-project
 	url = https://github.com/nghiat/llvm-project
+[submodule "third_party/vulkan/Vulkan-Headers"]
+	path = third_party/vulkan/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers

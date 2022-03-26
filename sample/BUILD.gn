@@ -46,6 +46,20 @@ reflection("test_reflection") {
   ]
 }
 
+executable("vulkan_sample") {
+  sources = [
+    "vulkan_sample.cpp",
+  ]
+
+  configs += [
+    "//third_party/vulkan:vulkan_config",
+  ]
+
+  deps = [
+    "//assets",
+    "//core",
+  ]
+}
 executable("dx12_sample") {
   sources = [
     "cam.cpp",
