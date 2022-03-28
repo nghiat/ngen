@@ -114,6 +114,12 @@ static_library("core") {
       "thread_unix.cpp",
       "window/window_x11.cpp",
     ]
+    libs = [
+      "X11",
+      "xcb",
+      "X11-xcb",
+      "xcb-keysyms",
+    ]
   }
 }
 

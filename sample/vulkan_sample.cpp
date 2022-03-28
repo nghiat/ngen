@@ -159,7 +159,9 @@ PFN_vkCmdNextSubpass vkCmdNextSubpass;
 PFN_vkCmdEndRenderPass vkCmdEndRenderPass;
 PFN_vkCmdExecuteCommands vkCmdExecuteCommands;
 
+#if M_os_is_win()
 PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#endif
 
 PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
@@ -178,7 +180,11 @@ static VkBool32 debug_cb(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT
 
 static void load_vulkan_() {
   Dynamic_lib_t vulkan_lib;
+#if M_os_is_win()
   vulkan_lib.open("vulkan-1.dll");
+#elif M_os_is_linux()
+  vulkan_lib.open("libvulkan.so");
+#endif
 
   vkCreateInstance = (PFN_vkCreateInstance)vulkan_lib.get_proc("vkCreateInstance");
   M_check(vkCreateInstance);
@@ -488,7 +494,13 @@ int main() {
     const char* instance_exts[] = {
       VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
       "VK_KHR_surface",
-      "VK_KHR_win32_surface",
+#if M_os_is_win()
+      VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif M_os_is_linux()
+      VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+#else
+#error "?"
+#endif
     };
     const char* layers[] = {
       "VK_LAYER_KHRONOS_validation",
@@ -505,11 +517,21 @@ int main() {
 
   VkSurfaceKHR surface;
   {
+#if M_os_is_win()
     VkWin32SurfaceCreateInfoKHR win32_surface_ci = {};
     win32_surface_ci.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     win32_surface_ci.hwnd = w.m_platform_data.hwnd;
     win32_surface_ci.hinstance = GetModuleHandle(nullptr);
     M_vk_check(vkCreateWin32SurfaceKHR(instance, &win32_surface_ci, nullptr, &surface));
+#elif M_os_is_linux()
+    VkXCBSurfaceCreateInfoKHR xcb_surface_ci = {};
+    xcb_surface_ci.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+    xcb_surface_ci.connect = w.m_platform_data.hwnd;
+    xcb_surface_ci.window = GetModuleHandle(nullptr);
+    M_vk_check(vkCreateWin32SurfaceKHR(instance, &win32_surface_ci, nullptr, &surface));
+#else
+#error "?"
+#endif
   }
 
   VkPhysicalDevice chosen_device = VK_NULL_HANDLE;
@@ -630,102 +652,102 @@ int main() {
   }
 
   {
-    // Find surface capabilities
-    VkSurfaceCapabilitiesKHR surface_capabilities;
-    M_vk_check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(chosen_device, surface, &surface_capabilities));
-    // Find supported surface formats
-    U32 format_count;
-    M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(chosen_device, surface, &format_count, nullptr));
+    // // Find surface capabilities
+    // VkSurfaceCapabilitiesKHR surface_capabilities;
+    // M_vk_check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(chosen_device, surface, &surface_capabilities));
+    // // Find supported surface formats
+    // U32 format_count;
+    // M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(chosen_device, surface, &format_count, nullptr));
 
-    Dynamic_array_t<VkSurfaceFormatKHR> surface_formats;
-    surface_formats.init(&vulkan_allocator);
-    M_scope_exit(surface_formats.destroy());
-    surface_formats.resize(format_count);
-    M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(chosen_device, surface, &format_count, surface_formats.m_p));
+    // Dynamic_array_t<VkSurfaceFormatKHR> surface_formats;
+    // surface_formats.init(&vulkan_allocator);
+    // M_scope_exit(surface_formats.destroy());
+    // surface_formats.resize(format_count);
+    // M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(chosen_device, surface, &format_count, surface_formats.m_p));
 
-    // Find supported present modes
-    U32 present_mode_count;
-    M_vk_check(vkGetPhysicalDeviceSurfacePresentModesKHR(chosen_device, surface, &present_mode_count, nullptr));
+    // // Find supported present modes
+    // U32 present_mode_count;
+    // M_vk_check(vkGetPhysicalDeviceSurfacePresentModesKHR(chosen_device, surface, &present_mode_count, nullptr));
 
-    Dynamic_array_t<VkPresentModeKHR> present_modes;
-    present_modes.init(&vulkan_allocator);
-    M_scope_exit(present_modes.destroy());
-    present_modes.resize(present_mode_count);
-    M_vk_check(vkGetPhysicalDeviceSurfacePresentModesKHR(chosen_device, surface, &present_mode_count, present_modes.m_p));
+    // Dynamic_array_t<VkPresentModeKHR> present_modes;
+    // present_modes.init(&vulkan_allocator);
+    // M_scope_exit(present_modes.destroy());
+    // present_modes.resize(present_mode_count);
+    // M_vk_check(vkGetPhysicalDeviceSurfacePresentModesKHR(chosen_device, surface, &present_mode_count, present_modes.m_p));
 
-    // Determine number of images for swap chain
-    U32 image_count = surface_capabilities.minImageCount + 1;
-    if (surface_capabilities.maxImageCount != 0 && image_count > surface_capabilities.maxImageCount) {
-      image_count = surface_capabilities.maxImageCount;
-    }
+    // // Determine number of images for swap chain
+    // U32 image_count = surface_capabilities.minImageCount + 1;
+    // if (surface_capabilities.maxImageCount != 0 && image_count > surface_capabilities.maxImageCount) {
+    //   image_count = surface_capabilities.maxImageCount;
+    // }
 
-    // Select a surface format
-    VkSurfaceFormatKHR surface_format = VK_FORMAT_R8G8B8A8_UNORM;
+    // // Select a surface format
+    // VkSurfaceFormatKHR surface_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-    // Select swap chain size
-    VkExtent2D swapchain_extent = { 1024, 768 };
+    // // Select swap chain size
+    // VkExtent2D swapchain_extent = { 1024, 768 };
 
-    // Determine transformation to use (preferring no transform)
-    VkSurfaceTransformFlagBitsKHR surface_transform;
-    if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-      surface_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    } else {
-      surface_transform = surface_capabilities.currentTransform;
-    }
+    // // Determine transformation to use (preferring no transform)
+    // VkSurfaceTransformFlagBitsKHR surface_transform;
+    // if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+    //   surface_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    // } else {
+    //   surface_transform = surface_capabilities.currentTransform;
+    // }
 
-    // Choose presentation mode (preferring MAILBOX ~= triple buffering)
-    VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+    // // Choose presentation mode (preferring MAILBOX ~= triple buffering)
+    // VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
-    // Finally, create the swap chain
-    VkSwapchainCreateInfoKHR swapchain = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = swapChainExtent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 0;
-    createInfo.pQueueFamilyIndices = nullptr;
-    createInfo.preTransform = surfaceTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = oldSwapChain;
+    // // Finally, create the swap chain
+    // VkSwapchainCreateInfoKHR swapchain = {};
+    // createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    // createInfo.surface = surface;
+    // createInfo.minImageCount = imageCount;
+    // createInfo.imageFormat = surfaceFormat.format;
+    // createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    // createInfo.imageExtent = swapChainExtent;
+    // createInfo.imageArrayLayers = 1;
+    // createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    // createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    // createInfo.queueFamilyIndexCount = 0;
+    // createInfo.pQueueFamilyIndices = nullptr;
+    // createInfo.preTransform = surfaceTransform;
+    // createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    // createInfo.presentMode = presentMode;
+    // createInfo.clipped = VK_TRUE;
+    // createInfo.oldSwapchain = oldSwapChain;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
-      std::cerr << "failed to create swap chain" << std::endl;
-      exit(1);
-    } else {
-      std::cout << "created swap chain" << std::endl;
-    }
+    // if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    //   std::cerr << "failed to create swap chain" << std::endl;
+    //   exit(1);
+    // } else {
+    //   std::cout << "created swap chain" << std::endl;
+    // }
 
-    if (oldSwapChain != VK_NULL_HANDLE) {
-      vkDestroySwapchainKHR(device, oldSwapChain, nullptr);
-    }
-    oldSwapChain = swapChain;
+    // if (oldSwapChain != VK_NULL_HANDLE) {
+    //   vkDestroySwapchainKHR(device, oldSwapChain, nullptr);
+    // }
+    // oldSwapChain = swapChain;
 
-    swapChainFormat = surfaceFormat.format;
+    // swapChainFormat = surfaceFormat.format;
 
-    // Store the images used by the swap chain
-    // Note: these are the images that swap chain image indices refer to
-    // Note: actual number of images may differ from requested number, since it's a lower bound
-    uint32_t actualImageCount = 0;
-    if (vkGetSwapchainImagesKHR(device, swapChain, &actualImageCount, nullptr) != VK_SUCCESS || actualImageCount == 0) {
-      std::cerr << "failed to acquire number of swap chain images" << std::endl;
-      exit(1);
-    }
+    // // Store the images used by the swap chain
+    // // Note: these are the images that swap chain image indices refer to
+    // // Note: actual number of images may differ from requested number, since it's a lower bound
+    // uint32_t actualImageCount = 0;
+    // if (vkGetSwapchainImagesKHR(device, swapChain, &actualImageCount, nullptr) != VK_SUCCESS || actualImageCount == 0) {
+    //   std::cerr << "failed to acquire number of swap chain images" << std::endl;
+    //   exit(1);
+    // }
 
-    swapChainImages.resize(actualImageCount);
+    // swapChainImages.resize(actualImageCount);
 
-    if (vkGetSwapchainImagesKHR(device, swapChain, &actualImageCount, swapChainImages.data()) != VK_SUCCESS) {
-      std::cerr << "failed to acquire swap chain images" << std::endl;
-      exit(1);
-    }
+    // if (vkGetSwapchainImagesKHR(device, swapChain, &actualImageCount, swapChainImages.data()) != VK_SUCCESS) {
+    //   std::cerr << "failed to acquire swap chain images" << std::endl;
+    //   exit(1);
+    // }
 
-    std::cout << "acquired swap chain images" << std::endl;
+    // std::cout << "acquired swap chain images" << std::endl;
   }
   w.os_loop();
   return 0;
