@@ -26,6 +26,10 @@ public:
   T& operator[](Sz index);
   const T& operator[](Sz index) const;
 
+// iterator (for each)
+  T* begin() const;
+  T* end() const;
+
   T* m_p = NULL;
   Allocator_t* m_allocator = NULL;
   Sip m_length = 0;

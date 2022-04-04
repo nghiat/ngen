@@ -40,6 +40,19 @@ bool File_t::init() {
   return true;
 }
 
+Dynamic_array_t<U8> File_t::read_whole_file_as_binary(Allocator_t* allocator, const Os_char* path) {
+  Dynamic_array_t<U8> buffer;
+  File_t f;
+  f.open(path, e_file_mode_read);
+  M_check_return_val(f.is_valid(), buffer);
+  Sip file_size = f.get_size();
+  buffer.init(allocator);
+  buffer.resize(file_size);
+  f.read_plat_(&buffer[0], NULL, file_size);
+  f.close();
+  return buffer;
+}
+
 Dynamic_array_t<U8> File_t::read_whole_file_as_text(Allocator_t* allocator, const Os_char* path) {
   Dynamic_array_t<U8> buffer;
   File_t f;

@@ -10,7 +10,7 @@
 #include "core/file.h"
 #include "core/linear_allocator.h"
 #include "core/log.h"
-#include "core/math/vec3.h"
+#include "core/math/vec3.inl"
 #include "core/utils.h"
 
 #include <ctype.h>

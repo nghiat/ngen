@@ -101,8 +101,13 @@ bool Window_t::init() {
   wcex.lpszClassName = m_title;
   wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
+  DWORD window_style = WS_OVERLAPPEDWINDOW;
+  RECT rect = {0, 0, m_width, m_height};
+  // m_width, m_height are the client sizes, we need to calculate the window sizes
+  AdjustWindowRect(&rect, window_style, false);
+
   M_check_log_return_val(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
-  hwnd = CreateWindow(m_title, m_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, m_width, m_height, NULL, NULL, hinstance, NULL);
+  hwnd = CreateWindow(m_title, m_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hinstance, NULL);
   M_check_log_return_val(hwnd, false, "Can't create HWND");
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
   ShowWindow(hwnd, SW_SHOWNORMAL);

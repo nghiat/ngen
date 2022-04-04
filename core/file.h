@@ -34,6 +34,7 @@ class File_t {
 public:
   static bool init();
   static void delete_path(const Os_char* path);
+  static Dynamic_array_t<U8> read_whole_file_as_binary(Allocator_t* allocator, const Os_char* path);
   static Dynamic_array_t<U8> read_whole_file_as_text(Allocator_t* allocator, const Os_char* path);
 
   bool open(const Os_char* path, enum E_file_mod mode);
