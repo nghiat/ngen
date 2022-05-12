@@ -13,6 +13,7 @@ class Allocator_t;
 template <typename T>
 class Dynamic_array_t {
 public:
+  using T_value = T;
   bool init(Allocator_t* allocator);
   void destroy();
   Sip len() const;

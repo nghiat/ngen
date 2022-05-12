@@ -1,7 +1,9 @@
+[[vk::binding(0, 0)]]
 cbuffer per_obj_cb : register(b0) {
     float4x4 world;
 };
 
+[[vk::binding(0, 1)]]
 cbuffer shared_cb : register(b1) {
     float4x4 view;
     float4x4 proj;
@@ -13,6 +15,11 @@ cbuffer shared_cb : register(b1) {
     float4 light_color;
 };
 
+[[vk::binding(1, 1)]]
+Texture2D g_shadow_texture : register(t0);
+[[vk::binding(2, 1)]]
+SamplerState g_shadow_sampler : register(s0);
+
 struct PSInput {
     float4 p : SV_POSITION;
     float4 v : POSITION0;
@@ -20,7 +27,7 @@ struct PSInput {
     float4 light_space_p : POSITION1;
 };
 
-PSInput VSMain(float4 v: V, float4 n: N) {
+PSInput VSMain([[vk::location(0)]] float4 v: V, [[vk::location(1)]] float4 n: N) {
     PSInput result;
     float4x4 mvp = mul(world, mul(view, proj));
     result.p = mul(v, mvp);
@@ -31,9 +38,6 @@ PSInput VSMain(float4 v: V, float4 n: N) {
 
     return result;
 }
-
-Texture2D g_shadow_texture : register(t0);
-SamplerState g_shadow_sampler : register(s0);
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float3 light_dir = normalize(light_pos - input.v);

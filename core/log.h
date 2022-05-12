@@ -96,6 +96,8 @@ void log_destroy();
     M_logf_return_val(retval, "%s", M_stringify_condition_(condition)); \
   }
 
+#define M_check_return_false(condition) M_check_return_val(condition, false)
+
 #define M_check_log_return(condition, format, ...) \
   if (M_unlikely(!(condition))) {                            \
     M_logf_return(format, ##__VA_ARGS__);            \

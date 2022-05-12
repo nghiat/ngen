@@ -48,6 +48,8 @@ reflection("test_reflection") {
 
 executable("vulkan_sample") {
   sources = [
+    "cam.cpp",
+    "cam.h",
     "vulkan_loader.cpp",
     "vulkan_loader.h",
     "vulkan_sample.cpp",
