@@ -3,7 +3,6 @@
 ## See LICENSE.txt for details.                                               ##
 ## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
 ##----------------------------------------------------------------------------##
-import distutils.dir_util
 import os
 import shutil
 import subprocess
@@ -37,25 +36,35 @@ if __name__ == "__main__":
     os.chdir(dxc_dir)
     build_dir = "build"
     os.makedirs(build_dir, exist_ok=True)
-    build_cmd = "cmake -S . -B {0} -G Ninja -DCMAKE_BUILD_TYPE=Release -DDXC_BUILD_ARCH=x64 -DENABLE_SPIRV_CODEGEN=ON -DSPIRV_BUILD_TESTS=OFF -DHLSL_INCLUDE_TESTS=OFF -C cmake/caches/PredefinedParams.cmake && ninja -C {0} dxc".format(build_dir)
+    cmake_cmd = "cmake -S . -B {0} -G Ninja -DCMAKE_BUILD_TYPE=Release -DDXC_BUILD_ARCH=x64 -DENABLE_SPIRV_CODEGEN=ON -DSPIRV_BUILD_TESTS=OFF -DHLSL_INCLUDE_TESTS=OFF -C cmake/caches/PredefinedParams.cmake".format(build_dir)
+    if sys.platform == "linux":
+        # There are some compile errors with gcc
+        cmake_cmd += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+    ninja_cmd = "ninja -C {0} dxc".format(build_dir)
     if sys.platform == "win32":
-        run_command('"{}" && {}'.format(vcvars, build_cmd))
+        run_command('"{}" && {} && {}'.format(vcvars, cmake_cmd, ninja_cmd))
     else:
-        run_command(build_cmd)
+        run_command("{} && {}".format(cmake_cmd, ninja_cmd))
 
     # Copying
     os.chdir(script_dir)
-    output_bin_dir = "DirectXShaderCompiler/{}/bin/".format(build_dir)
+    rel_bin_dir = "DirectXShaderCompiler/{}/bin/".format(build_dir)
+    rel_lib_dir = "DirectXShaderCompiler/{}/lib/".format(build_dir)
     if sys.platform == "win32":
         target_bin_dir = "bin/win64/"
         os.makedirs(target_bin_dir, exist_ok=True)
-        shutil.copy2(output_bin_dir + "dxc.exe", target_bin_dir)
-        shutil.copy2(output_bin_dir + "dxcompiler.dll", target_bin_dir)
+        shutil.copy2(rel_bin_dir + "dxc.exe", target_bin_dir)
+        shutil.copy2(rel_bin_dir + "dxcompiler.dll", target_bin_dir)
     elif sys.platform == "linux":
-        target_bin_dir = "bin/linux64/" + variant[0]
-        # os.makedirs(target_bin_dir, exist_ok=True)
-        # shutil.copy2(relative_path + "bin/dxc", "bin/linux64/" + variant[0])
-        # shutil.copy2(relative_path + "bin/dxcompiler.dll", "bin/linux64/" + variant[0])
+        target_bin_dir = "bin/linux64/bin/"
+        target_lib_dir = "bin/linux64/lib/"
+        os.makedirs(target_bin_dir, exist_ok=True)
+        os.makedirs(target_lib_dir, exist_ok=True)
+        shutil.copy2(rel_bin_dir + "dxc-3.7", target_bin_dir + "dxc")
+        shutil.copy2(rel_lib_dir + "libdxcompiler.so.3.7", target_lib_dir)
+        # Error 0x80004005 without this symlink
+        os.chdir(target_lib_dir)
+        os.symlink("libdxcompiler.so.3.7", "libdxcompiler.so")
     else:
         print("hmm...")
 

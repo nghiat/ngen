@@ -14,9 +14,19 @@ template("dxc") {
   output_folder = get_path_info(rebase_path("shader", "//"), "dir")
   output_path_without_ext = "${root_gen_dir}/${output_folder}/${output_filename}"
 
+  dxc_exe = ""
+
+  if (is_win) {
+    dxc_exe = "//third_party/dxc/bin/win64/dxc.exe"
+  } else if (is_linux) {
+    dxc_exe = "//third_party/dxc/bin/linux64/bin/dxc"
+  } else {
+    assert(false)
+  }
+
   shared_args = [
     "--dxc-exe",
-    rebase_path("//third_party/dxc/bin/win64/dxc.exe", root_build_dir),
+    rebase_path(dxc_exe, root_build_dir),
     "--shader",
     rebase_path(shader, root_build_dir),
     "--entry",
