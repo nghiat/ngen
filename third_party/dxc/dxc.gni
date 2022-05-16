@@ -1,0 +1,52 @@
+##----------------------------------------------------------------------------##
+## This file is distributed under the MIT License.                            ##
+## See LICENSE.txt for details.                                               ##
+## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
+##----------------------------------------------------------------------------##
+
+template("dxc") {
+  params = invoker.params
+  shader = params[0]
+  entry = params[1]
+  profile = params[2]
+  output_filename = params[3]
+
+  output_folder = get_path_info(rebase_path("shader", "//"), "dir")
+  output_path_without_ext = "${root_gen_dir}/${output_folder}/${output_filename}"
+
+  shared_args = [
+    "--dxc-exe",
+    rebase_path("//third_party/dxc/bin/win64/dxc.exe", root_build_dir),
+    "--shader",
+    rebase_path(shader, root_build_dir),
+    "--entry",
+    entry,
+    "--profile",
+    profile,
+  ]
+
+  action("${target_name}_hlsl") {
+    script = "//third_party/dxc/dxc_wrapper.py"
+    sources = [ shader ]
+    output_fullname = "${output_path_without_ext}.cso"
+    outputs = [ output_fullname ]
+    args = shared_args
+    args += [
+      "--output",
+      rebase_path(output_fullname, root_build_dir),
+    ]
+  }
+
+  action("${target_name}_spirv") {
+    script = "//third_party/dxc/dxc_wrapper.py"
+    sources = [ shader ]
+    output_fullname = "${output_path_without_ext}.spv"
+    outputs = [ output_fullname ]
+    args = shared_args
+    args += [
+      "--output",
+      rebase_path(output_fullname, root_build_dir),
+      "--spirv"
+    ]
+  }
+}

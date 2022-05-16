@@ -10,3 +10,6 @@
 [submodule "third_party/vulkan/Vulkan-Headers"]
 	path = third_party/vulkan/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "third_party/dxc/DirectXShaderCompiler"]
+	path = third_party/dxc/DirectXShaderCompiler
+	url = https://github.com/microsoft/DirectXShaderCompiler

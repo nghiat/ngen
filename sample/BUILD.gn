@@ -5,6 +5,7 @@
 ##----------------------------------------------------------------------------##
 
 import("//core/reflection/reflection.gni")
+import("//third_party/dxc/dxc.gni")
 
 group("sample") {
   deps = [
@@ -62,6 +63,9 @@ executable("vulkan_sample") {
   deps = [
     "//assets",
     "//core",
+    ":shadow_vs_spirv",
+    ":shader_vs_spirv",
+    ":shader_ps_spirv",
   ]
 }
 executable("dx12_sample") {
@@ -108,4 +112,16 @@ copy("dx12_shader") {
   outputs = [
     "$root_out_dir/assets/{{source_file_part}}"
   ]
+}
+
+dxc("shadow_vs") {
+  params = [ "shadow.hlsl", "VSMain", "vs_6_0", "shadow_vs" ]
+}
+
+dxc("shader_vs") {
+  params = [ "shader.hlsl", "VSMain", "vs_6_0", "shader_vs" ]
+}
+
+dxc("shader_ps") {
+  params = [ "shader.hlsl", "PSMain", "ps_6_0", "shader_ps" ]
 }

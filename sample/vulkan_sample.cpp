@@ -127,7 +127,6 @@ public:
   Vk_subbuffer_t_ m_per_obj_cb_subbuffers[10];
   Per_obj_cb_t_ m_per_obj_cbs[10];
   VkDescriptorSet m_per_obj_cb_dss[10];
-  Vk_subbuffer_t_ m_final_shared_cb_subbuffer;
 
   Shadow_shared_cb_t_ m_shadow_shared_cb;
   Vk_subbuffer_t_ m_shadow_shared_subbuffer;
@@ -649,6 +648,7 @@ bool Vk_window_t::init() {
 
   {
     m_cam.init({5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
+    m_final_shared_cb.view = m_cam.m_view_mat;
     m_final_shared_cb.eye_pos = V3o_v4(m_cam.m_eye, 1.0f);
     m_final_shared_cb.obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
     m_final_shared_cb.light_pos = {10.0f, 10.0f, 10.0f, 1.0f};
@@ -659,7 +659,7 @@ bool Vk_window_t::init() {
     m_final_shared_cb.light_proj = perspective_m4;
 
     m_final_shared_ds = allocate_descriptor_sets_(m_uniform_descriptor_pool, &m_final_shared_ds_layout);
-    m_final_shared_subbuffer = allocate_subbuffer_(&m_uniform_buffer, sizeof(Shadow_shared_cb_t_), 256);
+    m_final_shared_subbuffer = allocate_subbuffer_(&m_uniform_buffer, sizeof(Final_shared_cb_t_), 256);
     memcpy(m_final_shared_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
     update_uniform_descriptor_sets_(m_final_shared_ds, 0, 1, &m_final_shared_subbuffer.bi);
     VkSamplerCreateInfo sampler_ci = {};
@@ -769,9 +769,9 @@ bool Vk_window_t::init() {
       M_vk_check(vkCreatePipelineLayout(m_device, &pipeline_layout_ci, NULL, &m_final_pipeline_layout));
     }
 
-    m_shadow_vs = load_shader_(g_exe_dir.join(M_txt("shadow_vs.spv")));
-    m_final_vs = load_shader_(g_exe_dir.join(M_txt("shader_vs.spv")));
-    m_final_ps = load_shader_(g_exe_dir.join(M_txt("shader_ps.spv")));
+    m_shadow_vs = load_shader_(g_exe_dir.join(M_txt("gen/sample/shadow_vs.spv")));
+    m_final_vs = load_shader_(g_exe_dir.join(M_txt("gen/sample/shader_vs.spv")));
+    m_final_ps = load_shader_(g_exe_dir.join(M_txt("gen/sample/shader_ps.spv")));
 
     m_shadow_gfx_pipeline = create_graphics_pipeline_(m_shadow_vs, VK_NULL_HANDLE, m_shadow_pipeline_layout, vertex_input_binding_descs, 1, vertex_input_attr_descs, 1, m_shadow_render_pass);
     m_final_gfx_pipeline = create_graphics_pipeline_(m_final_vs, m_final_ps, m_final_pipeline_layout, vertex_input_binding_descs, 2, vertex_input_attr_descs, 2, m_final_render_pass);
@@ -802,7 +802,7 @@ bool Vk_window_t::init() {
     image_subresource_range.layerCount = 1;
 
     VkClearValue clear_values[2] = {};
-    clear_values[0].color = { 0.1f, 0.1f, 0.1f, 1.0f };
+    clear_values[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
     clear_values[1].depthStencil.depth = 1.0f;
 
     // Record command buffer for each swap image
@@ -915,7 +915,7 @@ void Vk_window_t::destroy() {
 void Vk_window_t::loop() {
   m_cam.update();
   m_final_shared_cb.view = m_cam.m_view_mat;
-  // memcpy(m_final_shared_cb_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
+  memcpy(m_final_shared_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
 
   U32 image_idx;
   M_vk_check(vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_image_available_semaphore, VK_NULL_HANDLE, &image_idx));
@@ -1091,9 +1091,9 @@ VkPipeline Vk_window_t::create_graphics_pipeline_(VkShaderModule vs,
 
   VkViewport viewport = {};
   viewport.x = 0.0f;
-  viewport.y = 0.0f;
+  viewport.y = (float)m_height;
   viewport.width = (float)m_width;
-  viewport.height = (float)m_height;
+  viewport.height = -(float)m_height;
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
