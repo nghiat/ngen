@@ -149,6 +149,8 @@ extern PFN_vkCmdExecuteCommands vkCmdExecuteCommands;
 
 #if M_os_is_win()
 extern PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#elif M_os_is_linux()
+extern PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
 #endif
 
 extern PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;

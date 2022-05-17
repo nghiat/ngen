@@ -10,5 +10,9 @@ config("vulkan_config") {
 
   if (is_win) {
     defines += [ "VK_USE_PLATFORM_WIN32_KHR" ]
+  } else if(is_linux) {
+    defines += [ "VK_USE_PLATFORM_XCB_KHR" ]
+  } else {
+    assert(0, "?")
   }
 }
