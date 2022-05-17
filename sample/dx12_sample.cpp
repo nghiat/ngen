@@ -347,13 +347,8 @@ static Dx12_subbuffer_t_ allocate_subbuffer_(Dx12_buffer_t_* buffer, Sip size, S
   return subbuffer;
 }
 
-static bool compile_shader_(const Path_t& path, const char* entry, const char* target, ID3DBlob** shader) {
-  UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-  ID3DBlob* error;
-  if (D3DCompileFromFile(path.m_path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
-    M_logf("%s", (const char*)error->GetBufferPointer());
-    return false;
-  }
+static bool compile_shader_(const Path_t& path, ID3DBlob** shader) {
+  M_dx_check_return_false_(D3DReadFileToBlob(path.m_path, shader));
   return true;
 }
 
@@ -591,18 +586,15 @@ bool Dx12_window_t::init() {
   }
 
   {
-    Path_t shader_path = g_exe_dir.join(M_txt("assets/shadow.hlsl"));
-    compile_shader_(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shadow_vs.cso")), &m_shadow_vs);
 
-    shader_path = g_exe_dir.join(M_txt("assets/shader.hlsl"));
-    compile_shader_(shader_path, "VSMain", "vs_5_0", &m_final_vs);
-    compile_shader_(shader_path, "PSMain", "ps_5_0", &m_final_ps);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shader_vs.cso")), &m_final_vs);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shader_ps.cso")), &m_final_ps);
 
-    shader_path = g_exe_dir.join(M_txt("assets/ui.hlsl"));
-    compile_shader_(shader_path, "VSTextureMain", "vs_5_0", &m_ui_texture_vs);
-    compile_shader_(shader_path, "PSTextureMain", "ps_5_0", &m_ui_texture_ps);
-    compile_shader_(shader_path, "VSNonTextureMain", "vs_5_0", &m_ui_non_texture_vs);
-    compile_shader_(shader_path, "PSNonTextureMain", "ps_5_0", &m_ui_non_texture_ps);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_texture_vs.cso")), &m_ui_texture_vs);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_texture_ps.cso")), &m_ui_texture_ps);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_non_texture_vs.cso")), &m_ui_non_texture_vs);
+    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_non_texture_ps.cso")), &m_ui_non_texture_ps);
   }
 
   {
@@ -986,24 +978,24 @@ void Dx12_window_t::loop() {
   m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[1].gpu_handle);
   m_cmd_list->DrawInstanced(m_obj_vertices_counts[1], 1, m_obj_vertices_counts[0], 0);
 
-  m_cmd_list->SetPipelineState(m_console_pso);
-  m_cmd_list->SetGraphicsRootSignature(m_console_root_sig);
-  m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
-  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shared_ui_cbv_descriptor.gpu_handle);
-  m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
-  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
-  m_cmd_list->DrawInstanced(6, 1, 0, 0);
+  // m_cmd_list->SetPipelineState(m_console_pso);
+  // m_cmd_list->SetGraphicsRootSignature(m_console_root_sig);
+  // m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
+  // m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shared_ui_cbv_descriptor.gpu_handle);
+  // m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
+  // m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  // m_cmd_list->IASetVertexBuffers(0, 1, &m_console_vb_view);
+  // m_cmd_list->DrawInstanced(6, 1, 0, 0);
 
-  m_cmd_list->SetPipelineState(m_ui_texture_pso);
-  m_cmd_list->SetGraphicsRootSignature(m_ui_root_sig);
-  m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
-  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_texture_srv_descriptor.gpu_handle);
-  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_shared_ui_cbv_descriptor.gpu_handle);
-  m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
-  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  m_cmd_list->IASetVertexBuffers(0, 1, &m_text_vb_view);
-  m_cmd_list->DrawInstanced(m_visible_text_len * 6, 1, 0, 0);
+  // m_cmd_list->SetPipelineState(m_ui_texture_pso);
+  // m_cmd_list->SetGraphicsRootSignature(m_ui_root_sig);
+  // m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
+  // m_cmd_list->SetGraphicsRootDescriptorTable(0, m_texture_srv_descriptor.gpu_handle);
+  // m_cmd_list->SetGraphicsRootDescriptorTable(1, m_shared_ui_cbv_descriptor.gpu_handle);
+  // m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, NULL);
+  // m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  // m_cmd_list->IASetVertexBuffers(0, 1, &m_text_vb_view);
+  // m_cmd_list->DrawInstanced(m_visible_text_len * 6, 1, 0, 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 

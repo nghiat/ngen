@@ -78,7 +78,13 @@ executable("dx12_sample") {
   ]
 
   deps = [
-    ":dx12_shader",
+    ":shadow_vs_hlsl",
+    ":shader_vs_hlsl",
+    ":shader_ps_hlsl",
+    ":ui_texture_vs_hlsl",
+    ":ui_texture_ps_hlsl",
+    ":ui_non_texture_vs_hlsl",
+    ":ui_non_texture_ps_hlsl",
     "//assets",
     "//core",
     "//third_party/libclang",
@@ -101,27 +107,30 @@ executable("hash_table") {
   ]
 }
 
-copy("dx12_shader") {
-  sources = [
-    "rtt.hlsl",
-    "shader.hlsl",
-    "shadow.hlsl",
-    "ui.hlsl",
-  ]
-
-  outputs = [
-    "$root_out_dir/assets/{{source_file_part}}"
-  ]
-}
-
 dxc("shadow_vs") {
-  params = [ "shadow.hlsl", "VSMain", "vs_6_0", "shadow_vs" ]
+  params = [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ]
 }
 
 dxc("shader_vs") {
-  params = [ "shader.hlsl", "VSMain", "vs_6_0", "shader_vs" ]
+  params = [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ]
 }
 
 dxc("shader_ps") {
-  params = [ "shader.hlsl", "PSMain", "ps_6_0", "shader_ps" ]
+  params = [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ]
+}
+
+dxc("ui_texture_vs") {
+  params = [ "ui.hlsl", "VSTextureMain", "vs_5_0", "ui_texture_vs" ]
+}
+
+dxc("ui_texture_ps") {
+  params = [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_texture_ps" ]
+}
+
+dxc("ui_non_texture_vs") {
+  params = [ "ui.hlsl", "VSNonTextureMain", "vs_5_0", "ui_non_texture_vs" ]
+}
+
+dxc("ui_non_texture_ps") {
+  params = [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_non_texture_ps" ]
 }

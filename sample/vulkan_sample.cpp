@@ -382,7 +382,7 @@ bool Vk_window_t::init() {
       surface_transform = surface_capabilities.currentTransform;
     }
 
-    VkPresentModeKHR present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR ;
 
     // Finally, create the swap chain
     VkSwapchainCreateInfoKHR swapchain_ci = {};
@@ -716,7 +716,6 @@ bool Vk_window_t::init() {
         m_per_obj_cb_dss[i] = allocate_descriptor_sets_(m_uniform_descriptor_pool, &m_per_obj_ds_layout);
         update_uniform_descriptor_sets_(m_per_obj_cb_dss[i], 0, 1, &m_per_obj_cb_subbuffers[i].bi);
         m_per_obj_cbs[i].world = m4_identity();
-        m_per_obj_cbs[i].world.a[1][1] = -1.0f;
         memcpy(m_per_obj_cb_subbuffers[i].cpu_p, &m_per_obj_cbs[i], sizeof(Per_obj_cb_t_));
 
         Obj_loader_t obj;
@@ -1089,9 +1088,10 @@ VkPipeline Vk_window_t::create_graphics_pipeline_(VkShaderModule vs,
   input_assembly_ci.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   input_assembly_ci.primitiveRestartEnable = VK_FALSE;
 
+  // Flipped viewport
   VkViewport viewport = {};
   viewport.x = 0.0f;
-  viewport.y = (float)m_height;
+  viewport.y = m_height;
   viewport.width = (float)m_width;
   viewport.height = -(float)m_height;
   viewport.minDepth = 0.0f;

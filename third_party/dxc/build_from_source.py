@@ -55,6 +55,7 @@ if __name__ == "__main__":
         os.makedirs(target_bin_dir, exist_ok=True)
         shutil.copy2(rel_bin_dir + "dxc.exe", target_bin_dir)
         shutil.copy2(rel_bin_dir + "dxcompiler.dll", target_bin_dir)
+        print("Pls download dxil.dll from: https://github.com/microsoft/DirectXShaderCompiler/releases")
     elif sys.platform == "linux":
         target_bin_dir = "bin/linux64/bin/"
         target_lib_dir = "bin/linux64/lib/"
