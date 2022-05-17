@@ -586,15 +586,15 @@ bool Dx12_window_t::init() {
   }
 
   {
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shadow_vs.cso")), &m_shadow_vs);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/shadow_vs.cso")), &m_shadow_vs);
 
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shader_vs.cso")), &m_final_vs);
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/shader_ps.cso")), &m_final_ps);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/shader_vs.cso")), &m_final_vs);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/shader_ps.cso")), &m_final_ps);
 
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_texture_vs.cso")), &m_ui_texture_vs);
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_texture_ps.cso")), &m_ui_texture_ps);
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_non_texture_vs.cso")), &m_ui_non_texture_vs);
-    compile_shader_(g_exe_dir.join(M_txt("gen/sample/ui_non_texture_ps.cso")), &m_ui_non_texture_ps);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/ui_texture_vs.cso")), &m_ui_texture_vs);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/ui_texture_ps.cso")), &m_ui_texture_ps);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/ui_non_texture_vs.cso")), &m_ui_non_texture_vs);
+    compile_shader_(g_exe_dir.join(M_txt("assets/sample/ui_non_texture_ps.cso")), &m_ui_non_texture_ps);
   }
 
   {

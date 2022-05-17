@@ -63,9 +63,7 @@ executable("vulkan_sample") {
   deps = [
     "//assets",
     "//core",
-    ":shadow_vs_spirv",
-    ":shader_vs_spirv",
-    ":shader_ps_spirv",
+    ":shaders_spirv",
   ]
 }
 executable("dx12_sample") {
@@ -78,13 +76,7 @@ executable("dx12_sample") {
   ]
 
   deps = [
-    ":shadow_vs_hlsl",
-    ":shader_vs_hlsl",
-    ":shader_ps_hlsl",
-    ":ui_texture_vs_hlsl",
-    ":ui_texture_ps_hlsl",
-    ":ui_non_texture_vs_hlsl",
-    ":ui_non_texture_ps_hlsl",
+    ":shaders_hlsl",
     "//assets",
     "//core",
     "//third_party/libclang",
@@ -107,30 +99,14 @@ executable("hash_table") {
   ]
 }
 
-dxc("shadow_vs") {
-  params = [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ]
-}
-
-dxc("shader_vs") {
-  params = [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ]
-}
-
-dxc("shader_ps") {
-  params = [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ]
-}
-
-dxc("ui_texture_vs") {
-  params = [ "ui.hlsl", "VSTextureMain", "vs_5_0", "ui_texture_vs" ]
-}
-
-dxc("ui_texture_ps") {
-  params = [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_texture_ps" ]
-}
-
-dxc("ui_non_texture_vs") {
-  params = [ "ui.hlsl", "VSNonTextureMain", "vs_5_0", "ui_non_texture_vs" ]
-}
-
-dxc("ui_non_texture_ps") {
-  params = [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_non_texture_ps" ]
+dxc("shaders") {
+  shaders = [
+    [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ],
+    [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ],
+    [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ],
+    [ "ui.hlsl", "VSTextureMain", "vs_5_0", "ui_texture_vs" ],
+    [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_texture_ps" ],
+    [ "ui.hlsl", "VSNonTextureMain", "vs_5_0", "ui_non_texture_vs" ],
+    [ "ui.hlsl", "PSTextureMain", "ps_5_0", "ui_non_texture_ps" ],
+  ]
 }

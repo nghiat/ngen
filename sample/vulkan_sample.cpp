@@ -768,9 +768,9 @@ bool Vk_window_t::init() {
       M_vk_check(vkCreatePipelineLayout(m_device, &pipeline_layout_ci, NULL, &m_final_pipeline_layout));
     }
 
-    m_shadow_vs = load_shader_(g_exe_dir.join(M_txt("gen/sample/shadow_vs.spv")));
-    m_final_vs = load_shader_(g_exe_dir.join(M_txt("gen/sample/shader_vs.spv")));
-    m_final_ps = load_shader_(g_exe_dir.join(M_txt("gen/sample/shader_ps.spv")));
+    m_shadow_vs = load_shader_(g_exe_dir.join(M_txt("assets/sample/shadow_vs.spv")));
+    m_final_vs = load_shader_(g_exe_dir.join(M_txt("assets/sample/shader_vs.spv")));
+    m_final_ps = load_shader_(g_exe_dir.join(M_txt("assets/sample/shader_ps.spv")));
 
     m_shadow_gfx_pipeline = create_graphics_pipeline_(m_shadow_vs, VK_NULL_HANDLE, m_shadow_pipeline_layout, vertex_input_binding_descs, 1, vertex_input_attr_descs, 1, m_shadow_render_pass);
     m_final_gfx_pipeline = create_graphics_pipeline_(m_final_vs, m_final_ps, m_final_pipeline_layout, vertex_input_binding_descs, 2, vertex_input_attr_descs, 2, m_final_render_pass);
