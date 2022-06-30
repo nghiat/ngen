@@ -4,6 +4,8 @@
 ## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
 ##----------------------------------------------------------------------------##
 
+import("//third_party/dxc/dxc.gni")
+
 static_library("core") {
   sources = [
     "allocator.cpp",
@@ -142,6 +144,7 @@ static_library("core") {
   }
 
   public_configs += [
+    ":gpu_vulkan_binding_offsets",
     "//third_party/vulkan:vulkan_config",
   ]
 }
@@ -172,5 +175,13 @@ copy("reflection_template") {
   ]
   outputs = [
     "$root_out_dir/template/{{source_file_part}}"
+  ]
+}
+
+config("gpu_vulkan_binding_offsets") {
+  defines = [
+    "GPU_VK_UNIFORM_BINDING_OFFSET=${uniform_binding_offset}",
+    "GPU_VK_TEXTURE_BINDING_OFFSET=${texture_binding_offset}",
+    "GPU_VK_SAMPLER_BINDING_OFFSET=${sampler_binding_offset}",
   ]
 }

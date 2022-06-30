@@ -83,8 +83,4 @@ private:
   bool create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlagBits usage_flags, VkMemoryPropertyFlagBits mem_prop_flags);
   void allocate_sub_buffer_(Vk_sub_buffer_t_* sub_buffer, Vk_buffer_t_* buffer, Sip size, int alignment);
   VkCommandBuffer get_active_cmd_buffer_() const;
-
-  static const int s_uniform_binding_offset_ = 0;
-  static const int s_sampled_image_binding_offset_ = 20;
-  static const int s_sampler_binding_offset_ = 40;
 };

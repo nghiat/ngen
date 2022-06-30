@@ -11,6 +11,9 @@ if __name__ == "__main__":
   parser.add_argument("--profile")
   parser.add_argument("--output")
   parser.add_argument("--spirv", action="store_true")
+  parser.add_argument("--uniform-binding-offset")
+  parser.add_argument("--texture-binding-offset")
+  parser.add_argument("--sampler-binding-offset")
   options = parser.parse_args()
 
   reflection_cmd = [options.dxc_exe]
@@ -19,14 +22,12 @@ if __name__ == "__main__":
   reflection_cmd += ["-Fo", options.output]
   if (options.spirv):
       reflection_cmd += ["-spirv"]
-      reflection_cmd += ["-fvk-t-shift", "20", "0"]
-      reflection_cmd += ["-fvk-t-shift", "20", "1"]
-      reflection_cmd += ["-fvk-t-shift", "20", "2"]
-      reflection_cmd += ["-fvk-t-shift", "20", "3"]
-      reflection_cmd += ["-fvk-s-shift", "40", "0"]
-      reflection_cmd += ["-fvk-s-shift", "40", "1"]
-      reflection_cmd += ["-fvk-s-shift", "40", "2"]
-      reflection_cmd += ["-fvk-s-shift", "40", "3"]
+      if (options.uniform_binding_offset):
+          reflection_cmd += [ "-fvk-b-shift", options.uniform_binding_offset, "all" ]
+      if (options.texture_binding_offset):
+          reflection_cmd += [ "-fvk-t-shift", options.texture_binding_offset, "all" ]
+      if (options.sampler_binding_offset):
+          reflection_cmd += [ "-fvk-s-shift", options.sampler_binding_offset, "all" ]
   reflection_cmd += [options.shader]
 
   ret = subprocess.call(reflection_cmd)

@@ -441,7 +441,7 @@ Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Re
   Fixed_array_t<VkDescriptorSetLayoutBinding, 8> layout_bindings;
   if (ci.uniform_buffer_count) {
     VkDescriptorSetLayoutBinding layout_binding = {};
-    layout_binding.binding = s_uniform_binding_offset_ + ci.binding;
+    layout_binding.binding = GPU_VK_UNIFORM_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     layout_binding.descriptorCount = ci.uniform_buffer_count;
     layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
@@ -450,7 +450,7 @@ Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Re
 
   if (ci.sampler_count) {
     VkDescriptorSetLayoutBinding layout_binding = {};
-    layout_binding.binding = s_sampler_binding_offset_ + ci.binding;
+    layout_binding.binding = GPU_VK_SAMPLER_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
     layout_binding.descriptorCount = ci.sampler_count;
     layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
@@ -459,7 +459,7 @@ Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Re
 
   if (ci.image_count) {
     VkDescriptorSetLayoutBinding layout_binding = {};
-    layout_binding.binding = s_sampled_image_binding_offset_ + ci.binding;
+    layout_binding.binding = GPU_VK_TEXTURE_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     layout_binding.descriptorCount = ci.image_count;
     layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
@@ -701,7 +701,7 @@ Sampler_t* Vulkan_t::create_sampler(Allocator_t* allocator, const Sampler_create
   write_descriptor_set.dstSet = vk_resources_set->set;
   write_descriptor_set.descriptorCount = 1;
   write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-  write_descriptor_set.dstBinding = s_sampler_binding_offset_ + ci.binding;
+  write_descriptor_set.dstBinding = GPU_VK_SAMPLER_BINDING_OFFSET + ci.binding;
   write_descriptor_set.pImageInfo = &descriptor_image_info;
 
   vkUpdateDescriptorSets(m_device, 1, &write_descriptor_set, 0, NULL);
@@ -724,7 +724,7 @@ Image_view_t* Vulkan_t::create_image_view(Allocator_t* allocator, const Image_vi
   write_descriptor_set.dstSet = vk_resources_set->set;
   write_descriptor_set.descriptorCount = 1;
   write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  write_descriptor_set.dstBinding = s_sampled_image_binding_offset_ + ci.binding;
+  write_descriptor_set.dstBinding = GPU_VK_TEXTURE_BINDING_OFFSET + ci.binding;
   write_descriptor_set.pImageInfo = &descriptor_image_info;
 
   vkUpdateDescriptorSets(m_device, 1, &write_descriptor_set, 0, NULL);

@@ -4,6 +4,12 @@
 ## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
 ##----------------------------------------------------------------------------##
 
+declare_args() {
+  uniform_binding_offset = 0
+  texture_binding_offset = 20
+  sampler_binding_offset = 40
+}
+
 # Compile a shader to either hlsl binary or spirv
 # Parameters:
 #   source: input hlsl file
@@ -63,7 +69,13 @@ template("dxc_internal") {
     args += [
       "--output",
       rebase_path(output_fullname, root_build_dir),
-      "--spirv"
+      "--spirv",
+      "--uniform-binding-offset",
+      "${uniform_binding_offset}",
+      "--texture-binding-offset",
+      "${texture_binding_offset}",
+      "--sampler-binding-offset",
+      "${sampler_binding_offset}",
     ]
   }
 }
