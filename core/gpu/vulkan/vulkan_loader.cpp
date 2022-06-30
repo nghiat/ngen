@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "sample/vulkan_loader.h"
+#include "core/gpu/vulkan/vulkan_loader.h"
 
 #include "core/dynamic_lib.h"
 #include "core/log.h"

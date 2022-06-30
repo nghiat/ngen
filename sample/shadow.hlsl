@@ -1,10 +1,8 @@
-[[vk::binding(0, 0)]]
-cbuffer per_obj_cb : register(b0) {
+cbuffer per_obj_cb : register(b0, space0) {
     float4x4 world;
 };
 
-[[vk::binding(0, 1)]]
-cbuffer shared_cb : register(b1) {
+cbuffer shared_cb : register(b0, space1) {
     float4x4 light_view;
     float4x4 light_proj;
 };

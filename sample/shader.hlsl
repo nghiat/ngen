@@ -1,10 +1,8 @@
-[[vk::binding(0, 0)]]
-cbuffer per_obj_cb : register(b0) {
+cbuffer per_obj_cb : register(b0, space0) {
     float4x4 world;
 };
 
-[[vk::binding(0, 1)]]
-cbuffer shared_cb : register(b1) {
+cbuffer shared_cb : register(b0, space1) {
     float4x4 view;
     float4x4 proj;
     float4x4 light_view;
@@ -15,10 +13,8 @@ cbuffer shared_cb : register(b1) {
     float4 light_color;
 };
 
-[[vk::binding(1, 1)]]
-Texture2D g_shadow_texture : register(t0);
-[[vk::binding(2, 1)]]
-SamplerState g_shadow_sampler : register(s0);
+SamplerState g_shadow_sampler : register(s0, space2);
+Texture2D g_shadow_texture : register(t0, space3);
 
 struct PSInput {
     float4 p : SV_POSITION;

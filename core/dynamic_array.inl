@@ -54,7 +54,7 @@ void Dynamic_array_t<T>::resize(Sip count) {
 
 template <typename T>
 void Dynamic_array_t<T>::remove_range(Sip pos, Sip length) {
-  M_check_log_return(pos >= 0 && pos < m_length && pos + length < m_length, "Can't remove invalid rage");
+  M_check_log_return(pos >= 0 && pos < m_length && pos + length <= m_length, "Can't remove invalid rage");
   memmove(m_p + pos, m_p + pos + length, (m_length - pos - length) * sizeof(T));
   m_length -= length;
 }

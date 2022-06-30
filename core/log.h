@@ -107,3 +107,5 @@ void log_destroy();
   if (M_unlikely(!(condition))) {                                        \
     M_logf_return_val(retval, format, ##__VA_ARGS__);            \
   }
+
+#define M_unimplemented() M_logf("UNIMPLEMENTED")

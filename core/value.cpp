@@ -37,7 +37,7 @@ float Value_t::get_float() const {
   return m_float;
 }
 
-const char* Value_t::get_string() const {
+Cstring_t Value_t::get_string() const {
   M_check(m_value_type == e_value_type_string);
   return m_string;
 }

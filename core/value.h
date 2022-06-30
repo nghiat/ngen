@@ -4,6 +4,8 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
+#include "core/string.h"
+
 #pragma once
 
 enum E_value_type {
@@ -29,7 +31,7 @@ public:
   bool get_bool() const;
   int get_int() const;
   float get_float() const;
-  const char* get_string() const;
+  Cstring_t get_string() const;
 
 // private:
   union {
@@ -37,7 +39,7 @@ public:
     int m_int;
     float m_float;
     char* m_string;
-    const char* m_const_string;
+    const char* m_const_string = NULL;
   };
   E_value_type m_value_type = e_value_type_none;
 };

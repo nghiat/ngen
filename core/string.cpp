@@ -78,7 +78,9 @@ String_t_<T>::String_t_(T& c) : m_p(&c), m_length(1) {}
 
 template <typename T>
 String_t_<T>::String_t_(T* str) : m_p(str) {
-  m_length = get_str_len_(str);
+  if (str) {
+    m_length = get_str_len_(str);
+  }
 }
 
 template <typename T>

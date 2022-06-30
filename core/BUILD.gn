@@ -26,8 +26,18 @@ static_library("core") {
     "dynamic_lib.h",
     "file.cpp",
     "file.h",
+    "fixed_array.h",
+    "fixed_array.inl",
     "free_list_allocator.cpp",
     "free_list_allocator.h",
+    "gpu/d3d12/d3d12.cpp",
+    "gpu/d3d12/d3d12.h",
+    "gpu/gpu.cpp",
+    "gpu/gpu.h",
+    "gpu/vulkan/vulkan.cpp",
+    "gpu/vulkan/vulkan.h",
+    "gpu/vulkan/vulkan_loader.cpp",
+    "gpu/vulkan/vulkan_loader.h",
     "hash.cpp",
     "hash.h",
     "hash_table.h",
@@ -84,6 +94,8 @@ static_library("core") {
     "windows_lite.h",
   ]
 
+  public_configs = []
+
   if (is_win) {
     sources += [
       "debug_win.cpp",
@@ -100,9 +112,16 @@ static_library("core") {
     libs = [
       "Dbghelp.lib",
       "User32.lib",
+
+      "D3D12.lib",
+      "D3DCompiler.lib",
+      "DXGI.lib",
     ]
 
-    public_configs = [ ":math_natvis" ]
+    public_configs += [
+      ":core_natvis",
+      ":math_natvis"
+    ]
   } else if (is_linux) {
     sources += [
       "debug_linux.cpp",
@@ -121,6 +140,14 @@ static_library("core") {
       "xcb-keysyms",
     ]
   }
+
+  public_configs += [
+    "//third_party/vulkan:vulkan_config",
+  ]
+}
+
+config("core_natvis") {
+  ldflags = [ "/NATVIS:" + rebase_path("core.natvis", root_build_dir)]
 }
 
 config("math_natvis") {

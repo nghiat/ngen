@@ -19,6 +19,14 @@ if __name__ == "__main__":
   reflection_cmd += ["-Fo", options.output]
   if (options.spirv):
       reflection_cmd += ["-spirv"]
+      reflection_cmd += ["-fvk-t-shift", "20", "0"]
+      reflection_cmd += ["-fvk-t-shift", "20", "1"]
+      reflection_cmd += ["-fvk-t-shift", "20", "2"]
+      reflection_cmd += ["-fvk-t-shift", "20", "3"]
+      reflection_cmd += ["-fvk-s-shift", "40", "0"]
+      reflection_cmd += ["-fvk-s-shift", "40", "1"]
+      reflection_cmd += ["-fvk-s-shift", "40", "2"]
+      reflection_cmd += ["-fvk-s-shift", "40", "3"]
   reflection_cmd += [options.shader]
 
   ret = subprocess.call(reflection_cmd)

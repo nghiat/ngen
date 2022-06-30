@@ -47,17 +47,26 @@ reflection("test_reflection") {
   ]
 }
 
+executable("gpu_sample") {
+  sources = [
+    "cam.cpp",
+    "cam.h",
+    "gpu_sample.cpp",
+  ]
+
+  deps = [
+    "//assets",
+    "//core",
+    ":shaders_spirv",
+    ":shaders_hlsl",
+  ]
+}
+
 executable("vulkan_sample") {
   sources = [
     "cam.cpp",
     "cam.h",
-    "vulkan_loader.cpp",
-    "vulkan_loader.h",
     "vulkan_sample.cpp",
-  ]
-
-  configs += [
-    "//third_party/vulkan:vulkan_config",
   ]
 
   deps = [
@@ -66,6 +75,7 @@ executable("vulkan_sample") {
     ":shaders_spirv",
   ]
 }
+
 executable("dx12_sample") {
   sources = [
     "cam.cpp",

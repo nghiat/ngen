@@ -21,16 +21,6 @@
 #include "sample/cam.h"
 #include "sample/vulkan_loader.h"
 
-#define M_vk_check(condition) { \
-  VkResult vk_result = condition; \
-  M_check(vk_result == VK_SUCCESS); \
-}
-
-#define M_vk_check_return_false(condition) { \
-  VkResult vk_result = condition; \
-  M_check_return_val(vk_result == VK_SUCCESS, false); \
-}
-
 struct Per_obj_cb_t_ {
   M4_t world;
 };
@@ -63,15 +53,6 @@ struct Vk_subbuffer_t_ {
   VkDescriptorBufferInfo bi;
   U8* cpu_p = NULL;
 };
-
-static VkBool32 debug_cb(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT obj_type, U64 src_obj, Sz location, S32 msg_code, const char* layer_prefix, const char* msg, void* user_data) {
-	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-    M_logf("layer: %s\ncode: %d\nmessage: %s", layer_prefix, msg_code, msg);
-	} else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-    M_logw("layer: %s\ncode: %d\nmessage: %s", layer_prefix, msg_code, msg);
-	}
-	return VK_FALSE;
-}
 
 class Vk_window_t : public Window_t {
 public:
