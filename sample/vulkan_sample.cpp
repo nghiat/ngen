@@ -198,11 +198,11 @@ bool Vk_window_t::init() {
     win32_surface_ci.hinstance = GetModuleHandle(NULL);
     M_vk_check(vkCreateWin32SurfaceKHR(m_instance, &win32_surface_ci, NULL, &m_surface));
 #elif M_os_is_linux()
-    VkXCBSurfaceCreateInfoKHR xcb_surface_ci = {};
+    VkXcbSurfaceCreateInfoKHR xcb_surface_ci = {};
     xcb_surface_ci.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    xcb_surface_ci.connect = m_platform_data.hwnd;
-    xcb_surface_ci.window = GetModuleHandle(NULL);
-    M_vk_check(vkCreateWin32SurfaceKHR(m_instance, &win32_surface_ci, NULL, &m_surface));
+    xcb_surface_ci.connection = m_platform_data.xcb_connection;
+    xcb_surface_ci.window = m_platform_data.xcb_window_id;
+    M_vk_check(vkCreateXcbSurfaceKHR(m_instance, &xcb_surface_ci, NULL, &m_surface));
 #else
 #error "?"
 #endif

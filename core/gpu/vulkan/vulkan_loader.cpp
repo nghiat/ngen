@@ -153,6 +153,8 @@ PFN_vkCmdExecuteCommands vkCmdExecuteCommands;
 
 #if M_os_is_win()
 PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#elif M_os_is_linux()
+PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
 #endif
 
 PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
@@ -457,6 +459,9 @@ bool vulkan_loader_init() {
 #if M_os_is_win()
   vkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)g_vulkan_lib_.get_proc("vkCreateWin32SurfaceKHR");;
   M_vk_check_return_false(vkCreateWin32SurfaceKHR);
+#elif M_os_is_linux()
+  vkCreateXcbSurfaceKHR = (PFN_vkCreateXcbSurfaceKHR)g_vulkan_lib_.get_proc("vkCreateXcbSurfaceKHR");;
+  M_vk_check_return_false(vkCreateXcbSurfaceKHR);
 #endif
 
   vkDestroySurfaceKHR = (PFN_vkDestroySurfaceKHR)g_vulkan_lib_.get_proc("vkDestroySurfaceKHR");
