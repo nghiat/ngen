@@ -6,13 +6,14 @@
 
 #pragma once
 
+#include "core/path.h"
 #include "core/types.h"
 
 struct Allocator_t;
 
 struct Png_loader_t {
 public:
-  bool init(Allocator_t* allocator, const Os_char* path);
+  bool init(Allocator_t* allocator, const Path_t& path);
   void destroy();
 
   Allocator_t* m_allocator;
@@ -20,5 +21,5 @@ public:
   U32 m_width = 0;
   U32 m_height = 0;
   U32 m_bit_depth = 0;
-  U32 m_bit_per_pixel = 0;
+  U32 m_values_per_pixel = 0;
 };

@@ -4,6 +4,9 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
+// https://www.w3.org/TR/2003/REC-PNG-20031110
+// https://www.ietf.org/rfc/rfc1951.txt
+
 #include "core/loader/png.h"
 
 #include "core/allocator.h"
@@ -51,7 +54,7 @@ static const int gc_dist_extra_bits_[] = {0, 0, 0,  0,  1,  1,  2,  2,  3,  3,
                                           9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
 
 // Structure saves codes of specific length.
-// |codes| contains codes of that length.
+// |codes| contains codes of a specific length in an increasing order.
 // |min| is the smallest codes of that length.
 // |count| is the number of codes.
 struct Codes_for_length_t_ {
@@ -83,21 +86,18 @@ static void build_alphabet_(U8* lens, int count, Alphabet_t_* alphabet) {
       break;
     }
   }
-  for (U8 i = gc_max_code__len_ - 1; i > 0; ++i) {
+  for (U8 i = gc_max_code__len_ - 1; i > 0; --i) {
     if (len_counts[i]) {
       alphabet->max_len = i;
       break;
     }
   }
   int smallest_code = 0;
-  int last_non_zero_count = 0;
-  for (U8 i = 0; i < 16; ++i) {
-    if (len_counts[i]) {
-      smallest_code = (smallest_code + last_non_zero_count) << 1;
-      alphabet->cfl[i].min = smallest_code;
-      alphabet->cfl[i].count = len_counts[i];
-      last_non_zero_count = len_counts[i];
-    }
+  for (U8 i = alphabet->min_len; i <= alphabet->max_len; ++i) {
+    smallest_code = smallest_code;
+    alphabet->cfl[i].min = smallest_code;
+    alphabet->cfl[i].count = len_counts[i];
+    smallest_code = (smallest_code + len_counts[i]) << 1;
   }
 }
 
@@ -142,13 +142,13 @@ static int paeth_(int a, int b, int c) {
   return c;
 }
 
-bool Png_loader_t::init(Allocator_t* allocator, const Os_char* path) {
+bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
   m_allocator = allocator;
 
   Linear_allocator_t<> temp_allocator("PNG_loader_temp_allocator");
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
-  Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path);
+  Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path.m_path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
   for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
@@ -171,16 +171,22 @@ bool Png_loader_t::init(Allocator_t* allocator, const Os_char* path) {
       U8 color_type = *p++;
       switch (color_type) {
       case 0:
-        m_bit_per_pixel = 1;
+        // Grey scale
+        m_values_per_pixel = 1;
         break;
       case 2:
+        // RGB
+        m_values_per_pixel = 3;
+        break;
       case 3:
-        m_bit_per_pixel = 3;
+        M_unimplemented();
         break;
       case 4:
-        m_bit_per_pixel = 2;
+        // Grey scale with alpha
+        m_values_per_pixel = 2;
       case 6:
-        m_bit_per_pixel = 2;
+        // RGBA
+        m_values_per_pixel = 4;
         break;
       default:
         M_logf_return_val(false, "Invalid color type");
@@ -208,96 +214,101 @@ bool Png_loader_t::init(Allocator_t* allocator, const Os_char* path) {
       U8 fdict = bs.consume_lsb( 1);
       U8 flevel = bs.consume_lsb(2);
 
-      // 3 header bits
-      const U8 bfinal = bs.consume_lsb(1);
-      const U8 ctype = bs.consume_lsb(2);
-      U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_bit_depth);
+      U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_values_per_pixel);
       U8* deflated_p = deflated_data;
-      if (ctype == 1) {
-        // Fixed Huffman.
-        for (;;) {
-          int code;
-          code = bs.consume_msb(7);
-          if (code >= 0 && code <= 23) {
-            code += 256;
-            if (code == 256) {
-              break;
-            }
-          } else {
-            code = code << 1 | bs.consume_msb(1);
-            if (code >= 48 && code <= 191) {
-              *deflated_p++ = code - 48;
-              continue;
-            } else if (code >= 192 && code <= 199) {
-              code += 88;
+      while (true) {
+        // 3 header bits
+        const U8 bfinal = bs.consume_lsb(1);
+        const U8 ctype = bs.consume_lsb(2);
+        if (ctype == 1) {
+          // Fixed Huffman.
+          for (;;) {
+            int code;
+            code = bs.consume_msb(7);
+            if (code >= 0 && code <= 23) {
+              code += 256;
+              if (code == 256) {
+                break;
+              }
             } else {
               code = code << 1 | bs.consume_msb(1);
-              M_check_log_return_val(code >= 400 && code <= 511, false, "Can't decode_ fixed Huffman");
-              *deflated_p++ = code - 256;
+              if (code >= 48 && code <= 191) {
+                *deflated_p++ = code - 48;
+                continue;
+              } else if (code >= 192 && code <= 199) {
+                code += 88;
+              } else {
+                code = code << 1 | bs.consume_msb(1);
+                M_check_log_return_val(code >= 400 && code <= 511, false, "Can't decode_ fixed Huffman");
+                *deflated_p++ = code - 256;
+                continue;
+              }
+            }
+            decode_len_and_dist_(&deflated_p, code, &bs, NULL);
+          }
+        } else if (ctype == 2) {
+          // Dynamic Huffman.
+          int hlit = bs.consume_lsb(5) + 257;
+          int hdist = bs.consume_lsb(5) + 1;
+          int hclen = bs.consume_lsb(4) + 4;
+          U8 len_of_len[19] = {};
+          const int c_len_alphabet[] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
+          for (int j = 0; j < hclen; ++j) {
+            len_of_len[c_len_alphabet[j]] = bs.consume_lsb(3);
+          }
+          Codes_for_length_t_ code_lens_cfl[8] = {};
+          Alphabet_t_ code_len_alphabet = {code_lens_cfl, 0, 0};
+          build_alphabet_(len_of_len, 19, &code_len_alphabet);
+          int index = 0;
+          U8 lit_and_dist_lens[gc_max_code_] = {};
+          while (index < hlit + hdist) {
+            int code_len = decode_(&bs, &code_len_alphabet);
+            if (code_len < 16) {
+              lit_and_dist_lens[index++] = code_len;
+            } else {
+              U8 repeat_count;
+              U8 repeated_val = 0;
+              if (code_len == 16) {
+                repeat_count = bs.consume_lsb(2) + 3;
+                repeated_val = lit_and_dist_lens[index - 1];
+              } else if (code_len == 17) {
+                repeat_count = bs.consume_lsb(3) + 3;
+              } else if (code_len == 18) {
+                repeat_count = bs.consume_lsb(7) + 11;
+              }
+              memset(lit_and_dist_lens + index, repeated_val, repeat_count);
+              index += repeat_count;
+            }
+            M_check_log_return_val(index <= hlit + hdist, false, "Can't decode_ literal and length alphabet, overflowed");
+          }
+          M_check_log_return_val(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
+          Codes_for_length_t_ lit_or_len_cfl[gc_max_code__len_] = {};
+          Alphabet_t_ lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
+          build_alphabet_(lit_and_dist_lens, hlit, &lit_or_len_alphabet);
+          Codes_for_length_t_ dist_cfl[gc_max_code__len_] = {};
+          Alphabet_t_ dist_alphabet = {dist_cfl, 0, 0};
+          build_alphabet_(lit_and_dist_lens + hlit, hdist, &dist_alphabet);
+          for (;;) {
+            int lit_or_len_code = decode_(&bs, &lit_or_len_alphabet);
+            if (lit_or_len_code == 256) {
+              break;
+            }
+            if (lit_or_len_code < 256) {
+              *deflated_p++ = lit_or_len_code;
               continue;
             }
+            decode_len_and_dist_(&deflated_p, lit_or_len_code, &bs, &dist_alphabet);
           }
-          decode_len_and_dist_(&deflated_p, code, &bs, NULL);
         }
-      } else if (ctype == 2) {
-        // Dynamic Huffman.
-        int hlit = bs.consume_lsb(5) + 257;
-        int hdist = bs.consume_lsb(5) + 1;
-        int hclen = bs.consume_lsb(4) + 4;
-        U8 len_of_len[19] = {};
-        const int c_len_alphabet[] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
-        for (int j = 0; j < hclen; ++j) {
-          len_of_len[c_len_alphabet[j]] = bs.consume_lsb(3);
-        }
-        Codes_for_length_t_ code_lens_cfl[8];
-        Alphabet_t_ code_len_alphabet = {code_lens_cfl, 0, 0};
-        build_alphabet_(len_of_len, 19, &code_len_alphabet);
-        int index = 0;
-        U8 lit_and_dist_lens[gc_max_code_];
-        while (index < hlit + hdist) {
-          int code_len = decode_(&bs, &code_len_alphabet);
-          if (code_len < 16) {
-            lit_and_dist_lens[index++] = code_len;
-          } else {
-            U8 repeat_count;
-            U8 repeated_val = 0;
-            if (code_len == 16) {
-              repeat_count = bs.consume_lsb(2) + 3;
-              repeated_val = lit_and_dist_lens[index - 1];
-            } else if (code_len == 17) {
-              repeat_count = bs.consume_lsb(3) + 3;
-            } else if (code_len == 18) {
-              repeat_count = bs.consume_lsb(7) + 11;
-            }
-            memset(lit_and_dist_lens + index, repeated_val, repeat_count);
-            index += repeat_count;
-          }
-          M_check_log_return_val(index <= hlit + hdist, false, "Can't decode_ literal and length alphabet, overflowed");
-        }
-        M_check_log_return_val(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
-        Codes_for_length_t_ lit_or_len_cfl[gc_max_code__len_];
-        Alphabet_t_ lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
-        build_alphabet_(lit_and_dist_lens, hlit, &lit_or_len_alphabet);
-        Codes_for_length_t_ dist_cfl[gc_max_code__len_];
-        Alphabet_t_ dist_alphabet = {dist_cfl, 0, 0};
-        build_alphabet_(lit_and_dist_lens + hlit, hdist, &dist_alphabet);
-        for (;;) {
-          int lit_or_len_code = decode_(&bs, &lit_or_len_alphabet);
-          if (lit_or_len_code == 256) {
-            break;
-          }
-          if (lit_or_len_code < 256) {
-            *deflated_p++ = lit_or_len_code;
-            continue;
-          }
-          decode_len_and_dist_(&deflated_p, lit_or_len_code, &bs, &dist_alphabet);
+        if (bfinal) {
+          break;
         }
       }
-      m_data = (U8*)m_allocator->alloc(m_width * m_height * 4);
-      int bytes_per_deflated_row = 4 * m_width + 1;
-      int bytes_per_data_row = 4 * m_width;
+      m_data = (U8*)m_allocator->alloc(m_width * m_height * m_values_per_pixel);
+      int bytes_per_deflated_row = m_values_per_pixel * m_width + 1;
+      int bytes_per_data_row = m_values_per_pixel * m_width;
       for (int r = 0; r < m_height; ++r) {
-        const U8 filter_method = deflated_data[r * bytes_per_deflated_row];
+        const U8 filter_type = deflated_data[r * bytes_per_deflated_row];
         const int data_offset = r * bytes_per_data_row;
         const int deflated_offset = r * bytes_per_deflated_row + 1;
         U8* a = &m_data[r * bytes_per_data_row];
@@ -309,7 +320,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Os_char* path) {
         if (r) {
           c = &m_data[(r - 1) * bytes_per_data_row];
         }
-        switch (filter_method) {
+        switch (filter_type) {
         case 0: {
           memcpy(m_data + data_offset, deflated_data + deflated_offset, bytes_per_data_row);
         } break;
