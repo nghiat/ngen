@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-// https://www.w3.org/TR/2003/REC-PNG-20031110
+// hthtps://www.w3.org/TR/2003/REC-PNG-20031110
 // https://www.ietf.org/rfc/rfc1951.txt
 
 #include "core/loader/png.h"
@@ -325,10 +325,10 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
           memcpy(m_data + data_offset, deflated_data + deflated_offset, bytes_per_data_row);
         } break;
         case 1: {
-          for (int j = 0; j < 4; ++j) {
+          for (int j = 0; j < m_values_per_pixel; ++j) {
             m_data[data_offset + j] = deflated_data[deflated_offset + j];
           }
-          for (int j = 4; j < bytes_per_data_row; ++j) {
+          for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
             m_data[data_offset + j] = deflated_data[deflated_offset + j] + *a++;
           }
         } break;
@@ -345,17 +345,17 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
         } break;
         case 3: {
           if (!r) {
-            for (int j = 0; j < 4; ++j) {
+            for (int j = 0; j < m_values_per_pixel; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j];
             }
-            for (int j = 4; j < bytes_per_data_row; ++j) {
+            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *a++ / 2;
             }
           } else {
-            for (int j = 0; j < 4; ++j) {
+            for (int j = 0; j < m_values_per_pixel; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *b++ / 2;
             }
-            for (int j = 4; j < bytes_per_data_row; ++j) {
+            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + ((int)(*a++) + (int)(*b++)) / 2;
             }
           }
@@ -366,10 +366,10 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j];
             }
           } else {
-            for (int j = 0; j < 4; ++j) {
+            for (int j = 0; j < m_values_per_pixel; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *b++;
             }
-            for (int j = 4; j < bytes_per_data_row; ++j) {
+            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(*(a++), *(b++), *(c++));
             }
           }
