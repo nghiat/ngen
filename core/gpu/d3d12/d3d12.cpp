@@ -366,7 +366,7 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   placed_texture.Offset = (Sip)m_texture_subbuffer.cpu_p - (Sip)m_texture_subbuffer.buffer->cpu_p;
   placed_texture.Footprint = pitched_desc;
   for (int i = 0; i < pitched_desc.Height; ++i) {
-    memcpy(m_texture_subbuffer.cpu_p + i * row_size, &ci.data[i * ci.width], row_size);
+    memcpy(m_texture_subbuffer.cpu_p + i * row_size, &ci.data[i * row_size], row_size);
   }
   D3D12_TEXTURE_COPY_LOCATION src = {};
   src.pResource = m_texture_subbuffer.buffer->buffer;
@@ -564,7 +564,7 @@ Sampler_t* D3d12_t::create_sampler(Allocator_t* allocator, const Sampler_create_
   auto rv = allocator->construct<D3d12_sampler_t>();
   rv->descriptor = allocate_descriptor_(&m_sampler_heap);
   D3D12_SAMPLER_DESC sampler_desc = {};
-  sampler_desc.Filter = D3D12_FILTER_MAXIMUM_ANISOTROPIC;
+  sampler_desc.Filter = D3D12_FILTER_ANISOTROPIC;
   sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
   sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
   sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;

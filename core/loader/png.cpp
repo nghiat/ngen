@@ -11,7 +11,7 @@
 
 #include "core/allocator.h"
 #include "core/bit_stream.h"
-#include "core/dynamic_array.h"
+#include "core/dynamic_array.inl"
 #include "core/file.h"
 #include "core/linear_allocator.h"
 #include "core/log.h"
@@ -150,6 +150,9 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
   M_scope_exit(temp_allocator.destroy());
   Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path.m_path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
+  Dynamic_array_t<U8> idat_full;
+  idat_full.init(&temp_allocator);
+  idat_full.reserve((m_width + 1) * m_height * m_values_per_pixel);
   for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
     i += 4;
@@ -203,17 +206,20 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       break;
     }
     case FOURCC_("IDAT"): {
+      idat_full.append_array(p, data_len);
+      break;
+    }
+    case FOURCC_("IEND"): {
       Bit_stream_t bs;
-      bs.init(p);
+      bs.init(idat_full.m_p);
       // 2 bytes of zlib header.
       U32 zlib_compress_method = bs.consume_lsb(4);
       M_check_log_return_val(zlib_compress_method == 8, false, "Invalid zlib compression method");
       U32 zlib_compress_info = bs.consume_lsb(4);
-      M_check_log_return_val((p[0] * 256 + p[1]) % 31 == 0, false, "Invalid FCHECK bits");
+      M_check_log_return_val((idat_full[0] * 256 + idat_full[1]) % 31 == 0, false, "Invalid FCHECK bits");
       bs.skip(5);
       U8 fdict = bs.consume_lsb( 1);
       U8 flevel = bs.consume_lsb(2);
-
       U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_values_per_pixel);
       U8* deflated_p = deflated_data;
       while (true) {
@@ -378,9 +384,8 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
           M_logf_return_val(false, "Invalid filter method");
         }
       }
-    } break;
-    case FOURCC_("IEND"):
       break;
+    }
     }
   }
   return true;
