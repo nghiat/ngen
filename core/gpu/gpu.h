@@ -38,11 +38,26 @@ enum E_render_target_type {
 
 enum E_format {
   e_format_r32g32b32a32_float,
+  e_format_r32g32_float,
+  e_format_r8_uint,
+  e_format_r8_unorm,
+  e_format_r8g8b8a8_uint,
+  e_format_r24_unorm_x8_typeless,
 };
 
 enum E_render_pass_hint {
   e_render_pass_hint_none,
   e_render_pass_hint_shadow,
+};
+
+struct Texture_create_info_t {
+  U8* data;
+  U32 width;
+  U32 height;
+  E_format format;
+};
+
+struct Texture_t {
 };
 
 struct Resources_set_create_info_t {
@@ -93,16 +108,21 @@ struct Render_pass_create_info_t {
   int render_target_count;
   Render_target_description_t* descs;
   E_render_pass_hint hint;
+  bool use_swapchain_render_target;
   bool is_last;
+  bool should_clear_render_target;
 };
 
 struct Render_pass_t {
   Dynamic_array_t<Render_target_description_t> rt_descs;
+  bool use_swapchain_render_target;
   bool is_last;
+  bool should_clear_render_target;
 };
 
 struct Sampler_create_info_t {
   Resources_set_t* resources_set;
+  // binding in |resources_set|
   int binding;
 };
 
@@ -110,10 +130,11 @@ struct Sampler_t {
 };
 
 struct Uniform_buffer_create_info_t {
-  Resources_set_t* set;
+  Resources_set_t* resources_set;
   Sz size;
   Sz alignment = 256;
-  U8 index;
+  // binding in |resources_set|
+  U8 binding;
 };
 
 struct Uniform_buffer_t {
@@ -142,16 +163,20 @@ struct Pipeline_state_object_create_info_t {
   Input_element_t* input_elements = NULL;
   Pipeline_layout_t* pipeline_layout = NULL;
   Render_pass_t* render_pass = NULL;
+  bool enable_depth = false;
 };
 
 struct Pipeline_state_object_t {
 };
 
 struct Image_view_create_info_t {
-  Resources_set_t* set;
+  Resources_set_t* resources_set;
   Render_target_t* render_target;
+  Texture_t* texture;
   E_resource_state state;
+  // binding in |resources_set|
   U8 binding;
+  E_format format;
 };
 
 struct Image_view_t {
@@ -161,6 +186,7 @@ struct Image_view_t {
 class Gpu_t {
 public:
   virtual void destroy() = 0;
+  virtual Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci);
   virtual Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci);
   virtual Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci);
   virtual Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) = 0;
@@ -182,4 +208,7 @@ public:
   virtual void cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
   virtual void cmd_draw(int vertex_count, int first_vertex);
   virtual void cmd_end();
+
+protected:
+  static int convert_format_to_size_(E_format format);
 };

@@ -27,6 +27,7 @@ public:
   Vulkan_t() : Gpu_t(), m_vk_allocator("vk_allocator") {}
   bool init(Window_t* w);
   void destroy() override;
+  Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;
   Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) override;
   Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) override;
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;
@@ -63,16 +64,19 @@ public:
   VkDevice m_device;
   VkQueue m_graphics_q;
   VkQueue m_present_q;
-  VkCommandPool m_cmd_pool;
+  VkQueue m_transfer_q;
+  VkCommandPool m_graphics_cmd_pool;
+  VkCommandPool m_transfer_cmd_pool;
   VkSwapchainKHR m_swapchain;
   VkFormat m_swapchain_format;
   Dynamic_array_t<VkImage> m_swapchain_images;
   Dynamic_array_t<VkImageView> m_swapchain_image_views;
-  Dynamic_array_t<VkFramebuffer> m_present_fbs;
   VkDescriptorPool m_descriptors_pool;
   Vk_buffer_t_ m_uniform_buffer;
   Vk_buffer_t_ m_vertex_buffer;
+  Vk_buffer_t_ m_upload_buffer;
   Dynamic_array_t<VkCommandBuffer> m_graphics_cmd_buffers;
+  VkCommandBuffer m_transfer_cmd_buffer;
   Dynamic_array_t<VkFence> m_fences;
   U32 m_next_swapchain_image_idx;
   VkSemaphore m_image_available_semaphore;
@@ -83,4 +87,5 @@ private:
   bool create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlagBits usage_flags, VkMemoryPropertyFlagBits mem_prop_flags);
   void allocate_sub_buffer_(Vk_sub_buffer_t_* sub_buffer, Vk_buffer_t_* buffer, Sip size, int alignment);
   VkCommandBuffer get_active_cmd_buffer_() const;
+  void create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, bool is_mutable = false);
 };

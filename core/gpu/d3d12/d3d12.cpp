@@ -34,6 +34,10 @@
 #pragma clang diagnostic ignored "-Waddress-of-temporary"
 #endif
 
+struct D3d12_texture_t : Texture_t {
+  ID3D12Resource* texture;
+};
+
 struct D3d12_image_view_t : Image_view_t {
   D3d12_descriptor_t_ descriptor;
 };
@@ -46,7 +50,6 @@ struct D3d12_resources_set_t : Resources_set_t {
 };
 
 struct D3d12_render_pass_t : Render_pass_t {
-  bool is_last = false;
 };
 
 struct D3d12_pipeline_layout_t : Pipeline_layout_t {
@@ -112,6 +115,16 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:
       return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case e_format_r32g32_float:
+      return DXGI_FORMAT_R32G32_FLOAT;
+    case e_format_r8_uint:
+      return DXGI_FORMAT_R8_UINT;
+    case e_format_r8_unorm:
+      return DXGI_FORMAT_R8_UNORM;
+    case e_format_r8g8b8a8_uint:
+      return DXGI_FORMAT_R8G8B8A8_UINT;
+    case e_format_r24_unorm_x8_typeless:
+      return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
     default:
       M_unimplemented();
   }
@@ -298,6 +311,13 @@ bool D3d12_t::init(Window_t* w) {
                                     NULL,
                                     IID_PPV_ARGS(&m_vertex_buffer.buffer));
   m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
+  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
+                                    D3D12_HEAP_FLAG_NONE,
+                                    &create_resource_desc_(128 * 1024 * 1024),
+                                    D3D12_RESOURCE_STATE_GENERIC_READ,
+                                    NULL,
+                                    IID_PPV_ARGS(&m_upload_buffer.buffer));
+  m_upload_buffer.buffer->Map(0, NULL, &m_upload_buffer.cpu_p);
   for (int i = 0; i < sc_frame_count; ++i) {
     M_dx_check_return_false_(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
   }
@@ -314,6 +334,56 @@ bool D3d12_t::init(Window_t* w) {
 }
 
 void D3d12_t::destroy() {
+}
+
+Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) {
+  auto rv = allocator->construct<D3d12_texture_t>();
+  D3D12_RESOURCE_DESC texture_desc = {};
+  texture_desc.MipLevels = 1;
+  texture_desc.Format = convert_format_to_dxgi_format(ci.format);
+  texture_desc.Width = ci.width;
+  texture_desc.Height = ci.height;
+  texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+  texture_desc.DepthOrArraySize = 1;
+  texture_desc.SampleDesc.Count = 1;
+  texture_desc.SampleDesc.Quality = 0;
+  texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
+
+  U64 upload_buffer_size;
+  m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
+
+  D3D12_SUBRESOURCE_FOOTPRINT pitched_desc = {};
+  int row_size = ci.width * convert_format_to_size_(ci.format);
+  pitched_desc.Format = convert_format_to_dxgi_format(ci.format);
+  pitched_desc.Width = ci.width;
+  pitched_desc.Height = ci.height;
+  pitched_desc.Depth = 1;
+  pitched_desc.RowPitch = (row_size + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+  D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
+  placed_texture.Offset = (Sip)m_texture_subbuffer.cpu_p - (Sip)m_texture_subbuffer.buffer->cpu_p;
+  placed_texture.Footprint = pitched_desc;
+  for (int i = 0; i < pitched_desc.Height; ++i) {
+    memcpy(m_texture_subbuffer.cpu_p + i * row_size, &ci.data[i * ci.width], row_size);
+  }
+  D3D12_TEXTURE_COPY_LOCATION src = {};
+  src.pResource = m_texture_subbuffer.buffer->buffer;
+  src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+  src.PlacedFootprint = placed_texture;
+  D3D12_TEXTURE_COPY_LOCATION dest = {};
+  dest.pResource = rv->texture;
+  dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+  dest.SubresourceIndex = 0;
+  m_cmd_allocators[m_frame_no]->Reset();
+  m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL);
+  m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+  m_cmd_list->Close();
+  m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
+  wait_for_gpu_();
+  return rv;
 }
 
 Resources_set_t* D3d12_t::create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) {
@@ -403,7 +473,7 @@ Pipeline_layout_t* D3d12_t::create_pipeline_layout(Allocator_t* allocator, const
 Vertex_buffer_t* D3d12_t::create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) {
   auto rv = allocator->construct<D3d12_vertex_buffer_t>();
   rv->stride = ci.stride;
-  rv->sub_buffer = allocate_sub_buffer_(&m_uniform_buffer, ci.size, ci.alignment);
+  rv->sub_buffer = allocate_sub_buffer_(&m_vertex_buffer, ci.size, ci.alignment);
   rv->p = rv->sub_buffer.cpu_p;
   return rv;
 }
@@ -416,7 +486,7 @@ Render_target_t* D3d12_t::create_depth_stencil(Allocator_t* allocator, const Dep
   depth_tex_desc.Height = m_window->m_height;
   depth_tex_desc.DepthOrArraySize = 1;
   depth_tex_desc.MipLevels = 1;
-  depth_tex_desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+  depth_tex_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
   depth_tex_desc.SampleDesc.Count = 1;
   depth_tex_desc.SampleDesc.Quality = 0;
   depth_tex_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -454,16 +524,25 @@ Render_pass_t* D3d12_t::create_render_pass(Allocator_t* allocator, const Render_
   rv->rt_descs.init(allocator);
   rv->rt_descs.reserve(ci.render_target_count);
   rv->is_last = ci.is_last;
+  rv->use_swapchain_render_target = ci.use_swapchain_render_target;
+  rv->should_clear_render_target = ci.should_clear_render_target;
   for (int i = 0; i < ci.render_target_count; ++i) {
     const Render_target_description_t& rt_desc = ci.descs[i];
     rv->rt_descs.append(rt_desc);
   }
   if (ci.is_last) {
+    rv->use_swapchain_render_target = true;
+  }
+  if (rv->use_swapchain_render_target) {
     rv->rt_descs.reserve(ci.render_target_count + 1);
     Render_target_description_t desc = {};
     desc.render_target = NULL;
     desc.render_pass_state = e_resource_state_render_target;
-    desc.state_after = e_resource_state_present;
+    if (ci.is_last) {
+      desc.state_after = e_resource_state_present;
+    } else {
+      desc.state_after = e_resource_state_render_target;
+    }
     rv->rt_descs.append(desc);
   }
   return rv;
@@ -500,17 +579,26 @@ Sampler_t* D3d12_t::create_sampler(Allocator_t* allocator, const Sampler_create_
 
 Image_view_t* D3d12_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
   auto rv = allocator->construct<D3d12_image_view_t>();
-  auto d3d12_rt = (D3d12_render_target_t*)ci.render_target;
   rv->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+  ID3D12Resource* resource;
+  if (ci.render_target) {
+    auto d3d12_rt = (D3d12_render_target_t*)ci.render_target;
+    resource = d3d12_rt->resource;
+  } else if (ci.texture) {
+    auto d3d12_texture = (D3d12_texture_t*)ci.texture;
+    resource = d3d12_texture->texture;
+  } else {
+    M_logf_return_val(NULL, "One of |ci.render_target| or |ci.texture| has to have a valid value");
+  }
   D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
-  srv_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+  srv_desc.Format = convert_format_to_dxgi_format(ci.format);
   srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
   srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srv_desc.Texture2D.MostDetailedMip = 0;
   srv_desc.Texture2D.MipLevels = 1;
   srv_desc.Texture2D.PlaneSlice = 0;
   srv_desc.Texture2D.ResourceMinLODClamp = 0.f;
-  m_device->CreateShaderResourceView(d3d12_rt->resource, &srv_desc, rv->descriptor.cpu_handle);
+  m_device->CreateShaderResourceView(resource, &srv_desc, rv->descriptor.cpu_handle);
   return rv;
 }
 
@@ -595,9 +683,11 @@ Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allo
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
   pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
   pso_desc.SampleDesc.Count = 1;
-  pso_desc.DepthStencilState.DepthEnable = TRUE;
-  pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-  pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+  if (ci.enable_depth) {
+    pso_desc.DepthStencilState.DepthEnable = TRUE;
+    pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+  }
   pso_desc.DepthStencilState.StencilEnable = FALSE;
   ID3D12PipelineState* pso;
   M_dx_check_return_val_(m_device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pso)), NULL);
@@ -632,7 +722,7 @@ void D3d12_t::cmd_begin() {
 
 void D3d12_t::cmd_begin_render_pass(Render_pass_t* render_pass) {
   auto d3d12_render_pass = (D3d12_render_pass_t*)render_pass;
-  if (d3d12_render_pass->is_last) {
+  if (d3d12_render_pass->use_swapchain_render_target) {
     d3d12_render_pass->rt_descs[d3d12_render_pass->rt_descs.len() - 1].render_target = &m_swapchain_rts[m_frame_no];
   }
   Fixed_array_t<D3D12_RESOURCE_BARRIER, 8> barriers;
@@ -657,12 +747,14 @@ void D3d12_t::cmd_begin_render_pass(Render_pass_t* render_pass) {
     m_cmd_list->ResourceBarrier(barriers.len(), barriers.m_p);
   }
   m_cmd_list->OMSetRenderTargets(color_rt_descriptor_handles.len(), color_rt_descriptor_handles.m_p, FALSE, depth_stencil_descriptor);
-  for (const auto handle : color_rt_descriptor_handles) {
-    float clear_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    m_cmd_list->ClearRenderTargetView(handle, clear_color, 0, NULL);
-  }
-  if (depth_stencil_descriptor) {
-    m_cmd_list->ClearDepthStencilView(*depth_stencil_descriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, NULL);
+  if (d3d12_render_pass->should_clear_render_target) {
+    for (const auto handle : color_rt_descriptor_handles) {
+      float clear_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
+      m_cmd_list->ClearRenderTargetView(handle, clear_color, 0, NULL);
+    }
+    if (depth_stencil_descriptor) {
+      m_cmd_list->ClearDepthStencilView(*depth_stencil_descriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, NULL);
+    }
   }
 }
 

@@ -8,6 +8,11 @@
 
 #include "core/log.h"
 
+Texture_t* Gpu_t::create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) {
+  M_unimplemented();
+  return NULL;
+}
+
 Resources_set_t* Gpu_t::create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) {
   M_unimplemented();
   return NULL;
@@ -91,3 +96,24 @@ void Gpu_t::cmd_draw(int vertex_count, int first_vertex) {
 void Gpu_t::cmd_end() {
   M_unimplemented();
 }
+
+int Gpu_t::convert_format_to_size_(E_format format) {
+  switch(format) {
+    case e_format_r32g32b32a32_float:
+      return 16;
+    case e_format_r32g32_float:
+      return 8;
+    case e_format_r8_uint:
+      return 1;
+    case e_format_r8_unorm:
+      return 4;
+    case e_format_r8g8b8a8_uint:
+      return 4;
+    case e_format_r24_unorm_x8_typeless:
+      return 4;
+    default:
+      M_unimplemented();
+  }
+  return 0;
+}
+

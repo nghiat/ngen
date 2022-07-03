@@ -11,6 +11,7 @@
 #include "core/gpu/d3d12/d3d12.h"
 #include "core/gpu/vulkan/vulkan.h"
 #include "core/loader/obj.h"
+#include "core/loader/png.h"
 #include "core/log.h"
 #include "core/math/float.inl"
 #include "core/math/mat4.inl"
@@ -58,15 +59,20 @@ public:
 
   Render_pass_t* m_final_render_pass;
   Render_pass_t* m_shadow_render_pass;
+  Render_pass_t* m_texture_render_pass;
   Resources_set_t* m_per_obj_resources_set;
   Resources_set_t* m_shadow_shared_resources_set;
   Resources_set_t* m_final_shared_resources_set;
   Resources_set_t* m_final_shared_samplers;
   Resources_set_t* m_final_shared_srvs;
+  Resources_set_t* m_texture_srvs;
+  Resources_set_t* m_texture_samplers;
   Pipeline_layout_t* m_shadow_pipeline_layout;
   Pipeline_layout_t* m_final_pipeline_layout;
+  Pipeline_layout_t* m_texture_pipeline_layout;
   Pipeline_state_object_t* m_shadow_pso;
   Pipeline_state_object_t* m_final_pso;
+  Pipeline_state_object_t* m_texture_pso;
 
   Uniform_buffer_t* m_shadow_shared_uniform;
   Shadow_shared_t_* m_shadow_shared;
@@ -75,9 +81,14 @@ public:
   Uniform_buffer_t* m_per_obj_uniforms[10];
   Per_obj_t_* m_per_obj[10];
   Sampler_t* m_shadow_sampler;
+  Sampler_t* m_texture_sampler;
   Image_view_t* m_shadow_depth_stencil_image_view;
+  Image_view_t* m_texture_image_view;
   Vertex_buffer_t* m_vertices_vb;
   Vertex_buffer_t* m_normals_vb;
+  Vertex_buffer_t* m_texture_v_vb;
+  Vertex_buffer_t* m_texture_uv_vb;
+  Texture_t* m_texture;
 
   Gpu_t* m_gpu;
   Cam_t m_cam;
@@ -124,6 +135,7 @@ bool Gpu_window_t::init() {
     shadow_render_pass_ci.render_target_count = 1;
     shadow_render_pass_ci.descs = &shadow_rt_desc;
     shadow_render_pass_ci.hint = e_render_pass_hint_shadow;
+    shadow_render_pass_ci.should_clear_render_target = true;
     m_shadow_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, shadow_render_pass_ci);
   }
   {
@@ -135,8 +147,15 @@ bool Gpu_window_t::init() {
     Render_pass_create_info_t final_render_pass_ci = {};
     final_render_pass_ci.render_target_count = 1;
     final_render_pass_ci.descs = &rt_desc;
-    final_render_pass_ci.is_last = true;
+    final_render_pass_ci.use_swapchain_render_target = true;
+    final_render_pass_ci.should_clear_render_target = true;
     m_final_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, final_render_pass_ci);
+  }
+  {
+    Render_pass_create_info_t texture_render_pass_ci = {};
+    texture_render_pass_ci.is_last = true;
+    texture_render_pass_ci.should_clear_render_target = false;
+    m_texture_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, texture_render_pass_ci);
   }
   {
     Resources_set_create_info_t resources_set_ci = {};
@@ -146,10 +165,10 @@ bool Gpu_window_t::init() {
     m_shadow_shared_resources_set = m_gpu->create_resources_set(&m_gpu_allocator, resources_set_ci);
 
     Uniform_buffer_create_info_t ub_ci = {};
-    ub_ci.set = m_shadow_shared_resources_set;
+    ub_ci.resources_set = m_shadow_shared_resources_set;
     ub_ci.size = sizeof(Shadow_shared_t_);
     ub_ci.alignment = 256;
-    ub_ci.index = 0;
+    ub_ci.binding = 0;
     m_shadow_shared_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
     m_shadow_shared = (Shadow_shared_t_*)m_shadow_shared_uniform->p;
     m_shadow_shared->light_view = light_cam.m_view_mat;
@@ -178,10 +197,10 @@ bool Gpu_window_t::init() {
       m_final_shared_srvs = m_gpu->create_resources_set(&m_gpu_allocator, final_resources_set_ci);
     }
     Uniform_buffer_create_info_t ub_ci = {};
-    ub_ci.set = m_final_shared_resources_set;
+    ub_ci.resources_set = m_final_shared_resources_set;
     ub_ci.size = sizeof(Final_shared_t_);
     ub_ci.alignment = 256;
-    ub_ci.index = 0;
+    ub_ci.binding = 0;
     m_final_shared_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
     m_final_shared = (Final_shared_t_*)m_final_shared_uniform->p;
     m_final_shared->view = m_cam.m_view_mat;
@@ -199,10 +218,52 @@ bool Gpu_window_t::init() {
     m_shadow_sampler = m_gpu->create_sampler(&m_gpu_allocator, sampler_ci);
 
     Image_view_create_info_t image_view_ci = {};
-    image_view_ci.set = m_final_shared_srvs;
+    image_view_ci.resources_set = m_final_shared_srvs;
     image_view_ci.render_target = m_shadow_depth_stencil;
     image_view_ci.binding = 0;
+    image_view_ci.format = e_format_r24_unorm_x8_typeless;
     m_shadow_depth_stencil_image_view = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
+  }
+  {
+    {
+      Resources_set_create_info_t texture_resources_set_ci = {};
+      texture_resources_set_ci.binding = 0;
+      texture_resources_set_ci.sampler_count = 1;
+      texture_resources_set_ci.visibility = e_shader_stage_fragment;
+      m_texture_samplers = m_gpu->create_resources_set(&m_gpu_allocator, texture_resources_set_ci);
+    }
+    {
+      Resources_set_create_info_t texture_resources_set_ci = {};
+      texture_resources_set_ci.binding = 0;
+      texture_resources_set_ci.image_count = 1;
+      texture_resources_set_ci.visibility = e_shader_stage_fragment;
+      m_texture_srvs = m_gpu->create_resources_set(&m_gpu_allocator, texture_resources_set_ci);
+    }
+
+    Sampler_create_info_t sampler_ci = {};
+    sampler_ci.resources_set = m_texture_samplers;
+    sampler_ci.binding = 0;
+    m_texture_sampler = m_gpu->create_sampler(&m_gpu_allocator, sampler_ci);
+
+    {
+      Png_loader_t png;
+      png.init(&temp_allocator, g_exe_dir.join(M_txt("assets/metal_plates_roughness.png")));
+      png.init(&temp_allocator, g_exe_dir.join(M_txt("assets/metal_plates_roughness.png")));
+      M_scope_exit(png.destroy());
+      Texture_create_info_t ci = {};
+      ci.data = png.m_data;
+      ci.width = png.m_width;
+      ci.height = png.m_height;
+      ci.format = e_format_r8_uint;
+      m_texture = m_gpu->create_texture(&m_gpu_allocator, ci);
+    }
+
+    Image_view_create_info_t image_view_ci = {};
+    image_view_ci.resources_set = m_texture_srvs;
+    image_view_ci.texture = m_texture;
+    image_view_ci.binding = 0;
+    image_view_ci.format = e_format_r8_unorm;
+    m_texture_image_view = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
   }
 
   {
@@ -229,6 +290,14 @@ bool Gpu_window_t::init() {
     m_final_pipeline_layout = m_gpu->create_pipeline_layout(&m_gpu_allocator, ci);
   }
 
+  {
+    Resources_set_t* sets[] = {m_texture_srvs, m_texture_samplers};
+    Pipeline_layout_create_info_t ci = {};
+    ci.set_count = static_array_size(sets);
+    ci.sets = sets;
+    m_texture_pipeline_layout = m_gpu->create_pipeline_layout(&m_gpu_allocator, ci);
+  }
+
   Input_element_t input_elems[2] = {};
   {
     const Os_char* obj_paths[] = {
@@ -248,10 +317,10 @@ bool Gpu_window_t::init() {
     {
       for (int i = 0; i < m_obj_count; ++i) {
         Uniform_buffer_create_info_t ub_ci = {};
-        ub_ci.set = m_per_obj_resources_set;
+        ub_ci.resources_set = m_per_obj_resources_set;
         ub_ci.size = sizeof(Per_obj_t_);
         ub_ci.alignment = 256;
-        ub_ci.index = 0;
+        ub_ci.binding = 0;
         m_per_obj_uniforms[i] = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
         m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i]->p;
         m_per_obj[i]->world = m4_identity();
@@ -295,6 +364,7 @@ bool Gpu_window_t::init() {
     pso_ci.input_elements = input_elems;
     pso_ci.pipeline_layout = m_shadow_pipeline_layout;
     pso_ci.render_pass = m_shadow_render_pass;
+    pso_ci.enable_depth = true;
     m_shadow_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
   }
   {
@@ -305,7 +375,59 @@ bool Gpu_window_t::init() {
     pso_ci.input_elements = input_elems;
     pso_ci.pipeline_layout = m_final_pipeline_layout;
     pso_ci.render_pass = m_final_render_pass;
+    pso_ci.enable_depth = true;
     m_final_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
+  }
+  {
+    Input_element_t texture_input_elems[2] = {};
+    texture_input_elems[0].semantic_name = "V";
+    texture_input_elems[0].format = e_format_r32g32_float;
+    texture_input_elems[0].semantic_index = 0;
+    texture_input_elems[0].input_slot = 0;
+    texture_input_elems[0].stride = 2 * sizeof(float);
+
+    texture_input_elems[1].semantic_name = "UV";
+    texture_input_elems[1].format = e_format_r32g32_float;
+    texture_input_elems[1].semantic_index = 0;
+    texture_input_elems[1].input_slot = 1;
+    texture_input_elems[1].stride = 2 * sizeof(float);
+    Pipeline_state_object_create_info_t pso_ci = {};
+    Shader_t* texture_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/texture_vs"))});
+    Shader_t* texture_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/texture_ps"))});
+    pso_ci.vs = texture_vs;
+    pso_ci.ps = texture_ps;
+    pso_ci.input_element_count = static_array_size(texture_input_elems);
+    pso_ci.input_elements = texture_input_elems;
+    pso_ci.pipeline_layout = m_texture_pipeline_layout;
+    pso_ci.render_pass = m_texture_render_pass;
+    m_texture_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
+
+    Vertex_buffer_create_info_t vb_ci = {};
+    vb_ci.size = 1024;
+    vb_ci.alignment = 256;
+    vb_ci.stride = sizeof(V2_t);
+    m_texture_v_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
+    m_texture_uv_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
+    float vertices[] = {
+      -0.5f, -0.5f,
+      0.5f, 0.5f,
+      -0.5f, 0.5f,
+
+      0.5f, 0.5f,
+      -0.5f, -0.5f,
+      0.5f, -0.5f,
+    };
+    memcpy((U8*)m_texture_v_vb->p, vertices, sizeof(vertices));
+    float uvs[] = {
+      0.0f, 1.0f,
+      1.0f, 0.0f,
+      0.0f, 0.0f,
+
+      1.0f, 0.0f,
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+    };
+    memcpy((U8*)m_texture_uv_vb->p, uvs, sizeof(uvs));
   }
 
   return true;
@@ -319,31 +441,46 @@ void Gpu_window_t::loop() {
   m_final_shared->view = m_cam.m_view_mat;
   m_gpu->get_back_buffer();
   m_gpu->cmd_begin();
-  m_gpu->cmd_begin_render_pass(m_shadow_render_pass);
-  m_gpu->cmd_set_pipeline_state(m_shadow_pso);
-  m_gpu->cmd_set_vertex_buffer(m_vertices_vb, 0);
-  m_gpu->cmd_set_uniform_buffer(m_shadow_shared_uniform, m_shadow_pipeline_layout, m_shadow_shared_resources_set, 1);
-  int vertex_offset = 0;
-  for (int i = 0; i < m_obj_count; ++i) {
-    m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_shadow_pipeline_layout, m_per_obj_resources_set, 0);
-    m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
-    vertex_offset += m_obj_vertices_counts[i];
+  {
+    m_gpu->cmd_begin_render_pass(m_shadow_render_pass);
+    m_gpu->cmd_set_pipeline_state(m_shadow_pso);
+    m_gpu->cmd_set_vertex_buffer(m_vertices_vb, 0);
+    m_gpu->cmd_set_uniform_buffer(m_shadow_shared_uniform, m_shadow_pipeline_layout, m_shadow_shared_resources_set, 1);
+    int vertex_offset = 0;
+    for (int i = 0; i < m_obj_count; ++i) {
+      m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_shadow_pipeline_layout, m_per_obj_resources_set, 0);
+      m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
+      vertex_offset += m_obj_vertices_counts[i];
+    }
+    m_gpu->cmd_end_render_pass(m_shadow_render_pass);
   }
-  m_gpu->cmd_end_render_pass(m_shadow_render_pass);
 
-  m_gpu->cmd_begin_render_pass(m_final_render_pass);
-  m_gpu->cmd_set_pipeline_state(m_final_pso);
-  m_gpu->cmd_set_vertex_buffer(m_normals_vb, 1);
-  m_gpu->cmd_set_uniform_buffer(m_final_shared_uniform, m_final_pipeline_layout, m_final_shared_resources_set, 1);
-  m_gpu->cmd_set_sampler(m_shadow_sampler, m_final_pipeline_layout, m_final_shared_samplers, 2);
-  m_gpu->cmd_set_image_view(m_shadow_depth_stencil_image_view, m_final_pipeline_layout, m_final_shared_srvs, 3);
-  vertex_offset = 0;
-  for (int i = 0; i < m_obj_count; ++i) {
-    m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_final_pipeline_layout, m_per_obj_resources_set, 0);
-    m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
-    vertex_offset += m_obj_vertices_counts[i];
+  {
+    m_gpu->cmd_begin_render_pass(m_final_render_pass);
+    m_gpu->cmd_set_pipeline_state(m_final_pso);
+    m_gpu->cmd_set_vertex_buffer(m_normals_vb, 1);
+    m_gpu->cmd_set_uniform_buffer(m_final_shared_uniform, m_final_pipeline_layout, m_final_shared_resources_set, 1);
+    m_gpu->cmd_set_sampler(m_shadow_sampler, m_final_pipeline_layout, m_final_shared_samplers, 2);
+    m_gpu->cmd_set_image_view(m_shadow_depth_stencil_image_view, m_final_pipeline_layout, m_final_shared_srvs, 3);
+    int vertex_offset = 0;
+    for (int i = 0; i < m_obj_count; ++i) {
+      m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_final_pipeline_layout, m_per_obj_resources_set, 0);
+      m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
+      vertex_offset += m_obj_vertices_counts[i];
+    }
+    m_gpu->cmd_end_render_pass(m_final_render_pass);
   }
-  m_gpu->cmd_end_render_pass(m_final_render_pass);
+
+  {
+    m_gpu->cmd_begin_render_pass(m_texture_render_pass);
+    m_gpu->cmd_set_pipeline_state(m_texture_pso);
+    m_gpu->cmd_set_vertex_buffer(m_texture_v_vb, 0);
+    m_gpu->cmd_set_vertex_buffer(m_texture_uv_vb, 1);
+    m_gpu->cmd_set_image_view(m_texture_image_view, m_texture_pipeline_layout, m_texture_srvs, 0);
+    m_gpu->cmd_set_sampler(m_texture_sampler, m_texture_pipeline_layout, m_texture_samplers, 1);
+    m_gpu->cmd_draw(6, 0);
+    m_gpu->cmd_end_render_pass(m_texture_render_pass);
+  }
   m_gpu->cmd_end();
 }
 

@@ -41,6 +41,7 @@ class D3d12_t : public Gpu_t {
 public:
   bool init(Window_t* w);
   void destroy() override;
+  Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;
   Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) override;
   Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) override;
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;
@@ -82,6 +83,7 @@ public:
 
   D3d12_buffer_t_ m_uniform_buffer;
   D3d12_buffer_t_ m_vertex_buffer;
+  D3d12_buffer_t_ m_upload_buffer;
   ID3D12Fence* m_fence;
   HANDLE m_fence_event;
   U64 m_fence_vals[sc_frame_count] = {};
