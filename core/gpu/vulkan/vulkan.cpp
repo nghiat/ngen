@@ -75,6 +75,7 @@ struct Vulkan_render_target_t : Render_target_t {
 struct Vulkan_render_pass_t : Render_pass_t {
   VkRenderPass render_pass;
   VkFramebuffer framebuffers[4] = {};
+  Fixed_array_t<VkClearValue, 4> clear_values;
 };
 
 struct Vulkan_pipeline_layout_t : Pipeline_layout_t {
@@ -663,9 +664,15 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
       desc.format = VK_FORMAT_D24_UNORM_S8_UINT;
       depth_stencil_ref = ref;
       ++depth_stencil_ref_count;
+      VkClearValue clear_value = {};
+      clear_value.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+      rv->clear_values.append(clear_value);
     } else {
       desc.format = m_swapchain_format;
       color_refs.append(ref);
+      VkClearValue clear_value = {};
+      clear_value.depthStencil = { 1.0f, 0 };
+      rv->clear_values.append(clear_value);
     }
     attachment_descs.append(desc);
     attachments.append(((Vulkan_render_target_t*)ci.descs[i].render_target)->image_view);
@@ -678,6 +685,9 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
       desc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
       desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
       desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      VkClearValue clear_value = {};
+      clear_value.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+      rv->clear_values.append(clear_value);
     } else {
       desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
       desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -1044,10 +1054,8 @@ void Vulkan_t::cmd_begin_render_pass(Render_pass_t* render_pass) {
   }
   render_pass_begin_info.renderArea.offset = { 0, 0 };
   render_pass_begin_info.renderArea.extent = { (U32)m_window->m_width, (U32)m_window->m_height};
-  if (vk_render_pass->should_clear_render_target) {
-    render_pass_begin_info.clearValueCount = static_array_size(clear_values);
-    render_pass_begin_info.pClearValues = clear_values;
-  }
+  render_pass_begin_info.clearValueCount = vk_render_pass->clear_values.len();
+  render_pass_begin_info.pClearValues = vk_render_pass->clear_values.m_p;
   vkCmdBeginRenderPass(get_active_cmd_buffer_(), &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
