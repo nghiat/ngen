@@ -151,8 +151,6 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
   Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path.m_path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
   Dynamic_array_t<U8> idat_full;
-  idat_full.init(&temp_allocator);
-  idat_full.reserve((m_width + 1) * m_height * m_values_per_pixel);
   for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
     i += 4;
@@ -175,25 +173,28 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       switch (color_type) {
       case 0:
         // Grey scale
-        m_values_per_pixel = 1;
+        m_components_per_pixel = 1;
         break;
       case 2:
         // RGB
-        m_values_per_pixel = 3;
+        m_components_per_pixel = 3;
         break;
       case 3:
         M_unimplemented();
         break;
       case 4:
         // Grey scale with alpha
-        m_values_per_pixel = 2;
+        m_components_per_pixel = 2;
       case 6:
         // RGBA
-        m_values_per_pixel = 4;
+        m_components_per_pixel = 4;
         break;
       default:
         M_logf_return_val(false, "Invalid color type");
       }
+      m_bytes_per_pixel = ((m_bit_depth + 7) / 8) * m_components_per_pixel;
+      idat_full.init(&temp_allocator);
+      idat_full.reserve((m_width + 1) * m_height * m_bytes_per_pixel);
       U8 compression_method = *p++;
       M_check_log_return_val(!compression_method, false, "Invalid compression method");
       U8 filter_method = *p++;
@@ -220,7 +221,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       bs.skip(5);
       U8 fdict = bs.consume_lsb( 1);
       U8 flevel = bs.consume_lsb(2);
-      U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_values_per_pixel);
+      U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_bytes_per_pixel);
       U8* deflated_p = deflated_data;
       while (true) {
         // 3 header bits
@@ -310,9 +311,9 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
           break;
         }
       }
-      m_data = (U8*)m_allocator->alloc(m_width * m_height * m_values_per_pixel);
-      int bytes_per_deflated_row = m_values_per_pixel * m_width + 1;
-      int bytes_per_data_row = m_values_per_pixel * m_width;
+      m_data = (U8*)m_allocator->alloc(m_width * m_height * m_bytes_per_pixel);
+      int bytes_per_deflated_row = m_bytes_per_pixel * m_width + 1;
+      int bytes_per_data_row = m_bytes_per_pixel * m_width;
       for (int r = 0; r < m_height; ++r) {
         const U8 filter_type = deflated_data[r * bytes_per_deflated_row];
         const int data_offset = r * bytes_per_data_row;
@@ -331,10 +332,10 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
           memcpy(m_data + data_offset, deflated_data + deflated_offset, bytes_per_data_row);
         } break;
         case 1: {
-          for (int j = 0; j < m_values_per_pixel; ++j) {
+          for (int j = 0; j < m_bytes_per_pixel; ++j) {
             m_data[data_offset + j] = deflated_data[deflated_offset + j];
           }
-          for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
+          for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
             m_data[data_offset + j] = deflated_data[deflated_offset + j] + *a++;
           }
         } break;
@@ -351,17 +352,17 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
         } break;
         case 3: {
           if (!r) {
-            for (int j = 0; j < m_values_per_pixel; ++j) {
+            for (int j = 0; j < m_bytes_per_pixel; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j];
             }
-            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
+            for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *a++ / 2;
             }
           } else {
-            for (int j = 0; j < m_values_per_pixel; ++j) {
+            for (int j = 0; j < m_bytes_per_pixel; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *b++ / 2;
             }
-            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
+            for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + ((int)(*a++) + (int)(*b++)) / 2;
             }
           }
@@ -372,16 +373,21 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j];
             }
           } else {
-            for (int j = 0; j < m_values_per_pixel; ++j) {
-              m_data[data_offset + j] = deflated_data[deflated_offset + j] + *b++;
+            for (int j = 0; j < m_bytes_per_pixel; ++j) {
+              m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(0, *b++, 0);
             }
-            for (int j = m_values_per_pixel; j < bytes_per_data_row; ++j) {
+            for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(*(a++), *(b++), *(c++));
             }
           }
         } break;
         default:
           M_logf_return_val(false, "Invalid filter method");
+        }
+      }
+      if (m_bit_depth == 16) {
+        for (int i = 0; i < m_bytes_per_pixel * m_width * m_height; i = i + 2) {
+          swap(&m_data[i], &m_data[i+1]);
         }
       }
       break;

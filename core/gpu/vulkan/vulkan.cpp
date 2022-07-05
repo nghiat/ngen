@@ -102,6 +102,12 @@ static VkFormat convert_format_to_vk_format(E_format format) {
       return VK_FORMAT_R8_UNORM;
     case e_format_r8g8b8a8_uint:
       return VK_FORMAT_R8G8B8A8_UINT;
+    case e_format_r8g8b8a8_unorm:
+      return VK_FORMAT_R8G8B8A8_UNORM;
+    case e_format_r16_uint:
+      return VK_FORMAT_R16_UINT;
+    case e_format_r16_unorm:
+      return VK_FORMAT_R16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return VK_FORMAT_X8_D24_UNORM_PACK32;
     default:

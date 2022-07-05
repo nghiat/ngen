@@ -123,6 +123,12 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
       return DXGI_FORMAT_R8_UNORM;
     case e_format_r8g8b8a8_uint:
       return DXGI_FORMAT_R8G8B8A8_UINT;
+    case e_format_r8g8b8a8_unorm:
+      return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case e_format_r16_uint:
+      return DXGI_FORMAT_R16_UINT;
+    case e_format_r16_unorm:
+      return DXGI_FORMAT_R16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
     default:

@@ -42,6 +42,9 @@ enum E_format {
   e_format_r8_uint,
   e_format_r8_unorm,
   e_format_r8g8b8a8_uint,
+  e_format_r8g8b8a8_unorm,
+  e_format_r16_uint,
+  e_format_r16_unorm,
   e_format_r24_unorm_x8_typeless,
 };
 
