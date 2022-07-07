@@ -13,7 +13,7 @@
 #include "core/bit_stream.h"
 #include "core/dynamic_array.inl"
 #include "core/file.h"
-#include "core/linear_allocator.h"
+#include "core/linear_allocator.inl"
 #include "core/log.h"
 #include "core/os.h"
 #include "core/utils.h"
@@ -192,7 +192,8 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       default:
         M_logf_return_val(false, "Invalid color type");
       }
-      m_bytes_per_pixel = ((m_bit_depth + 7) / 8) * m_components_per_pixel;
+      M_check_log(m_bit_depth == 8 || m_bit_depth == 16, "No support for bit depth <8");
+      m_bytes_per_pixel = m_bit_depth / 8 * m_components_per_pixel;
       idat_full.init(&temp_allocator);
       idat_full.reserve((m_width + 1) * m_height * m_bytes_per_pixel);
       U8 compression_method = *p++;
@@ -386,9 +387,25 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
         }
       }
       if (m_bit_depth == 16) {
-        for (int i = 0; i < m_bytes_per_pixel * m_width * m_height; i = i + 2) {
-          swap(&m_data[i], &m_data[i+1]);
+        for (int j = 0; j < m_bytes_per_pixel * m_width * m_height; j = j + 2) {
+          swap(&m_data[j], &m_data[j+1]);
         }
+      }
+      if (m_components_per_pixel == 3) {
+        U8* temp_data = (U8*)temp_allocator.alloc(m_width * m_height * m_bytes_per_pixel);
+        memcpy(temp_data, m_data, m_width * m_height * m_bytes_per_pixel);
+        U8 new_components_per_pixel = 4;
+        U8 new_bytes_per_pixel = m_bit_depth * new_components_per_pixel / 8;
+        m_data = (U8*)allocator->realloc(m_data, m_width * m_height * new_bytes_per_pixel);
+        for (int j = 0; j < m_width * m_height; ++j) {
+          memcpy(m_data + j * new_bytes_per_pixel, temp_data + j * m_bytes_per_pixel, m_bytes_per_pixel);
+          // Set alpha to max
+          for (int k = m_bytes_per_pixel; k < new_bytes_per_pixel; ++k) {
+            m_data[j*new_bytes_per_pixel + k] = 255;
+          }
+        }
+        m_components_per_pixel = new_components_per_pixel;
+        m_bytes_per_pixel = new_bytes_per_pixel;
       }
       break;
     }

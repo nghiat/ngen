@@ -23,8 +23,4 @@ public:
   U8 m_bit_depth = 0;
   U8 m_components_per_pixel = 0;
   U8 m_bytes_per_pixel = 0;
-
-private:
-  template <typename T>
-  void reconstruct_png_(U8* deflated_data);
 };
