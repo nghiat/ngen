@@ -10,16 +10,22 @@
 #include "core/dynamic_array.inl"
 #include "core/gpu/d3d12/d3d12.h"
 #include "core/gpu/vulkan/vulkan.h"
+#include "core/linear_allocator.inl"
 #include "core/loader/obj.h"
 #include "core/loader/png.h"
 #include "core/log.h"
 #include "core/math/float.inl"
 #include "core/math/mat4.inl"
 #include "core/math/transform.inl"
+#include "core/math/vec3.h"
+#include "core/mono_time.h"
 #include "core/path_utils.h"
 #include "core/utils.h"
 #include "core/window/window.h"
 #include "sample/cam.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "third_party/stb/stb_image.h"
 
 Command_line_t g_cl;
 
@@ -43,6 +49,77 @@ struct Final_shared_t_ {
   V4_t light_color;
 };
 
+static V3_t spherical_to_cartesian(float r, float phi, float theta) {
+  V3_t v;
+  v.y = r * cos(theta);
+  float temp = r * sin(theta);
+  v.x = temp * cos(phi);
+  v.z = temp * sin(phi);
+  return v;
+}
+
+struct Textured_sphere_t {
+  Dynamic_array_t<V3_t> v; // normal are the same as v
+  Dynamic_array_t<V2_t> uv;
+};
+
+static Textured_sphere_t generate_sphere(Allocator_t* allocator, float r, int n) {
+  int vertex_count = n * ((n-2)*6 + 2*3);
+  Textured_sphere_t s;
+  s.v.init(allocator);
+  s.v.reserve(vertex_count);
+  s.uv.init(allocator);
+  s.uv.reserve(vertex_count);
+  for (int i = 0; i < n; ++i) {
+    float phi = 2 * M_pi_f * i/ n;
+    float phi2 = 2 * M_pi_f * (i + 1)/ n;
+    for (int j = 0; j < n; ++j) {
+      float theta = M_pi_f * j / n;
+      float theta2 = M_pi_f * (j + 1) / n;
+      V3_t v1 = spherical_to_cartesian(r, phi, theta);
+      V3_t v2 = spherical_to_cartesian(r, phi2, theta);
+      V3_t v3 = spherical_to_cartesian(r, phi, theta2);
+      V3_t v4 = spherical_to_cartesian(r, phi2, theta2);
+      V2_t uv1 = { i * 1.0f / n, j * 1.0f / n };
+      V2_t uv2 = { (i +1) * 1.0f / n, j * 1.0f / n };
+      V2_t uv3 = { i * 1.0f / n, (j + 1) * 1.0f / n };
+      V2_t uv4 = { (i + 1) * 1.0f / n, (j + 1) * 1.0f / n };
+      if (j == 0) {
+        s.v.append(v1);
+        s.v.append(v4);
+        s.v.append(v3);
+
+        s.uv.append(uv1);
+        s.uv.append(uv4);
+        s.uv.append(uv3);
+      } else if (j == n - 1) {
+        s.v.append(v2);
+        s.v.append(v3);
+        s.v.append(v1);
+
+        s.uv.append(uv2);
+        s.uv.append(uv3);
+        s.uv.append(uv1);
+      } else {
+        s.v.append(v1);
+        s.v.append(v2);
+        s.v.append(v3);
+        s.uv.append(uv1);
+        s.uv.append(uv2);
+        s.uv.append(uv3);
+
+        s.v.append(v2);
+        s.v.append(v4);
+        s.v.append(v3);
+        s.uv.append(uv2);
+        s.uv.append(uv4);
+        s.uv.append(uv3);
+      }
+    }
+  }
+  return s;
+}
+
 class Gpu_window_t : public Window_t {
 public:
   Gpu_window_t(const Os_char* title, int w, int h) : Window_t(title, w, h), m_gpu_allocator("gpu_allocator") {}
@@ -59,43 +136,53 @@ public:
 
   Render_pass_t* m_final_render_pass;
   Render_pass_t* m_shadow_render_pass;
-  Render_pass_t* m_texture_render_pass;
+  Render_pass_t* m_pbr_render_pass;
   Resources_set_t* m_per_obj_resources_set;
   Resources_set_t* m_shadow_shared_resources_set;
   Resources_set_t* m_final_shared_resources_set;
   Resources_set_t* m_final_shared_samplers;
   Resources_set_t* m_final_shared_srvs;
-  Resources_set_t* m_texture_srvs;
-  Resources_set_t* m_texture_samplers;
+  Resources_set_t* m_pbr_samplers;
+  Resources_set_t* m_pbr_srvs;
   Pipeline_layout_t* m_shadow_pipeline_layout;
   Pipeline_layout_t* m_final_pipeline_layout;
-  Pipeline_layout_t* m_texture_pipeline_layout;
+  Pipeline_layout_t* m_pbr_pipeline_layout;
   Pipeline_state_object_t* m_shadow_pso;
   Pipeline_state_object_t* m_final_pso;
-  Pipeline_state_object_t* m_texture_pso;
+  Pipeline_state_object_t* m_pbr_pso;
 
   Uniform_buffer_t* m_shadow_shared_uniform;
   Shadow_shared_t_* m_shadow_shared;
   Uniform_buffer_t* m_final_shared_uniform;
   Final_shared_t_* m_final_shared;
   Uniform_buffer_t* m_per_obj_uniforms[10];
+  Uniform_buffer_t* m_per_obj_pbr_uniform;
   Per_obj_t_* m_per_obj[10];
+  Per_obj_t_* m_per_obj_pbr;
   Sampler_t* m_shadow_sampler;
-  Sampler_t* m_texture_sampler;
   Image_view_t* m_shadow_depth_stencil_image_view;
-  Image_view_t* m_texture_image_view;
   Vertex_buffer_t* m_vertices_vb;
   Vertex_buffer_t* m_normals_vb;
-  Vertex_buffer_t* m_texture_v_vb;
-  Vertex_buffer_t* m_texture_uv_vb;
-  Texture_t* m_texture;
+  Vertex_buffer_t* m_pbr_v_vb;
+  Vertex_buffer_t* m_pbr_uv_vb;
+
+  Texture_t* m_albedo_texture;
+  Image_view_t* m_albedo_srv;
+  Texture_t* m_normal_texture;
+  Image_view_t* m_normal_srv;
+  Texture_t* m_metallic_texture;
+  Image_view_t* m_metallic_srv;
+  Texture_t* m_roughness_texture;
+  Image_view_t* m_roughness_srv;
 
   Gpu_t* m_gpu;
   Cam_t m_cam;
   int m_obj_count;
   int m_obj_vertices_counts[10];
+  int m_sphere_vertice_count;
 
 private:
+  void create_texture_and_srv_(Texture_t** texture, Image_view_t** srv, const Path_t& path, Resources_set_t* set, int binding);
 };
 
 bool Gpu_window_t::init() {
@@ -115,7 +202,7 @@ bool Gpu_window_t::init() {
   // The light is static for now.
   m_cam.init({5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
   Cam_t light_cam;
-  light_cam.init({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, this);
+  light_cam.init({10.0f, 10.0f, 10.0f}, {0.0f, 0.0f, 0.0f}, this);
 
   // TODO: ortho?
   M4_t perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 100.0f);
@@ -152,10 +239,10 @@ bool Gpu_window_t::init() {
     m_final_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, final_render_pass_ci);
   }
   {
-    Render_pass_create_info_t texture_render_pass_ci = {};
-    texture_render_pass_ci.is_last = true;
-    texture_render_pass_ci.should_clear_render_target = false;
-    m_texture_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, texture_render_pass_ci);
+    Render_pass_create_info_t render_pass_ci = {};
+    render_pass_ci.is_last = true;
+    render_pass_ci.should_clear_render_target = false;
+    m_pbr_render_pass = m_gpu->create_render_pass(&m_gpu_allocator, render_pass_ci);
   }
   {
     Resources_set_create_info_t resources_set_ci = {};
@@ -226,44 +313,23 @@ bool Gpu_window_t::init() {
   }
   {
     {
-      Resources_set_create_info_t texture_resources_set_ci = {};
-      texture_resources_set_ci.binding = 0;
-      texture_resources_set_ci.sampler_count = 1;
-      texture_resources_set_ci.visibility = e_shader_stage_fragment;
-      m_texture_samplers = m_gpu->create_resources_set(&m_gpu_allocator, texture_resources_set_ci);
+      Resources_set_create_info_t ci = {};
+      ci.binding = 0;
+      ci.sampler_count = 1;
+      ci.visibility = e_shader_stage_fragment;
+      m_pbr_samplers = m_gpu->create_resources_set(&m_gpu_allocator, ci);
     }
     {
-      Resources_set_create_info_t texture_resources_set_ci = {};
-      texture_resources_set_ci.binding = 0;
-      texture_resources_set_ci.image_count = 1;
-      texture_resources_set_ci.visibility = e_shader_stage_fragment;
-      m_texture_srvs = m_gpu->create_resources_set(&m_gpu_allocator, texture_resources_set_ci);
+      Resources_set_create_info_t ci = {};
+      ci.binding = 0;
+      ci.image_count = 4;
+      ci.visibility = e_shader_stage_fragment;
+      m_pbr_srvs = m_gpu->create_resources_set(&m_gpu_allocator, ci);
     }
-
-    Sampler_create_info_t sampler_ci = {};
-    sampler_ci.resources_set = m_texture_samplers;
-    sampler_ci.binding = 0;
-    m_texture_sampler = m_gpu->create_sampler(&m_gpu_allocator, sampler_ci);
-
-    {
-      Png_loader_t png;
-      png.init(&temp_allocator, g_exe_dir.join(M_txt("assets/metal_plates_roughness.png")));
-      png.init(&temp_allocator, g_exe_dir.join(M_txt("assets/metal_plates_roughness.png")));
-      M_scope_exit(png.destroy());
-      Texture_create_info_t ci = {};
-      ci.data = png.m_data;
-      ci.width = png.m_width;
-      ci.height = png.m_height;
-      ci.format = e_format_r8_uint;
-      m_texture = m_gpu->create_texture(&m_gpu_allocator, ci);
-    }
-
-    Image_view_create_info_t image_view_ci = {};
-    image_view_ci.resources_set = m_texture_srvs;
-    image_view_ci.texture = m_texture;
-    image_view_ci.binding = 0;
-    image_view_ci.format = e_format_r8_unorm;
-    m_texture_image_view = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
+    create_texture_and_srv_(&m_albedo_texture, &m_albedo_srv, g_exe_dir.join(M_txt("assets/basecolor.png")), m_pbr_srvs, 0);
+    create_texture_and_srv_(&m_normal_texture, &m_normal_srv, g_exe_dir.join(M_txt("assets/normal.png")), m_pbr_srvs, 1);
+    create_texture_and_srv_(&m_metallic_texture, &m_metallic_srv, g_exe_dir.join(M_txt("assets/metallic.png")), m_pbr_srvs, 2);
+    create_texture_and_srv_(&m_roughness_texture, &m_roughness_srv, g_exe_dir.join(M_txt("assets/roughness.png")), m_pbr_srvs, 3);
   }
 
   {
@@ -291,11 +357,11 @@ bool Gpu_window_t::init() {
   }
 
   {
-    Resources_set_t* sets[] = {m_texture_srvs, m_texture_samplers};
+    Resources_set_t* sets[] = {m_per_obj_resources_set, m_final_shared_resources_set, m_pbr_samplers, m_pbr_srvs};
     Pipeline_layout_create_info_t ci = {};
     ci.set_count = static_array_size(sets);
     ci.sets = sets;
-    m_texture_pipeline_layout = m_gpu->create_pipeline_layout(&m_gpu_allocator, ci);
+    m_pbr_pipeline_layout = m_gpu->create_pipeline_layout(&m_gpu_allocator, ci);
   }
 
   Input_element_t input_elems[2] = {};
@@ -379,55 +445,55 @@ bool Gpu_window_t::init() {
     m_final_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
   }
   {
-    Input_element_t texture_input_elems[2] = {};
-    texture_input_elems[0].semantic_name = "V";
-    texture_input_elems[0].format = e_format_r32g32_float;
-    texture_input_elems[0].semantic_index = 0;
-    texture_input_elems[0].input_slot = 0;
-    texture_input_elems[0].stride = 2 * sizeof(float);
+    Input_element_t pbr_input_elems[3] = {};
+    pbr_input_elems[0].semantic_name = "V";
+    pbr_input_elems[0].format = e_format_r32g32b32_float;
+    pbr_input_elems[0].semantic_index = 0;
+    pbr_input_elems[0].input_slot = 0;
+    pbr_input_elems[0].stride = sizeof(V3_t);
 
-    texture_input_elems[1].semantic_name = "UV";
-    texture_input_elems[1].format = e_format_r32g32_float;
-    texture_input_elems[1].semantic_index = 0;
-    texture_input_elems[1].input_slot = 1;
-    texture_input_elems[1].stride = 2 * sizeof(float);
+    pbr_input_elems[1].semantic_name = "UV";
+    pbr_input_elems[1].format = e_format_r32g32_float;
+    pbr_input_elems[1].semantic_index = 0;
+    pbr_input_elems[1].input_slot = 1;
+    pbr_input_elems[1].stride = sizeof(V2_t);
+
+    pbr_input_elems[2].semantic_name = "NORMAL";
+    pbr_input_elems[2].format = e_format_r32g32b32_float;
+    pbr_input_elems[2].semantic_index = 0;
+    pbr_input_elems[2].input_slot = 2;
+    pbr_input_elems[2].stride = sizeof(V3_t);
+
     Pipeline_state_object_create_info_t pso_ci = {};
-    Shader_t* texture_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/texture_vs"))});
-    Shader_t* texture_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/texture_ps"))});
-    pso_ci.vs = texture_vs;
-    pso_ci.ps = texture_ps;
-    pso_ci.input_element_count = static_array_size(texture_input_elems);
-    pso_ci.input_elements = texture_input_elems;
-    pso_ci.pipeline_layout = m_texture_pipeline_layout;
-    pso_ci.render_pass = m_texture_render_pass;
-    m_texture_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
+    Shader_t* pbr_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/pbr_vs"))});
+    Shader_t* pbr_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/pbr_ps"))});
+    pso_ci.vs = pbr_vs;
+    pso_ci.ps = pbr_ps;
+    pso_ci.input_element_count = static_array_size(pbr_input_elems);
+    pso_ci.input_elements = pbr_input_elems;
+    pso_ci.pipeline_layout = m_pbr_pipeline_layout;
+    pso_ci.render_pass = m_pbr_render_pass;
+    m_pbr_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
 
+    auto sphere = generate_sphere(&temp_allocator, 5, 20);
     Vertex_buffer_create_info_t vb_ci = {};
-    vb_ci.size = 1024;
+    vb_ci.size = 1024*1024;
     vb_ci.alignment = 256;
+    vb_ci.stride = sizeof(V3_t);
+    m_pbr_v_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
+    memcpy(m_pbr_v_vb->p, sphere.v.m_p, sphere.v.len() * sizeof(V3_t));
     vb_ci.stride = sizeof(V2_t);
-    m_texture_v_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
-    m_texture_uv_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
-    float vertices[] = {
-      -0.5f, -0.5f,
-      0.5f, 0.5f,
-      -0.5f, 0.5f,
-
-      0.5f, 0.5f,
-      -0.5f, -0.5f,
-      0.5f, -0.5f,
-    };
-    memcpy((U8*)m_texture_v_vb->p, vertices, sizeof(vertices));
-    float uvs[] = {
-      0.0f, 1.0f,
-      1.0f, 0.0f,
-      0.0f, 0.0f,
-
-      1.0f, 0.0f,
-      0.0f, 1.0f,
-      1.0f, 1.0f,
-    };
-    memcpy((U8*)m_texture_uv_vb->p, uvs, sizeof(uvs));
+    m_pbr_uv_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
+    memcpy(m_pbr_uv_vb->p, sphere.uv.m_p, sphere.v.len() * sizeof(V2_t));
+    m_sphere_vertice_count = sphere.v.len();
+    Uniform_buffer_create_info_t ub_ci = {};
+    ub_ci.resources_set = m_per_obj_resources_set;
+    ub_ci.size = sizeof(Per_obj_t_);
+    ub_ci.alignment = 256;
+    ub_ci.binding = 0;
+    m_per_obj_pbr_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
+    m_per_obj_pbr = (Per_obj_t_*)m_per_obj_pbr_uniform->p;
+    m_per_obj_pbr->world = m4_identity();
   }
 
   return true;
@@ -472,14 +538,17 @@ void Gpu_window_t::loop() {
   }
 
   {
-    m_gpu->cmd_begin_render_pass(m_texture_render_pass);
-    m_gpu->cmd_set_pipeline_state(m_texture_pso);
-    m_gpu->cmd_set_vertex_buffer(m_texture_v_vb, 0);
-    m_gpu->cmd_set_vertex_buffer(m_texture_uv_vb, 1);
-    m_gpu->cmd_set_image_view(m_texture_image_view, m_texture_pipeline_layout, m_texture_srvs, 0);
-    m_gpu->cmd_set_sampler(m_texture_sampler, m_texture_pipeline_layout, m_texture_samplers, 1);
-    m_gpu->cmd_draw(6, 0);
-    m_gpu->cmd_end_render_pass(m_texture_render_pass);
+    m_gpu->cmd_begin_render_pass(m_pbr_render_pass);
+    m_gpu->cmd_set_pipeline_state(m_pbr_pso);
+    m_gpu->cmd_set_vertex_buffer(m_pbr_v_vb, 0);
+    m_gpu->cmd_set_vertex_buffer(m_pbr_uv_vb, 1);
+    m_gpu->cmd_set_vertex_buffer(m_pbr_v_vb, 2);
+    m_gpu->cmd_set_uniform_buffer(m_final_shared_uniform, m_pbr_pipeline_layout, m_final_shared_resources_set, 1);
+    m_gpu->cmd_set_uniform_buffer(m_per_obj_pbr_uniform, m_pbr_pipeline_layout, m_per_obj_resources_set, 0);
+    m_gpu->cmd_set_sampler(m_shadow_sampler, m_pbr_pipeline_layout, m_pbr_samplers, 2);
+    m_gpu->cmd_set_image_view(m_albedo_srv, m_pbr_pipeline_layout, m_pbr_srvs, 3);
+    m_gpu->cmd_draw(m_sphere_vertice_count, 0);
+    m_gpu->cmd_end_render_pass(m_pbr_render_pass);
   }
   m_gpu->cmd_end();
 }
@@ -490,6 +559,66 @@ void Gpu_window_t::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
 
 void Gpu_window_t::on_mouse_move(int x, int y) {
   m_cam.mouse_move(x, y);
+}
+
+void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Image_view_t** srv, const Path_t& path, Resources_set_t* set, int binding) {
+  Linear_allocator_t<> temp_allocator("texture_temp_allocator");
+  temp_allocator.init();
+  M_scope_exit(temp_allocator.destroy());
+  Png_loader_t png;
+  png.init(&temp_allocator, path);
+  Texture_create_info_t ci = {};
+  ci.data = png.m_data;
+  ci.width = png.m_width;
+  ci.height = png.m_height;
+  if (png.m_bit_depth == 8) {
+    switch(png.m_components_per_pixel) {
+      case 1:
+        ci.format = e_format_r8_uint;
+        break;
+      case 4:
+        ci.format = e_format_r8g8b8a8_uint;
+        break;
+      default:
+        M_unimplemented();
+    }
+  } else if (png.m_bit_depth == 16) {
+    switch(png.m_components_per_pixel) {
+      case 1:
+        ci.format = e_format_r16_uint;
+        break;
+      case 4:
+        ci.format = e_format_r16g16b16a16_uint;
+        break;
+      default:
+        M_unimplemented();
+    }
+  } else {
+    M_unimplemented();
+  }
+  *texture = m_gpu->create_texture(&m_gpu_allocator, ci);
+
+  Image_view_create_info_t image_view_ci = {};
+  image_view_ci.resources_set = set;
+  image_view_ci.texture = *texture;
+  image_view_ci.binding = binding;
+  switch (ci.format) {
+    case e_format_r8_uint:
+      image_view_ci.format = e_format_r8_unorm;
+      break;
+    case e_format_r8g8b8a8_uint:
+      image_view_ci.format = e_format_r8g8b8a8_unorm;
+      break;
+    case e_format_r16_uint:
+      image_view_ci.format = e_format_r16_unorm;
+      break;
+    case e_format_r16g16b16a16_uint:
+      image_view_ci.format = e_format_r16g16b16a16_unorm;
+      break;
+    default:
+      M_unimplemented();
+  }
+  *srv = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
 }
 
 int main(int argc, char** argv) {

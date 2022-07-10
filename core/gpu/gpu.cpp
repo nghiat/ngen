@@ -101,6 +101,8 @@ int Gpu_t::convert_format_to_size_(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:
       return 16;
+    case e_format_r32g32b32_float:
+      return 12;
     case e_format_r32g32_float:
       return 8;
     case e_format_r8_uint:
@@ -115,6 +117,10 @@ int Gpu_t::convert_format_to_size_(E_format format) {
       return 2;
     case e_format_r16_unorm:
       return 2;
+    case e_format_r16g16b16a16_uint:
+      return 8;
+    case e_format_r16g16b16a16_unorm:
+      return 8;
     case e_format_r24_unorm_x8_typeless:
       return 4;
     default:

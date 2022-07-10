@@ -115,6 +115,8 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:
       return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case e_format_r32g32b32_float:
+      return DXGI_FORMAT_R32G32B32_FLOAT;
     case e_format_r32g32_float:
       return DXGI_FORMAT_R32G32_FLOAT;
     case e_format_r8_uint:
@@ -129,6 +131,10 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
       return DXGI_FORMAT_R16_UINT;
     case e_format_r16_unorm:
       return DXGI_FORMAT_R16_UNORM;
+    case e_format_r16g16b16a16_uint:
+      return DXGI_FORMAT_R16G16B16A16_UINT;
+    case e_format_r16g16b16a16_unorm:
+      return DXGI_FORMAT_R16G16B16A16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
     default:

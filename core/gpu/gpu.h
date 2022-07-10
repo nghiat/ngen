@@ -38,6 +38,7 @@ enum E_render_target_type {
 
 enum E_format {
   e_format_r32g32b32a32_float,
+  e_format_r32g32b32_float,
   e_format_r32g32_float,
   e_format_r8_uint,
   e_format_r8_unorm,
@@ -45,6 +46,8 @@ enum E_format {
   e_format_r8g8b8a8_unorm,
   e_format_r16_uint,
   e_format_r16_unorm,
+  e_format_r16g16b16a16_uint,
+  e_format_r16g16b16a16_unorm,
   e_format_r24_unorm_x8_typeless,
 };
 

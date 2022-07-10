@@ -94,6 +94,8 @@ static VkFormat convert_format_to_vk_format(E_format format) {
   switch (format) {
     case e_format_r32g32b32a32_float:
       return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case e_format_r32g32b32_float:
+      return VK_FORMAT_R32G32B32_SFLOAT;
     case e_format_r32g32_float:
       return VK_FORMAT_R32G32_SFLOAT;
     case e_format_r8_uint:
@@ -108,6 +110,10 @@ static VkFormat convert_format_to_vk_format(E_format format) {
       return VK_FORMAT_R16_UINT;
     case e_format_r16_unorm:
       return VK_FORMAT_R16_UNORM;
+    case e_format_r16g16b16a16_uint:
+      return VK_FORMAT_R16G16B16A16_UINT;
+    case e_format_r16g16b16a16_unorm:
+      return VK_FORMAT_R16G16B16A16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return VK_FORMAT_X8_D24_UNORM_PACK32;
     default:
@@ -542,7 +548,6 @@ Texture_t* Vulkan_t::create_texture(Allocator_t* allocator, const Texture_create
     vkWaitForFences(m_device, 1, &fence, VK_TRUE, (U64)(-1));
 
     vkDestroyFence(m_device, fence, nullptr);
-    vkFreeCommandBuffers(m_device, m_transfer_cmd_pool, 1, &m_transfer_cmd_buffer);
   }
   auto rv = allocator->construct<Vulkan_texture_t>();
   rv->image = image;
@@ -554,31 +559,30 @@ Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Re
   auto rv = allocator->construct<Vulkan_resources_set_t>();
   rv->binding = ci.binding;
   Fixed_array_t<VkDescriptorSetLayoutBinding, 8> layout_bindings;
+  VkDescriptorSetLayoutBinding layout_binding = {};
+  layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
+  layout_binding.descriptorCount = 1;
+  int descriptor_count = 0;
   if (ci.uniform_buffer_count) {
-    VkDescriptorSetLayoutBinding layout_binding = {};
+    descriptor_count = ci.uniform_buffer_count;
     layout_binding.binding = GPU_VK_UNIFORM_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layout_binding.descriptorCount = ci.uniform_buffer_count;
-    layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
-    layout_bindings.append(layout_binding);
   }
 
   if (ci.sampler_count) {
-    VkDescriptorSetLayoutBinding layout_binding = {};
+    descriptor_count = ci.sampler_count;
     layout_binding.binding = GPU_VK_SAMPLER_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-    layout_binding.descriptorCount = ci.sampler_count;
-    layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
-    layout_bindings.append(layout_binding);
   }
 
   if (ci.image_count) {
-    VkDescriptorSetLayoutBinding layout_binding = {};
+    descriptor_count = ci.image_count;
     layout_binding.binding = GPU_VK_TEXTURE_BINDING_OFFSET + ci.binding;
     layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    layout_binding.descriptorCount = ci.image_count;
-    layout_binding.stageFlags = convert_shader_stage_to_state_flags_(ci.visibility);
+  }
+  for (int i = 0; i < descriptor_count; ++i) {
     layout_bindings.append(layout_binding);
+    ++layout_binding.binding;
   }
 
   VkDescriptorSetLayoutCreateInfo set_layout_ci = {};
@@ -887,7 +891,7 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
   Dynamic_array_t<VkPipelineShaderStageCreateInfo> shader_stage_cis;
   shader_stage_cis.init(&temp_allocator);
   if (ci.vs) {
-    VkPipelineShaderStageCreateInfo shader_stage_ci;
+    VkPipelineShaderStageCreateInfo shader_stage_ci = {};
     shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
     shader_stage_ci.module = ((Vulkan_shader_t*)ci.vs)->shader;
@@ -896,7 +900,7 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
   }
 
   if (ci.ps) {
-    VkPipelineShaderStageCreateInfo shader_stage_ci;
+    VkPipelineShaderStageCreateInfo shader_stage_ci = {};
     shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shader_stage_ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     shader_stage_ci.module = ((Vulkan_shader_t*)ci.ps)->shader;

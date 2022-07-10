@@ -20,6 +20,8 @@ if __name__ == "__main__":
   reflection_cmd += ["-E", options.entry]
   reflection_cmd += ["-T", options.profile]
   reflection_cmd += ["-Fo", options.output]
+  reflection_cmd += ["-Zi"]
+  reflection_cmd += ["-O1"]
   if (options.spirv):
       reflection_cmd += ["-spirv"]
       if (options.uniform_binding_offset):

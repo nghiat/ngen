@@ -114,7 +114,7 @@ dxc("shaders") {
     [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ],
     [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ],
     [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ],
-    [ "ui.hlsl", "VSMain", "vs_5_0", "texture_vs" ],
-    [ "ui.hlsl", "PSMain", "ps_5_0", "texture_ps" ],
+    [ "pbr.hlsl", "VSMain", "vs_5_0", "pbr_vs" ],
+    [ "pbr.hlsl", "PSMain", "ps_5_0", "pbr_ps" ],
   ]
 }
