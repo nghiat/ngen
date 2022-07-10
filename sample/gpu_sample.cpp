@@ -8,7 +8,9 @@
 #include "core/core_allocators.h"
 #include "core/core_init.h"
 #include "core/dynamic_array.inl"
+#if M_os_is_win()
 #include "core/gpu/d3d12/d3d12.h"
+#endif
 #include "core/gpu/vulkan/vulkan.h"
 #include "core/linear_allocator.inl"
 #include "core/loader/obj.h"
@@ -192,8 +194,10 @@ bool Gpu_window_t::init() {
 
   m_gpu_allocator.init();
   if (g_cl.get_flag_value("--gpu").get_string().equals("dx12")) {
+#if M_os_is_win()
     m_gpu = g_persistent_allocator->construct<D3d12_t>();
     ((D3d12_t*)m_gpu)->init(this);
+#endif
   } else {
     m_gpu = g_persistent_allocator->construct<Vulkan_t>();
     ((Vulkan_t*)m_gpu)->init(this);
