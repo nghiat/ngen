@@ -420,7 +420,7 @@ Pipeline_layout_t* D3d12_t::create_pipeline_layout(Allocator_t* allocator, const
       range.NumDescriptors = set->uniform_buffer_count;
       range.BaseShaderRegister = 0;
       range.RegisterSpace = i;
-      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC;
+      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
       range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
       ranges[i].append(range);
     }
@@ -441,7 +441,7 @@ Pipeline_layout_t* D3d12_t::create_pipeline_layout(Allocator_t* allocator, const
       range.NumDescriptors = set->image_count;
       range.BaseShaderRegister = 0;
       range.RegisterSpace = i;
-      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC;
+      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
       range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
       ranges[i].append(range);
     }
