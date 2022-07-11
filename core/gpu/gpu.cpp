@@ -28,19 +28,23 @@ Render_pass_t* Gpu_t::create_render_pass(Allocator_t* allocator, const Render_pa
   return NULL;
 }
 
-Sampler_t* Gpu_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
+Resource_t Gpu_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
   M_unimplemented();
-  return NULL;
+  return Resource_t();
 }
 
-Image_view_t* Gpu_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
+Resource_t Gpu_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
   M_unimplemented();
-  return NULL;
+  return Resource_t();
 }
 
-Uniform_buffer_t* Gpu_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
+Resource_t Gpu_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
   M_unimplemented();
-  return NULL;
+  return Resource_t();
+}
+
+void Gpu_t::bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding) {
+  M_unimplemented();
 }
 
 Shader_t* Gpu_t::compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci) {
@@ -77,15 +81,7 @@ void Gpu_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   M_unimplemented();
 }
 
-void Gpu_t::cmd_set_uniform_buffer(Uniform_buffer_t* ub, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  M_unimplemented();
-}
-
-void Gpu_t::cmd_set_sampler(Sampler_t* sampler, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  M_unimplemented();
-}
-
-void Gpu_t::cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
+void Gpu_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
   M_unimplemented();
 }
 

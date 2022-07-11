@@ -151,29 +151,29 @@ public:
   Pipeline_state_object_t* m_final_pso;
   Pipeline_state_object_t* m_pbr_pso;
 
-  Uniform_buffer_t* m_shadow_shared_uniform;
+  Resource_t m_shadow_shared_uniform;
   Shadow_shared_t_* m_shadow_shared;
-  Uniform_buffer_t* m_final_shared_uniform;
+  Resource_t m_final_shared_uniform;
   Final_shared_t_* m_final_shared;
-  Uniform_buffer_t* m_per_obj_uniforms[10];
-  Uniform_buffer_t* m_per_obj_pbr_uniform;
+  Resource_t m_per_obj_uniforms[10];
+  Resource_t m_per_obj_pbr_uniform;
   Per_obj_t_* m_per_obj[10];
   Per_obj_t_* m_per_obj_pbr;
-  Sampler_t* m_shadow_sampler;
-  Image_view_t* m_shadow_depth_stencil_image_view;
+  Resource_t m_sampler;
+  Resource_t m_shadow_depth_stencil_image_view;
   Vertex_buffer_t* m_vertices_vb;
   Vertex_buffer_t* m_normals_vb;
   Vertex_buffer_t* m_pbr_v_vb;
   Vertex_buffer_t* m_pbr_uv_vb;
 
   Texture_t* m_albedo_texture;
-  Image_view_t* m_albedo_srv;
+  Resource_t m_albedo_srv;
   Texture_t* m_normal_texture;
-  Image_view_t* m_normal_srv;
+  Resource_t m_normal_srv;
   Texture_t* m_metallic_texture;
-  Image_view_t* m_metallic_srv;
+  Resource_t m_metallic_srv;
   Texture_t* m_roughness_texture;
-  Image_view_t* m_roughness_srv;
+  Resource_t m_roughness_srv;
 
   Gpu_t* m_gpu;
   Cam_t m_cam;
@@ -182,7 +182,7 @@ public:
   int m_sphere_vertice_count;
 
 private:
-  void create_texture_and_srv_(Texture_t** texture, Image_view_t** srv, const Path_t& path, Resources_set_t* set, int binding);
+  void create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding);
 };
 
 bool Gpu_window_t::init() {
@@ -252,12 +252,11 @@ bool Gpu_window_t::init() {
     m_shadow_shared_resources_set = m_gpu->create_resources_set(&m_gpu_allocator, resources_set_ci);
 
     Uniform_buffer_create_info_t ub_ci = {};
-    ub_ci.resources_set = m_shadow_shared_resources_set;
     ub_ci.size = sizeof(Shadow_shared_t_);
     ub_ci.alignment = 256;
-    ub_ci.binding = 0;
     m_shadow_shared_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
-    m_shadow_shared = (Shadow_shared_t_*)m_shadow_shared_uniform->p;
+    m_gpu->bind_resource_to_set(m_shadow_shared_uniform, m_shadow_shared_resources_set, 0);
+    m_shadow_shared = (Shadow_shared_t_*)m_shadow_shared_uniform.uniform_buffer->p;
     m_shadow_shared->light_view = light_cam.m_view_mat;
     m_shadow_shared->light_proj = perspective_m4;
   }
@@ -284,12 +283,11 @@ bool Gpu_window_t::init() {
       m_final_shared_srvs = m_gpu->create_resources_set(&m_gpu_allocator, final_resources_set_ci);
     }
     Uniform_buffer_create_info_t ub_ci = {};
-    ub_ci.resources_set = m_final_shared_resources_set;
     ub_ci.size = sizeof(Final_shared_t_);
     ub_ci.alignment = 256;
-    ub_ci.binding = 0;
     m_final_shared_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
-    m_final_shared = (Final_shared_t_*)m_final_shared_uniform->p;
+    m_gpu->bind_resource_to_set(m_final_shared_uniform, m_final_shared_resources_set, 0);
+    m_final_shared = (Final_shared_t_*)m_final_shared_uniform.uniform_buffer->p;
     m_final_shared->view = m_cam.m_view_mat;
     m_final_shared->eye_pos = V3o_v4(m_cam.m_eye, 1.0f);
     m_final_shared->obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -300,16 +298,14 @@ bool Gpu_window_t::init() {
     m_final_shared->light_proj = perspective_m4;
 
     Sampler_create_info_t sampler_ci = {};
-    sampler_ci.resources_set = m_final_shared_samplers;
-    sampler_ci.binding = 0;
-    m_shadow_sampler = m_gpu->create_sampler(&m_gpu_allocator, sampler_ci);
+    m_sampler = m_gpu->create_sampler(&m_gpu_allocator, sampler_ci);
+    m_gpu->bind_resource_to_set(m_sampler, m_final_shared_samplers, 0);
 
     Image_view_create_info_t image_view_ci = {};
-    image_view_ci.resources_set = m_final_shared_srvs;
     image_view_ci.render_target = m_shadow_depth_stencil;
-    image_view_ci.binding = 0;
     image_view_ci.format = e_format_r24_unorm_x8_typeless;
     m_shadow_depth_stencil_image_view = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
+    m_gpu->bind_resource_to_set(m_shadow_depth_stencil_image_view, m_final_shared_srvs, 0);
   }
   {
     {
@@ -318,6 +314,7 @@ bool Gpu_window_t::init() {
       ci.sampler_count = 1;
       ci.visibility = e_shader_stage_fragment;
       m_pbr_samplers = m_gpu->create_resources_set(&m_gpu_allocator, ci);
+      m_gpu->bind_resource_to_set(m_sampler, m_pbr_samplers, 0);
     }
     {
       Resources_set_create_info_t ci = {};
@@ -383,12 +380,11 @@ bool Gpu_window_t::init() {
     {
       for (int i = 0; i < m_obj_count; ++i) {
         Uniform_buffer_create_info_t ub_ci = {};
-        ub_ci.resources_set = m_per_obj_resources_set;
         ub_ci.size = sizeof(Per_obj_t_);
         ub_ci.alignment = 256;
-        ub_ci.binding = 0;
         m_per_obj_uniforms[i] = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
-        m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i]->p;
+        m_gpu->bind_resource_to_set(m_per_obj_uniforms[i], m_per_obj_resources_set, 0);
+        m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i].uniform_buffer->p;
         m_per_obj[i]->world = m4_identity();
 
         Obj_loader_t obj;
@@ -487,12 +483,11 @@ bool Gpu_window_t::init() {
     memcpy(m_pbr_uv_vb->p, sphere.uv.m_p, sphere.v.len() * sizeof(V2_t));
     m_sphere_vertice_count = sphere.v.len();
     Uniform_buffer_create_info_t ub_ci = {};
-    ub_ci.resources_set = m_per_obj_resources_set;
     ub_ci.size = sizeof(Per_obj_t_);
     ub_ci.alignment = 256;
-    ub_ci.binding = 0;
     m_per_obj_pbr_uniform = m_gpu->create_uniform_buffer(&m_gpu_allocator, ub_ci);
-    m_per_obj_pbr = (Per_obj_t_*)m_per_obj_pbr_uniform->p;
+    m_gpu->bind_resource_to_set(m_per_obj_pbr_uniform, m_per_obj_resources_set, 0);
+    m_per_obj_pbr = (Per_obj_t_*)m_per_obj_pbr_uniform.uniform_buffer->p;
     m_per_obj_pbr->world = m4_identity();
   }
 
@@ -511,10 +506,10 @@ void Gpu_window_t::loop() {
     m_gpu->cmd_begin_render_pass(m_shadow_render_pass);
     m_gpu->cmd_set_pipeline_state(m_shadow_pso);
     m_gpu->cmd_set_vertex_buffer(m_vertices_vb, 0);
-    m_gpu->cmd_set_uniform_buffer(m_shadow_shared_uniform, m_shadow_pipeline_layout, m_shadow_shared_resources_set, 1);
+    m_gpu->cmd_set_resource(m_shadow_shared_uniform, m_shadow_pipeline_layout, m_shadow_shared_resources_set, 1);
     int vertex_offset = 0;
     for (int i = 0; i < m_obj_count; ++i) {
-      m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_shadow_pipeline_layout, m_per_obj_resources_set, 0);
+      m_gpu->cmd_set_resource(m_per_obj_uniforms[i], m_shadow_pipeline_layout, m_per_obj_resources_set, 0);
       m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
       vertex_offset += m_obj_vertices_counts[i];
     }
@@ -525,12 +520,12 @@ void Gpu_window_t::loop() {
     m_gpu->cmd_begin_render_pass(m_final_render_pass);
     m_gpu->cmd_set_pipeline_state(m_final_pso);
     m_gpu->cmd_set_vertex_buffer(m_normals_vb, 1);
-    m_gpu->cmd_set_uniform_buffer(m_final_shared_uniform, m_final_pipeline_layout, m_final_shared_resources_set, 1);
-    m_gpu->cmd_set_sampler(m_shadow_sampler, m_final_pipeline_layout, m_final_shared_samplers, 2);
-    m_gpu->cmd_set_image_view(m_shadow_depth_stencil_image_view, m_final_pipeline_layout, m_final_shared_srvs, 3);
+    m_gpu->cmd_set_resource(m_final_shared_uniform, m_final_pipeline_layout, m_final_shared_resources_set, 1);
+    m_gpu->cmd_set_resource(m_sampler, m_final_pipeline_layout, m_final_shared_samplers, 2);
+    m_gpu->cmd_set_resource(m_shadow_depth_stencil_image_view, m_final_pipeline_layout, m_final_shared_srvs, 3);
     int vertex_offset = 0;
     for (int i = 0; i < m_obj_count; ++i) {
-      m_gpu->cmd_set_uniform_buffer(m_per_obj_uniforms[i], m_final_pipeline_layout, m_per_obj_resources_set, 0);
+      m_gpu->cmd_set_resource(m_per_obj_uniforms[i], m_final_pipeline_layout, m_per_obj_resources_set, 0);
       m_gpu->cmd_draw(m_obj_vertices_counts[i], vertex_offset);
       vertex_offset += m_obj_vertices_counts[i];
     }
@@ -543,10 +538,10 @@ void Gpu_window_t::loop() {
     m_gpu->cmd_set_vertex_buffer(m_pbr_v_vb, 0);
     m_gpu->cmd_set_vertex_buffer(m_pbr_uv_vb, 1);
     m_gpu->cmd_set_vertex_buffer(m_pbr_v_vb, 2);
-    m_gpu->cmd_set_uniform_buffer(m_final_shared_uniform, m_pbr_pipeline_layout, m_final_shared_resources_set, 1);
-    m_gpu->cmd_set_uniform_buffer(m_per_obj_pbr_uniform, m_pbr_pipeline_layout, m_per_obj_resources_set, 0);
-    m_gpu->cmd_set_sampler(m_shadow_sampler, m_pbr_pipeline_layout, m_pbr_samplers, 2);
-    m_gpu->cmd_set_image_view(m_albedo_srv, m_pbr_pipeline_layout, m_pbr_srvs, 3);
+    m_gpu->cmd_set_resource(m_final_shared_uniform, m_pbr_pipeline_layout, m_final_shared_resources_set, 1);
+    m_gpu->cmd_set_resource(m_per_obj_pbr_uniform, m_pbr_pipeline_layout, m_per_obj_resources_set, 0);
+    m_gpu->cmd_set_resource(m_sampler, m_pbr_pipeline_layout, m_pbr_samplers, 2);
+    m_gpu->cmd_set_resource(m_albedo_srv, m_pbr_pipeline_layout, m_pbr_srvs, 3);
     m_gpu->cmd_draw(m_sphere_vertice_count, 0);
     m_gpu->cmd_end_render_pass(m_pbr_render_pass);
   }
@@ -561,7 +556,7 @@ void Gpu_window_t::on_mouse_move(int x, int y) {
   m_cam.mouse_move(x, y);
 }
 
-void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Image_view_t** srv, const Path_t& path, Resources_set_t* set, int binding) {
+void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding) {
   Linear_allocator_t<> temp_allocator("texture_temp_allocator");
   temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
@@ -599,9 +594,7 @@ void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Image_view_t** s
   *texture = m_gpu->create_texture(&m_gpu_allocator, ci);
 
   Image_view_create_info_t image_view_ci = {};
-  image_view_ci.resources_set = set;
   image_view_ci.texture = *texture;
-  image_view_ci.binding = binding;
   switch (ci.format) {
     case e_format_r8_uint:
       image_view_ci.format = e_format_r8_unorm;
@@ -619,6 +612,7 @@ void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Image_view_t** s
       M_unimplemented();
   }
   *srv = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
+  m_gpu->bind_resource_to_set(*srv, set, binding);
 }
 
 int main(int argc, char** argv) {

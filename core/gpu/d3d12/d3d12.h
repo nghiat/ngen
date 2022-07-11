@@ -47,9 +47,10 @@ public:
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;
   Render_target_t* create_depth_stencil(Allocator_t* allocator, const Depth_stencil_create_info_t& ci) override;
   Render_pass_t* create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci) override;
-  Uniform_buffer_t* create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) override;
-  Sampler_t* create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) override;
-  Image_view_t* create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) override;
+  Resource_t create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) override;
+  Resource_t create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) override;
+  Resource_t create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) override;
+  void bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding) override;
   Shader_t* compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci) override;
   Pipeline_state_object_t* create_pipeline_state_object(Allocator_t* allocator, const Pipeline_state_object_create_info_t& ci) override;
   void get_back_buffer() override;
@@ -58,9 +59,7 @@ public:
   void cmd_end_render_pass(Render_pass_t* render_pass) override;
   void cmd_set_pipeline_state(Pipeline_state_object_t* pso) override;
   void cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) override;
-  void cmd_set_uniform_buffer(Uniform_buffer_t* ub, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
-  void cmd_set_sampler(Sampler_t* sampler, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
-  void cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
+  void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
   void cmd_draw(int vertex_count, int first_vertex) override;
   void cmd_end() override;
 
