@@ -420,7 +420,7 @@ Pipeline_layout_t* D3d12_t::create_pipeline_layout(Allocator_t* allocator, const
       range.NumDescriptors = set->uniform_buffer_count;
       range.BaseShaderRegister = 0;
       range.RegisterSpace = i;
-      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC;
+      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
       range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
       ranges[i].append(range);
     }
@@ -441,7 +441,7 @@ Pipeline_layout_t* D3d12_t::create_pipeline_layout(Allocator_t* allocator, const
       range.NumDescriptors = set->image_count;
       range.BaseShaderRegister = 0;
       range.RegisterSpace = i;
-      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC;
+      range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
       range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
       ranges[i].append(range);
     }
@@ -560,21 +560,24 @@ Render_pass_t* D3d12_t::create_render_pass(Allocator_t* allocator, const Render_
   return rv;
 }
 
-Uniform_buffer_t* D3d12_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
-  auto rv = allocator->construct<D3d12_uniform_buffer_t>();
-  rv->sub_buffer = allocate_sub_buffer_(&m_uniform_buffer, ci.size, ci.alignment);
-  rv->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+Resource_t D3d12_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
+  auto ub = allocator->construct<D3d12_uniform_buffer_t>();
+  ub->sub_buffer = allocate_sub_buffer_(&m_uniform_buffer, ci.size, ci.alignment);
+  ub->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
   D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-  desc.BufferLocation = rv->sub_buffer.gpu_p;
-  desc.SizeInBytes = rv->sub_buffer.size;
-  m_device->CreateConstantBufferView(&desc, rv->descriptor.cpu_handle);
-  rv->p = rv->sub_buffer.cpu_p;
+  desc.BufferLocation = ub->sub_buffer.gpu_p;
+  desc.SizeInBytes = ub->sub_buffer.size;
+  m_device->CreateConstantBufferView(&desc, ub->descriptor.cpu_handle);
+  ub->p = ub->sub_buffer.cpu_p;
+  Resource_t rv;
+  rv.type = e_resource_type_uniform_buffer;
+  rv.uniform_buffer = ub;
   return rv;
 }
 
-Sampler_t* D3d12_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
-  auto rv = allocator->construct<D3d12_sampler_t>();
-  rv->descriptor = allocate_descriptor_(&m_sampler_heap);
+Resource_t D3d12_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
+  auto sampler = allocator->construct<D3d12_sampler_t>();
+  sampler->descriptor = allocate_descriptor_(&m_sampler_heap);
   D3D12_SAMPLER_DESC sampler_desc = {};
   sampler_desc.Filter = D3D12_FILTER_ANISOTROPIC;
   sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
@@ -585,13 +588,17 @@ Sampler_t* D3d12_t::create_sampler(Allocator_t* allocator, const Sampler_create_
   sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
   sampler_desc.MinLOD = 0.0f;
   sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-  m_device->CreateSampler(&sampler_desc, rv->descriptor.cpu_handle);
+  m_device->CreateSampler(&sampler_desc, sampler->descriptor.cpu_handle);
+  Resource_t rv;
+  rv.type = e_resource_type_sampler;
+  rv.sampler = sampler;
   return rv;
 }
 
-Image_view_t* D3d12_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
-  auto rv = allocator->construct<D3d12_image_view_t>();
-  rv->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
+Resource_t D3d12_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
+  Resource_t rv;
+  auto image_view = allocator->construct<D3d12_image_view_t>();
+  image_view->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
   ID3D12Resource* resource;
   if (ci.render_target) {
     auto d3d12_rt = (D3d12_render_target_t*)ci.render_target;
@@ -600,7 +607,7 @@ Image_view_t* D3d12_t::create_image_view(Allocator_t* allocator, const Image_vie
     auto d3d12_texture = (D3d12_texture_t*)ci.texture;
     resource = d3d12_texture->texture;
   } else {
-    M_logf_return_val(NULL, "One of |ci.render_target| or |ci.texture| has to have a valid value");
+    M_logf_return_val(rv, "One of |ci.render_target| or |ci.texture| has to have a valid value");
   }
   D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
   srv_desc.Format = convert_format_to_dxgi_format(ci.format);
@@ -610,8 +617,13 @@ Image_view_t* D3d12_t::create_image_view(Allocator_t* allocator, const Image_vie
   srv_desc.Texture2D.MipLevels = 1;
   srv_desc.Texture2D.PlaneSlice = 0;
   srv_desc.Texture2D.ResourceMinLODClamp = 0.f;
-  m_device->CreateShaderResourceView(resource, &srv_desc, rv->descriptor.cpu_handle);
+  m_device->CreateShaderResourceView(resource, &srv_desc, image_view->descriptor.cpu_handle);
+  rv.type = e_resource_type_image_view;
+  rv.image_view = image_view;
   return rv;
+}
+
+void D3d12_t::bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding) {
 }
 
 Shader_t* D3d12_t::compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci) {
@@ -806,19 +818,22 @@ void D3d12_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   m_cmd_list->IASetVertexBuffers(binding, 1, &vb_view);
 }
 
-void D3d12_t::cmd_set_uniform_buffer(Uniform_buffer_t* ub, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  auto d3d12_ub = (D3d12_uniform_buffer_t*)ub;
-  m_cmd_list->SetGraphicsRootDescriptorTable(index, d3d12_ub->descriptor.gpu_handle);
-}
-
-void D3d12_t::cmd_set_sampler(Sampler_t* sampler, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  auto d3d12_sampler = (D3d12_sampler_t*)sampler;
-  m_cmd_list->SetGraphicsRootDescriptorTable(index, d3d12_sampler->descriptor.gpu_handle);
-}
-
-void D3d12_t::cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  auto d3d12_image_view = (D3d12_image_view_t*)image_view;
-  m_cmd_list->SetGraphicsRootDescriptorTable(index, d3d12_image_view->descriptor.gpu_handle);
+void D3d12_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
+  D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+  switch(resource.type) {
+    case e_resource_type_uniform_buffer:
+      gpu_handle = ((D3d12_uniform_buffer_t*)resource.uniform_buffer)->descriptor.gpu_handle;
+      break;
+    case e_resource_type_sampler:
+      gpu_handle = ((D3d12_sampler_t*)resource.sampler)->descriptor.gpu_handle;
+      break;
+    case e_resource_type_image_view:
+      gpu_handle = ((D3d12_image_view_t*)resource.image_view)->descriptor.gpu_handle;
+      break;
+    default:
+      M_unimplemented();
+  }
+  m_cmd_list->SetGraphicsRootDescriptorTable(index, gpu_handle);
 }
 
 void D3d12_t::cmd_draw(int vertex_count, int first_vertex) {

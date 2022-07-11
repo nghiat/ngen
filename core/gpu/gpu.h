@@ -56,6 +56,13 @@ enum E_render_pass_hint {
   e_render_pass_hint_shadow,
 };
 
+enum E_resource_type {
+  e_resource_type_none,
+  e_resource_type_uniform_buffer,
+  e_resource_type_image_view,
+  e_resource_type_sampler,
+};
+
 struct Texture_create_info_t {
   U8* data;
   U32 width;
@@ -127,20 +134,14 @@ struct Render_pass_t {
 };
 
 struct Sampler_create_info_t {
-  Resources_set_t* resources_set;
-  // binding in |resources_set|
-  int binding;
 };
 
 struct Sampler_t {
 };
 
 struct Uniform_buffer_create_info_t {
-  Resources_set_t* resources_set;
   Sz size;
   Sz alignment = 256;
-  // binding in |resources_set|
-  U8 binding;
 };
 
 struct Uniform_buffer_t {
@@ -176,17 +177,23 @@ struct Pipeline_state_object_t {
 };
 
 struct Image_view_create_info_t {
-  Resources_set_t* resources_set;
   Render_target_t* render_target;
   Texture_t* texture;
   E_resource_state state;
-  // binding in |resources_set|
-  U8 binding;
   E_format format;
 };
 
 struct Image_view_t {
 
+};
+
+struct Resource_t {
+  E_resource_type type = e_resource_type_none;
+  union {
+    Uniform_buffer_t* uniform_buffer = NULL;
+    Image_view_t* image_view;
+    Sampler_t* sampler;
+  };
 };
 
 class Gpu_t {
@@ -198,9 +205,10 @@ public:
   virtual Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) = 0;
   virtual Render_target_t* create_depth_stencil(Allocator_t* allocator, const Depth_stencil_create_info_t& ci) = 0;
   virtual Render_pass_t* create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci);
-  virtual Uniform_buffer_t* create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci);
-  virtual Sampler_t* create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci);
-  virtual Image_view_t* create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci);
+  virtual Resource_t create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci);
+  virtual Resource_t create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci);
+  virtual Resource_t create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci);
+  virtual void bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding);
   virtual Shader_t* compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci);
   virtual Pipeline_state_object_t* create_pipeline_state_object(Allocator_t* allocator, const Pipeline_state_object_create_info_t& ci);
   virtual void get_back_buffer();
@@ -209,9 +217,7 @@ public:
   virtual void cmd_end_render_pass(Render_pass_t* render_pass);
   virtual void cmd_set_pipeline_state(Pipeline_state_object_t* pso);
   virtual void cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding);
-  virtual void cmd_set_uniform_buffer(Uniform_buffer_t* ub, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
-  virtual void cmd_set_sampler(Sampler_t* sampler, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
-  virtual void cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
+  virtual void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
   virtual void cmd_draw(int vertex_count, int first_vertex);
   virtual void cmd_end();
 

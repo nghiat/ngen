@@ -786,7 +786,18 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
   return rv;
 }
 
-Sampler_t* Vulkan_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
+Resource_t Vulkan_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
+  auto ub = allocator->construct<Vulkan_uniform_buffer_t>();
+  allocate_sub_buffer_(&ub->sub_buffer, &m_uniform_buffer, ci.size, ci.alignment);
+  ub->p = ub->sub_buffer.cpu_p;
+
+  Resource_t rv;
+  rv.type = e_resource_type_uniform_buffer;
+  rv.uniform_buffer = ub;
+  return rv;
+}
+
+Resource_t Vulkan_t::create_sampler(Allocator_t* allocator, const Sampler_create_info_t& ci) {
   VkSampler sampler;
   VkSamplerCreateInfo sampler_ci = {};
   sampler_ci.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -801,67 +812,61 @@ Sampler_t* Vulkan_t::create_sampler(Allocator_t* allocator, const Sampler_create
   sampler_ci.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
   M_vk_check(vkCreateSampler(m_device, &sampler_ci, NULL, &sampler));
 
-  auto vk_resources_set = (Vulkan_resources_set_t*)ci.resources_set;
-
-  VkDescriptorImageInfo descriptor_image_info = {};
-  descriptor_image_info.sampler = sampler;
-  VkWriteDescriptorSet write_descriptor_set = {};
-  write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  write_descriptor_set.dstSet = vk_resources_set->set;
-  write_descriptor_set.descriptorCount = 1;
-  write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-  write_descriptor_set.dstBinding = GPU_VK_SAMPLER_BINDING_OFFSET + ci.binding;
-  write_descriptor_set.pImageInfo = &descriptor_image_info;
-
-  vkUpdateDescriptorSets(m_device, 1, &write_descriptor_set, 0, NULL);
-  auto rv = allocator->construct<Vulkan_sampler_t>();
-  rv->sampler = sampler;
+  auto vk_sampler = allocator->construct<Vulkan_sampler_t>();
+  vk_sampler->sampler = sampler;
+  Resource_t rv;
+  rv.type = e_resource_type_sampler;
+  rv.sampler = vk_sampler;
   return rv;
 }
 
-Image_view_t* Vulkan_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
-  auto rv = allocator->construct<Vulkan_image_view_t>();
-  auto vk_resources_set = (Vulkan_resources_set_t*)ci.resources_set;
+Resource_t Vulkan_t::create_image_view(Allocator_t* allocator, const Image_view_create_info_t& ci) {
+  Resource_t rv;
+  auto image_view = allocator->construct<Vulkan_image_view_t>();
   if (ci.render_target) {
     auto vk_rt = (Vulkan_render_target_t*)ci.render_target;
-    rv->image_view = vk_rt->image_view;
+    image_view->image_view = vk_rt->image_view;
   } else if (ci.texture) {
     auto vk_texture = (Vulkan_texture_t*)ci.texture;
-    rv->image_view = create_image_view_(vk_texture->image, convert_format_to_vk_format(ci.format), VK_IMAGE_ASPECT_COLOR_BIT);
+    image_view->image_view = create_image_view_(vk_texture->image, convert_format_to_vk_format(ci.format), VK_IMAGE_ASPECT_COLOR_BIT);
   } else {
-    M_logf_return_val(NULL, "One of |ci.render_target| or |ci.texture| has to have a valid value");
+    M_logf_return_val(rv, "One of |ci.render_target| or |ci.texture| has to have a valid value");
   }
 
-  VkDescriptorImageInfo descriptor_image_info = {};
-  descriptor_image_info.imageView = rv->image_view;
-  descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-  VkWriteDescriptorSet write_descriptor_set = {};
-  write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  write_descriptor_set.dstSet = vk_resources_set->set;
-  write_descriptor_set.descriptorCount = 1;
-  write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  write_descriptor_set.dstBinding = GPU_VK_TEXTURE_BINDING_OFFSET + ci.binding;
-  write_descriptor_set.pImageInfo = &descriptor_image_info;
-
-  vkUpdateDescriptorSets(m_device, 1, &write_descriptor_set, 0, NULL);
+  rv.type = e_resource_type_image_view;
+  rv.image_view = image_view;
   return rv;
 }
 
-Uniform_buffer_t* Vulkan_t::create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) {
-  auto rv = allocator->construct<Vulkan_uniform_buffer_t>();
-  allocate_sub_buffer_(&rv->sub_buffer, &m_uniform_buffer, ci.size, ci.alignment);
-
+void Vulkan_t::bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding) {
   VkWriteDescriptorSet write_descriptor_set = {};
   write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  write_descriptor_set.dstSet = ((Vulkan_resources_set_t*)ci.resources_set)->set;
+  write_descriptor_set.dstSet = ((Vulkan_resources_set_t*)set)->set;
   write_descriptor_set.descriptorCount = 1;
-  write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  write_descriptor_set.pBufferInfo = &rv->sub_buffer.bi;
-  write_descriptor_set.dstBinding = ci.binding;
-
+  VkDescriptorImageInfo descriptor_image_info = {};
+  switch(resource.type) {
+    case e_resource_type_uniform_buffer:
+      write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      write_descriptor_set.pBufferInfo = &((Vulkan_uniform_buffer_t*)(resource.uniform_buffer))->sub_buffer.bi;
+      write_descriptor_set.dstBinding = GPU_VK_UNIFORM_BINDING_OFFSET + binding;
+      break;
+    case e_resource_type_sampler:
+      descriptor_image_info.sampler = ((Vulkan_sampler_t*)resource.sampler)->sampler;
+      write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+      write_descriptor_set.dstBinding = GPU_VK_SAMPLER_BINDING_OFFSET + binding;
+      write_descriptor_set.pImageInfo = &descriptor_image_info;
+      break;
+    case e_resource_type_image_view:
+      descriptor_image_info.imageView = ((Vulkan_image_view_t*)resource.image_view)->image_view;
+      descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+      write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+      write_descriptor_set.dstBinding = GPU_VK_TEXTURE_BINDING_OFFSET + binding;
+      write_descriptor_set.pImageInfo = &descriptor_image_info;
+      break;
+    default:
+      M_unimplemented();
+  };
   vkUpdateDescriptorSets(m_device, 1, &write_descriptor_set, 0, NULL);
-  rv->p = rv->sub_buffer.cpu_p;
-  return rv;
 }
 
 Shader_t* Vulkan_t::compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci) {
@@ -1086,19 +1091,7 @@ void Vulkan_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   vkCmdBindVertexBuffers(get_active_cmd_buffer_(), binding, 1, &m_vertex_buffer.buffer, &offset1);
 }
 
-void Vulkan_t::cmd_set_uniform_buffer(Uniform_buffer_t* ub, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  auto vk_pipeline_layout = (Vulkan_pipeline_layout_t*)pipeline_layout;
-  auto vk_set = (Vulkan_resources_set_t*)set;
-  vkCmdBindDescriptorSets(get_active_cmd_buffer_(), VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout->pipeline_layout, index, 1, &vk_set->set, 0, NULL);
-}
-
-void Vulkan_t::cmd_set_sampler(Sampler_t* sampler, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
-  auto vk_pipeline_layout = (Vulkan_pipeline_layout_t*)pipeline_layout;
-  auto vk_set = (Vulkan_resources_set_t*)set;
-  vkCmdBindDescriptorSets(get_active_cmd_buffer_(), VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout->pipeline_layout, index, 1, &vk_set->set, 0, NULL);
-}
-
-void Vulkan_t::cmd_set_image_view(Image_view_t* image_view, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
+void Vulkan_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
   auto vk_pipeline_layout = (Vulkan_pipeline_layout_t*)pipeline_layout;
   auto vk_set = (Vulkan_resources_set_t*)set;
   vkCmdBindDescriptorSets(get_active_cmd_buffer_(), VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout->pipeline_layout, index, 1, &vk_set->set, 0, NULL);
