@@ -306,7 +306,7 @@ bool D3d12_t::init(Window_t* w) {
     }
   }
   create_descriptor_heap_(&m_dsv_heap, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, 2);
-  create_descriptor_heap_(&m_cbv_srv_heap, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10);
+  create_descriptor_heap_(&m_cbv_srv_heap, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 20);
   create_descriptor_heap_(&m_sampler_heap, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10);
 
   m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
@@ -325,7 +325,7 @@ bool D3d12_t::init(Window_t* w) {
   m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
   m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
                                     D3D12_HEAP_FLAG_NONE,
-                                    &create_resource_desc_(128 * 1024 * 1024),
+                                    &create_resource_desc_(256 * 1024 * 1024),
                                     D3D12_RESOURCE_STATE_GENERIC_READ,
                                     NULL,
                                     IID_PPV_ARGS(&m_upload_buffer.buffer));
@@ -375,7 +375,7 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   pitched_desc.RowPitch = (row_size + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
   auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
-  placed_texture.Offset = (Sip)m_texture_subbuffer.cpu_p - (Sip)m_texture_subbuffer.buffer->cpu_p;
+  placed_texture.Offset = m_texture_subbuffer.offset;
   placed_texture.Footprint = pitched_desc;
   for (int i = 0; i < pitched_desc.Height; ++i) {
     memcpy(m_texture_subbuffer.cpu_p + i * row_size, &ci.data[i * row_size], row_size);
@@ -391,6 +391,57 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   m_cmd_allocators[m_frame_no]->Reset();
   m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL);
   m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
+  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+  m_cmd_list->Close();
+  m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
+  wait_for_gpu_();
+  return rv;
+}
+
+Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
+  auto rv = allocator->construct<D3d12_texture_t>();
+  rv->is_cube = true;
+  D3D12_RESOURCE_DESC texture_desc = {};
+  texture_desc.MipLevels = 1;
+  texture_desc.Format = convert_format_to_dxgi_format(ci.format);
+  texture_desc.Width = ci.dimension;
+  texture_desc.Height = ci.dimension;
+  texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+  texture_desc.DepthOrArraySize = 6;
+  texture_desc.SampleDesc.Count = 1;
+  texture_desc.SampleDesc.Quality = 0;
+  texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
+
+  U64 upload_buffer_size;
+  m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
+
+  D3D12_SUBRESOURCE_FOOTPRINT pitched_desc = {};
+  int row_size = ci.dimension * convert_format_to_size_(ci.format);
+  pitched_desc.Format = convert_format_to_dxgi_format(ci.format);
+  pitched_desc.Width = ci.dimension;
+  pitched_desc.Height = ci.dimension;
+  pitched_desc.Depth = 1;
+  pitched_desc.RowPitch = (row_size + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, 6 * pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+  memcpy(m_texture_subbuffer.cpu_p, ci.data, 6 * ci.dimension * row_size);
+  D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
+  placed_texture.Footprint = pitched_desc;
+  D3D12_TEXTURE_COPY_LOCATION src = {};
+  src.pResource = m_texture_subbuffer.buffer->buffer;
+  src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+  src.PlacedFootprint = placed_texture;
+  D3D12_TEXTURE_COPY_LOCATION dest = {};
+  dest.pResource = rv->texture;
+  dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+  m_cmd_allocators[m_frame_no]->Reset();
+  m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL);
+  for (int i = 0; i < 6; ++i) {
+    src.PlacedFootprint.Offset = m_texture_subbuffer.offset + i * ci.dimension * row_size;
+    dest.SubresourceIndex = i;
+    m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
+  }
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
@@ -600,23 +651,32 @@ Resource_t D3d12_t::create_image_view(Allocator_t* allocator, const Image_view_c
   auto image_view = allocator->construct<D3d12_image_view_t>();
   image_view->descriptor = allocate_descriptor_(&m_cbv_srv_heap);
   ID3D12Resource* resource;
+  bool is_cube = false;
   if (ci.render_target) {
     auto d3d12_rt = (D3d12_render_target_t*)ci.render_target;
     resource = d3d12_rt->resource;
   } else if (ci.texture) {
     auto d3d12_texture = (D3d12_texture_t*)ci.texture;
     resource = d3d12_texture->texture;
+    is_cube = d3d12_texture->is_cube;
   } else {
     M_logf_return_val(rv, "One of |ci.render_target| or |ci.texture| has to have a valid value");
   }
   D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
   srv_desc.Format = convert_format_to_dxgi_format(ci.format);
-  srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
   srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-  srv_desc.Texture2D.MostDetailedMip = 0;
-  srv_desc.Texture2D.MipLevels = 1;
-  srv_desc.Texture2D.PlaneSlice = 0;
-  srv_desc.Texture2D.ResourceMinLODClamp = 0.f;
+  if (is_cube) {
+    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+    srv_desc.TextureCube.MostDetailedMip = 0;
+    srv_desc.TextureCube.MipLevels = 1;
+    srv_desc.TextureCube.ResourceMinLODClamp = 0.f;
+  } else {
+    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srv_desc.Texture2D.MostDetailedMip = 0;
+    srv_desc.Texture2D.MipLevels = 1;
+    srv_desc.Texture2D.PlaneSlice = 0;
+    srv_desc.Texture2D.ResourceMinLODClamp = 0.f;
+  }
   m_device->CreateShaderResourceView(resource, &srv_desc, image_view->descriptor.cpu_handle);
   rv.type = e_resource_type_image_view;
   rv.image_view = image_view;

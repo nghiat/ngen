@@ -42,6 +42,7 @@ public:
   bool init(Window_t* w);
   void destroy() override;
   Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;
+  Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) override;
   Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) override;
   Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) override;
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;

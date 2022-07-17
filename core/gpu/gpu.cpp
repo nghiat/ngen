@@ -13,6 +13,11 @@ Texture_t* Gpu_t::create_texture(Allocator_t* allocator, const Texture_create_in
   return NULL;
 }
 
+Texture_t* Gpu_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
+  M_unimplemented();
+  return NULL;
+}
+
 Resources_set_t* Gpu_t::create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) {
   M_unimplemented();
   return NULL;

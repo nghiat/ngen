@@ -193,6 +193,33 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
         M_logf_return_val(false, "Invalid color type");
       }
       M_check_log(m_bit_depth == 8 || m_bit_depth == 16, "No support for bit depth <8");
+      if (m_bit_depth == 8) {
+        switch(m_components_per_pixel) {
+          case 1:
+            m_format = e_format_r8_uint;
+            break;
+          case 3:
+          case 4:
+            m_format = e_format_r8g8b8a8_uint;
+            break;
+          default:
+            M_unimplemented();
+        }
+      } else if (m_bit_depth == 16) {
+        switch(m_components_per_pixel) {
+          case 1:
+            m_format = e_format_r16_uint;
+            break;
+          case 3:
+          case 4:
+            m_format = e_format_r16g16b16a16_uint;
+            break;
+          default:
+            M_unimplemented();
+        }
+      } else {
+        M_unimplemented();
+      }
       m_bytes_per_pixel = m_bit_depth / 8 * m_components_per_pixel;
       idat_full.init(&temp_allocator);
       idat_full.reserve((m_width + 1) * m_height * m_bytes_per_pixel);
