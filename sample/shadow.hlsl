@@ -3,8 +3,14 @@ cbuffer per_obj_cb : register(b0, space0) {
 };
 
 cbuffer shared_cb : register(b0, space1) {
+    float4x4 view;
+    float4x4 proj;
     float4x4 light_view;
     float4x4 light_proj;
+    float4 eye_pos;
+    float4 obj_color;
+    float4 light_pos;
+    float4 light_color;
 };
 
 struct PSInput {

@@ -28,6 +28,7 @@ public:
   bool init(Window_t* w);
   void destroy() override;
   Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;
+  Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) override;
   Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) override;
   Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) override;
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;
@@ -82,9 +83,9 @@ public:
   VkSemaphore m_rendering_finished_semaphore;
 private:
   int get_mem_type_idx_(U32 mem_type_bits, VkFlags mem_flags);
-  VkImageView create_image_view_(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags);
+  VkImageView create_image_view_(VkImage image, VkImageViewType view_type, VkFormat format, VkImageAspectFlags aspect_flags);
   bool create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlagBits usage_flags, VkMemoryPropertyFlagBits mem_prop_flags);
   void allocate_sub_buffer_(Vk_sub_buffer_t_* sub_buffer, Vk_buffer_t_* buffer, Sip size, int alignment);
   VkCommandBuffer get_active_cmd_buffer_() const;
-  void create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, bool is_mutable = false);
+  void create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, VkImageCreateFlags flags);
 };

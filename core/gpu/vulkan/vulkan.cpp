@@ -115,7 +115,7 @@ static VkFormat convert_format_to_vk_format(E_format format) {
     case e_format_r16g16b16a16_unorm:
       return VK_FORMAT_R16G16B16A16_UNORM;
     case e_format_r24_unorm_x8_typeless:
-      return VK_FORMAT_X8_D24_UNORM_PACK32;
+      return VK_FORMAT_D24_UNORM_S8_UINT;
     default:
       M_unimplemented();
   }
@@ -427,7 +427,7 @@ bool Vulkan_t::init(Window_t* w) {
     m_swapchain_image_views.resize(m_swapchain_images.len());
     {
       for (int i = 0; i < m_swapchain_images.len(); ++i) {
-        m_swapchain_image_views[i] = create_image_view_(m_swapchain_images[i], m_swapchain_format, VK_IMAGE_ASPECT_COLOR_BIT);
+        m_swapchain_image_views[i] = create_image_view_(m_swapchain_images[i], VK_IMAGE_VIEW_TYPE_2D, m_swapchain_format, VK_IMAGE_ASPECT_COLOR_BIT);
       }
     }
   }
@@ -506,7 +506,7 @@ Texture_t* Vulkan_t::create_texture(Allocator_t* allocator, const Texture_create
   vkBeginCommandBuffer(m_transfer_cmd_buffer, &cmd_buffer_begin_info);
   VkImage image;
   VkDeviceMemory memory;
-  create_image_(&image, &memory, ci.width, ci.height, convert_format_to_vk_format(ci.format), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, true);
+  create_image_(&image, &memory, ci.width, ci.height, convert_format_to_vk_format(ci.format), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT);
   VkImageSubresourceRange subresource_range = {};
   subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   subresource_range.baseMipLevel = 0;
@@ -553,6 +553,76 @@ Texture_t* Vulkan_t::create_texture(Allocator_t* allocator, const Texture_create
   rv->image = image;
   rv->memory = memory;
   return rv;
+}
+
+Texture_t* Vulkan_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
+  Sz texture_size = ci.dimension * ci.dimension * convert_format_to_size_(ci.format);
+  memcpy(m_upload_buffer.cpu_p, ci.data, 6*texture_size);
+  VkBufferImageCopy copy_region = {};
+  copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy_region.imageSubresource.mipLevel = 0;
+  copy_region.imageSubresource.baseArrayLayer = 0;
+  copy_region.imageSubresource.layerCount = 6;
+  copy_region.imageExtent.width = ci.dimension;
+  copy_region.imageExtent.height = ci.dimension;
+  copy_region.imageExtent.depth = 1;
+  copy_region.bufferOffset = 0;
+
+  VkCommandBufferBeginInfo cmd_buffer_begin_info = {};
+  cmd_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  cmd_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+  vkBeginCommandBuffer(m_transfer_cmd_buffer, &cmd_buffer_begin_info);
+  VkImage image;
+  VkDeviceMemory memory;
+  create_image_(&image, &memory, ci.dimension, ci.dimension, convert_format_to_vk_format(ci.format), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+  VkImageSubresourceRange subresource_range = {};
+  subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  subresource_range.baseMipLevel = 0;
+  subresource_range.levelCount = 1;
+  subresource_range.layerCount = 6;
+  VkImageMemoryBarrier image_barrier = {};
+  image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  image_barrier.image = image;
+  image_barrier.subresourceRange = subresource_range;
+  image_barrier.srcAccessMask = 0;
+  image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  image_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  image_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  vkCmdPipelineBarrier(m_transfer_cmd_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_barrier);
+  vkCmdCopyBufferToImage(m_transfer_cmd_buffer, m_upload_buffer.buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+
+  image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+  vkCmdPipelineBarrier(m_transfer_cmd_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_barrier);
+  // m_device->flushCommandBuffer(m_transfer_cmd_buffer, m_transfer_queue, true);
+  {
+    vkEndCommandBuffer(m_transfer_cmd_buffer);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &m_transfer_cmd_buffer;
+
+    VkFenceCreateInfo fence_ci = {};
+    fence_ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_ci.flags = 0;
+    VkFence fence;
+    vkCreateFence(m_device, &fence_ci, nullptr, &fence);
+
+    vkQueueSubmit(m_transfer_q, 1, &submit_info, fence);
+    vkWaitForFences(m_device, 1, &fence, VK_TRUE, (U64)(-1));
+
+    vkDestroyFence(m_device, fence, nullptr);
+  }
+  auto rv = allocator->construct<Vulkan_texture_t>();
+  rv->image = image;
+  rv->memory = memory;
+  rv->is_cube = true;
+  return rv;
+  return NULL;
 }
 
 Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) {
@@ -635,8 +705,8 @@ Render_target_t* Vulkan_t::create_depth_stencil(Allocator_t* allocator, const De
     usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   }
   auto rv = allocator->construct<Vulkan_render_target_t>();
-  create_image_(&rv->image, &rv->memory, (U32)m_window->m_width, (U32)m_window->m_height, VK_FORMAT_D24_UNORM_S8_UINT, usage);
-  VkImageView image_view = create_image_view_(rv->image, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
+  create_image_(&rv->image, &rv->memory, (U32)m_window->m_width, (U32)m_window->m_height, VK_FORMAT_D24_UNORM_S8_UINT, usage, 0);
+  VkImageView image_view = create_image_view_(rv->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
   rv->state = e_resource_state_undefined;
   rv->image_view = image_view;
   rv->type = e_render_target_type_depth_stencil;
@@ -828,7 +898,11 @@ Resource_t Vulkan_t::create_image_view(Allocator_t* allocator, const Image_view_
     image_view->image_view = vk_rt->image_view;
   } else if (ci.texture) {
     auto vk_texture = (Vulkan_texture_t*)ci.texture;
-    image_view->image_view = create_image_view_(vk_texture->image, convert_format_to_vk_format(ci.format), VK_IMAGE_ASPECT_COLOR_BIT);
+    if (vk_texture->is_cube) {
+      image_view->image_view = create_image_view_(vk_texture->image, VK_IMAGE_VIEW_TYPE_CUBE, convert_format_to_vk_format(ci.format), VK_IMAGE_ASPECT_COLOR_BIT);
+    } else {
+      image_view->image_view = create_image_view_(vk_texture->image, VK_IMAGE_VIEW_TYPE_2D, convert_format_to_vk_format(ci.format), VK_IMAGE_ASPECT_COLOR_BIT);
+    }
   } else {
     M_logf_return_val(rv, "One of |ci.render_target| or |ci.texture| has to have a valid value");
   }
@@ -1135,11 +1209,11 @@ int Vulkan_t::get_mem_type_idx_(U32 mem_type_bits, VkFlags mem_flags) {
   return -1;
 }
 
-VkImageView Vulkan_t::create_image_view_(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) {
+VkImageView Vulkan_t::create_image_view_(VkImage image, VkImageViewType view_type, VkFormat format, VkImageAspectFlags aspect_flags) {
   VkImageViewCreateInfo image_view_ci = {};
   image_view_ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   image_view_ci.image = image;
-  image_view_ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  image_view_ci.viewType = view_type;
   image_view_ci.format = format;
   image_view_ci.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_ci.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1149,7 +1223,11 @@ VkImageView Vulkan_t::create_image_view_(VkImage image, VkFormat format, VkImage
   image_view_ci.subresourceRange.baseMipLevel = 0;
   image_view_ci.subresourceRange.levelCount = 1;
   image_view_ci.subresourceRange.baseArrayLayer = 0;
-  image_view_ci.subresourceRange.layerCount = 1;
+  if (view_type == VK_IMAGE_VIEW_TYPE_CUBE) {
+    image_view_ci.subresourceRange.layerCount = 6;
+  } else {
+    image_view_ci.subresourceRange.layerCount = 1;
+  }
   VkImageView image_view;
   M_vk_check(vkCreateImageView(m_device, &image_view_ci, NULL, &image_view));
   return image_view;
@@ -1191,22 +1269,24 @@ VkCommandBuffer Vulkan_t::get_active_cmd_buffer_() const {
   return m_graphics_cmd_buffers[m_next_swapchain_image_idx];
 }
 
-void Vulkan_t::create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, bool is_mutable) {
+void Vulkan_t::create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, VkImageCreateFlags flags) {
   VkImageCreateInfo image_ci = {};
   image_ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_ci.imageType = VK_IMAGE_TYPE_2D;
   image_ci.format = format;
   image_ci.extent = {width, height, 1};
   image_ci.mipLevels = 1;
-  image_ci.arrayLayers = 1;
+  if (flags | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) {
+    image_ci.arrayLayers = 6;
+  } else {
+    image_ci.arrayLayers = 1;
+  }
   image_ci.samples = VK_SAMPLE_COUNT_1_BIT;
   image_ci.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_ci.usage = usage;
   image_ci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   image_ci.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  if (is_mutable) {
-    image_ci.flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-  }
+  image_ci.flags = flags;
   M_vk_check_return(vkCreateImage(m_device, &image_ci, NULL, image));
 
   VkMemoryRequirements image_mem_reqs;

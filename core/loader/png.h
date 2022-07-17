@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "core/gpu/gpu.h"
 #include "core/path.h"
 #include "core/types.h"
 
@@ -23,4 +24,5 @@ public:
   U8 m_bit_depth = 0;
   U8 m_components_per_pixel = 0;
   U8 m_bytes_per_pixel = 0;
+  E_format m_format;
 };

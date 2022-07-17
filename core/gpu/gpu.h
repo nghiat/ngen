@@ -70,7 +70,14 @@ struct Texture_create_info_t {
   E_format format;
 };
 
+struct Texture_cube_create_info_t {
+  U8* data;
+  U32 dimension;
+  E_format format;
+};
+
 struct Texture_t {
+  bool is_cube = false;
 };
 
 struct Resources_set_create_info_t {
@@ -200,6 +207,7 @@ class Gpu_t {
 public:
   virtual void destroy() = 0;
   virtual Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci);
+  virtual Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci);
   virtual Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci);
   virtual Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci);
   virtual Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) = 0;

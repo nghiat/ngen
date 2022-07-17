@@ -111,6 +111,8 @@ executable("hash_table") {
 
 dxc("shaders") {
   shaders = [
+    [ "cube.hlsl", "VSMain", "vs_5_0", "cube_vs" ],
+    [ "cube.hlsl", "PSMain", "ps_5_0", "cube_ps" ],
     [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ],
     [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ],
     [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ],
