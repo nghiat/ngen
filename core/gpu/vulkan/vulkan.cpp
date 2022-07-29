@@ -481,6 +481,20 @@ bool Vulkan_t::init(Window_t* w) {
     M_vk_check(vkCreateSemaphore(m_device, &semaphore_ci, NULL, &m_image_available_semaphore));
     M_vk_check(vkCreateSemaphore(m_device, &semaphore_ci, NULL, &m_rendering_finished_semaphore));
   }
+
+  VkFormat depth_formats[] = {
+    VK_FORMAT_D32_SFLOAT_S8_UINT,
+    VK_FORMAT_D32_SFLOAT,
+    VK_FORMAT_D24_UNORM_S8_UINT,
+  };
+  for (auto depth_format : depth_formats) {
+    VkFormatProperties format_props;
+    vkGetPhysicalDeviceFormatProperties(m_chosen_device, depth_format, &format_props);
+    if (format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+      m_depth_format = depth_format;
+      break;
+    }
+  }
   return true;
 }
 
@@ -705,8 +719,8 @@ Render_target_t* Vulkan_t::create_depth_stencil(Allocator_t* allocator, const De
     usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   }
   auto rv = allocator->construct<Vulkan_render_target_t>();
-  create_image_(&rv->image, &rv->memory, (U32)m_window->m_width, (U32)m_window->m_height, VK_FORMAT_D24_UNORM_S8_UINT, usage, 0);
-  VkImageView image_view = create_image_view_(rv->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
+  create_image_(&rv->image, &rv->memory, (U32)m_window->m_width, (U32)m_window->m_height, m_depth_format, usage, 0);
+  VkImageView image_view = create_image_view_(rv->image, VK_IMAGE_VIEW_TYPE_2D, m_depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
   rv->state = e_resource_state_undefined;
   rv->image_view = image_view;
   rv->type = e_render_target_type_depth_stencil;
