@@ -148,3 +148,11 @@ void Window_t::os_loop() {
     this->loop();
   }
 }
+
+void Window_t::show_cursor(bool show) {
+  M_unimplemented();
+}
+
+void Window_t::set_cursor_pos(int x, int y) {
+  M_unimplemented();
+}

@@ -69,6 +69,7 @@ public:
   VkCommandPool m_transfer_cmd_pool;
   VkSwapchainKHR m_swapchain;
   VkFormat m_swapchain_format;
+  VkFormat m_depth_format;
   Dynamic_array_t<VkImage> m_swapchain_images;
   Dynamic_array_t<VkImageView> m_swapchain_image_views;
   VkDescriptorPool m_descriptors_pool;
