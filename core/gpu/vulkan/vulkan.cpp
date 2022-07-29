@@ -1290,7 +1290,7 @@ void Vulkan_t::create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, 
   image_ci.format = format;
   image_ci.extent = {width, height, 1};
   image_ci.mipLevels = 1;
-  if (flags | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) {
+  if (flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) {
     image_ci.arrayLayers = 6;
   } else {
     image_ci.arrayLayers = 1;
