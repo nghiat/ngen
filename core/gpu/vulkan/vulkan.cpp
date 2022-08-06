@@ -755,7 +755,7 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
     ref.attachment = i;
     ref.layout = convert_resource_state_to_image_layout_(rt_desc.render_pass_state);
     if (rt_desc.render_target->type == e_render_target_type_depth_stencil) {
-      desc.format = VK_FORMAT_D24_UNORM_S8_UINT;
+      desc.format = m_depth_format;
       depth_stencil_ref = ref;
       ++depth_stencil_ref_count;
       VkClearValue clear_value = {};
