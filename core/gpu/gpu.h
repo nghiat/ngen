@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/dynamic_array.h"
+#include "core/fixed_array.h"
 #include "core/path.h"
 #include "core/types.h"
 
@@ -134,7 +134,7 @@ struct Render_pass_create_info_t {
 };
 
 struct Render_pass_t {
-  Dynamic_array_t<Render_target_description_t> rt_descs;
+  Fixed_array_t<Render_target_description_t, 8> rt_descs;
   bool use_swapchain_render_target;
   bool is_last;
   bool should_clear_render_target;

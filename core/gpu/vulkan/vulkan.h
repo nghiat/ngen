@@ -24,7 +24,7 @@ struct Vk_buffer_t_ {
 
 class Vulkan_t : public Gpu_t {
 public:
-  Vulkan_t() : Gpu_t(), m_vk_allocator("vk_allocator") {}
+  Vulkan_t() : Gpu_t(), m_vk_allocator("vk_allocator"), m_swapchain_images(&m_vk_allocator), m_swapchain_image_views(&m_vk_allocator), m_graphics_cmd_buffers(&m_vk_allocator), m_fences(&m_vk_allocator) {}
   bool init(Window_t* w);
   void destroy() override;
   Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;

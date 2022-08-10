@@ -15,7 +15,8 @@ struct Allocator_t;
 
 class Obj_loader_t {
 public:
-  bool init(Allocator_t* allocator, const Os_char* path);
+  Obj_loader_t(Allocator_t* allocator);
+  bool init(const Os_char* path);
   void destroy();
 
   Dynamic_array_t<V4_t> m_vertices;

@@ -46,7 +46,7 @@ public:
     Sz m_idx;
   };
 
-  bool init(Allocator_t* allocator);
+  Hash_table_t_(Allocator_t* allocator);
   void destroy();
   T_value& operator[](const T_key& key);
   T_value* find(const T_key& key) const;
@@ -68,7 +68,6 @@ public:
   void rehash(int bucket_count);
   T_value& insert_without_checking(int bucket_idx, const T_key& key);
 
-  Allocator_t* m_allocator = nullptr;
   // |m_data| contains 2 array: data array and state array.
   // The state array comes after the data array so we can resize both of them using only one realloc call.
   // Which works well with the Linear_allocator_t because it can only realloc to a bigger size when the pointer is at the top.

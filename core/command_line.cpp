@@ -12,14 +12,7 @@
 
 #include <ctype.h>
 
-Command_line_t::Command_line_t() : m_unnamed_args_allocator("Command_line_t default flag allocator") {}
-
-bool Command_line_t::init(Allocator_t* allocator) {
-  bool rv = m_flags.init(allocator);
-  rv &= m_unnamed_args_allocator.init();
-  rv &= m_unnamed_args.init(&m_unnamed_args_allocator);
-  return rv;
-}
+Command_line_t::Command_line_t(Allocator_t* allocator) : m_flags(allocator), m_unnamed_args_allocator("Command_line_t default flag allocator"), m_unnamed_args(&m_unnamed_args_allocator) {}
 
 void Command_line_t::destroy() {
   m_flags.destroy();

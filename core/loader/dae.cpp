@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 struct Xml_node_t_ {
+  Xml_node_t_(Allocator_t* allocator) : attr_names(allocator), attr_vals(allocator), children(allocator) {}
   char* tag_name;
   char* text;
   Dynamic_array_t<char*> attr_names;
@@ -31,7 +32,7 @@ static char* alloc_string_(Allocator_t* allocator, const char* start, const char
 
 static Xml_node_t_* parse_xml_(const char** last_pos, Allocator_t* allocator, const char* start, const char* end) {
   const char* p = start;
-  Xml_node_t_* node = (Xml_node_t_*)allocator->alloc(sizeof(Xml_node_t_));
+  auto* node = allocator->construct<Xml_node_t_>(allocator);
   node->text = NULL;
   while (p != end) {
     while (p != end && *p != '<') {
@@ -54,8 +55,6 @@ static Xml_node_t_* parse_xml_(const char** last_pos, Allocator_t* allocator, co
       }
       if (*tag_p == '/') {
         tag_end = tag_p;
-      } else {
-        node->children.init(allocator);
       }
 
       // Parse tag_name
@@ -80,10 +79,6 @@ static Xml_node_t_* parse_xml_(const char** last_pos, Allocator_t* allocator, co
           break;
         }
 
-        if (node->attr_names.len() == 0) {
-          node->attr_names.init(allocator);
-          node->attr_vals.init(allocator);
-        }
         const char* a_name_start = tag_p;
         while(tag_p != tag_end && !isspace(*tag_p) && *tag_p != '=') {
           ++tag_p;
@@ -191,17 +186,17 @@ static Xml_node_t_* dae_find_node_(Xml_node_t_* node, const char* name) {
   return curr;
 }
 
-bool Dae_loader_t::init(Allocator_t* allocator, const Os_char* path) {
+Dae_loader_t::Dae_loader_t(Allocator_t* allocator) : m_vertices(allocator) {}
+
+bool Dae_loader_t::init(const Os_char* path) {
   Linear_allocator_t<> file_allocator("xml_file_allocator");
-  file_allocator.init();
   Dynamic_array_t<U8> buffer = File_t::read_whole_file_as_text(&file_allocator, path);
-  Xml_node_t_* root = parse_xml_(NULL, allocator, (char*)&buffer[0], (char*)&buffer[0] + buffer.len());
+  Xml_node_t_* root = parse_xml_(NULL, m_vertices.m_allocator, (char*)&buffer[0], (char*)&buffer[0] + buffer.len());
   file_allocator.destroy();
 
   Xml_node_t_* mesh_position = dae_find_node_(root, "library_geometries/geometry/mesh/source/float_array");
   int arr_len = atoi(mesh_position->attr_vals[1]);
   M_check_log_return_val(arr_len % 3 == 0, false, "Invalid vertex number");
-  m_vertices.init(allocator);
   m_vertices.reserve(arr_len / 3);
   char* arr_p = mesh_position->text;
   while (*arr_p) {

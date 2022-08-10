@@ -15,10 +15,7 @@
 #include <string.h>
 
 template <typename T>
-bool Dynamic_array_t<T>::init(Allocator_t* allocator) {
-  m_allocator = allocator;
-  return true;
-}
+Dynamic_array_t<T>::Dynamic_array_t(Allocator_t* allocator) : m_allocator(allocator) {}
 
 template <typename T>
 void Dynamic_array_t<T>::destroy() {

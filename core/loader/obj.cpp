@@ -42,9 +42,10 @@ static inline int parse_index_(int index, int len) {
   return index + len;
 }
 
-bool Obj_loader_t::init(Allocator_t* allocator, const Os_char* path) {
+Obj_loader_t::Obj_loader_t(Allocator_t* allocator) : m_vertices(allocator), m_uvs(allocator), m_normals(allocator) {}
+
+bool Obj_loader_t::init(const Os_char* path) {
   Linear_allocator_t<> temp_allocator("Obj_loader_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
   int v_count = 0;
@@ -77,19 +78,13 @@ bool Obj_loader_t::init(Allocator_t* allocator, const Os_char* path) {
       break;
     }
   }
-  Dynamic_array_t<V4_t> vs;
-  Dynamic_array_t<V2_t> uvs;
-  Dynamic_array_t<V4_t> ns;
-  vs.init(&temp_allocator);
-  uvs.init(&temp_allocator);
-  ns.init(&temp_allocator);
+  Dynamic_array_t<V4_t> vs(&temp_allocator);
+  Dynamic_array_t<V2_t> uvs(&temp_allocator);
+  Dynamic_array_t<V4_t> ns(&temp_allocator);
   vs.reserve(v_count);
   uvs.reserve(v_count);
   ns.reserve(v_count);
 
-  m_vertices.init(allocator);
-  m_uvs.init(allocator);
-  m_normals.init(allocator);
   vs.reserve(elems_count);
   if (uv_count)
     uvs.reserve(elems_count);

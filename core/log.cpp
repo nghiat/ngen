@@ -34,7 +34,6 @@ void ng_log_(E_log_level_ level, const char* file, int line, const char* format,
     return;
   }
   Linear_allocator_t<> temp_allocator("log_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
   // FILE(LINE) for visual studio click to go to location.

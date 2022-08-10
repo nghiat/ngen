@@ -584,8 +584,6 @@ Render_target_t* D3d12_t::create_depth_stencil(Allocator_t* allocator, const Dep
 
 Render_pass_t* D3d12_t::create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci) {
   auto rv = allocator->construct<D3d12_render_pass_t>();
-  rv->rt_descs.init(allocator);
-  rv->rt_descs.reserve(ci.render_target_count);
   rv->is_last = ci.is_last;
   rv->use_swapchain_render_target = ci.use_swapchain_render_target;
   rv->should_clear_render_target = ci.should_clear_render_target;
@@ -597,7 +595,6 @@ Render_pass_t* D3d12_t::create_render_pass(Allocator_t* allocator, const Render_
     rv->use_swapchain_render_target = true;
   }
   if (rv->use_swapchain_render_target) {
-    rv->rt_descs.reserve(ci.render_target_count + 1);
     Render_target_description_t desc = {};
     desc.render_target = NULL;
     desc.render_pass_state = e_resource_state_render_target;
@@ -698,7 +695,6 @@ Shader_t* D3d12_t::compile_shader(Allocator_t* allocator, const Shader_create_in
 
 Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allocator, const Pipeline_state_object_create_info_t& ci) {
   Linear_allocator_t<> temp_allocator("dx12_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
@@ -746,8 +742,7 @@ Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allo
 
   pso_desc.DepthStencilState = {};
 
-  Dynamic_array_t<D3D12_INPUT_ELEMENT_DESC> elems;
-  elems.init(&temp_allocator);
+  Dynamic_array_t<D3D12_INPUT_ELEMENT_DESC> elems(&temp_allocator);
   elems.resize(ci.input_element_count);
   for (int i = 0; i < ci.input_element_count; ++i) {
     auto& elem = elems[i];

@@ -20,8 +20,7 @@ struct Linear_allocator_page_t_;
 template <Sz T_initial_size = 4096>
 class Linear_allocator_t : public Allocator_t {
 public:
-  Linear_allocator_t(const char* name) : Allocator_t(name, T_initial_size) {}
-  bool init();
+  Linear_allocator_t(const char* name);
   void destroy() override;
   void* aligned_alloc(Sip size, Sip alignment) override;
   void* realloc(void* p, Sip size) override;

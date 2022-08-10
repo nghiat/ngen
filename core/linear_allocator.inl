@@ -20,13 +20,12 @@ struct Linear_allocator_page_t_ {
 };
 
 template <Sz T_initial_size>
-bool Linear_allocator_t<T_initial_size>::init() {
+Linear_allocator_t<T_initial_size>::Linear_allocator_t(const char* name) : Allocator_t(name, T_initial_size) {
   m_used_size += sizeof(Linear_allocator_page_t_);
   m_current_page = (Linear_allocator_page_t_*)&(m_stack_page[0]);
   m_current_page->size = T_initial_size;
   m_current_page->prev = NULL;
   m_top = (U8*)(m_current_page + 1);
-  return true;
 }
 
 template <Sz T_initial_size>

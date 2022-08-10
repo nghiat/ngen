@@ -29,7 +29,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
 
-Command_line_t g_cl;
+Command_line_t g_cl(g_persistent_allocator);
 
 struct Per_obj_t_ {
   M4_t world;
@@ -56,16 +56,15 @@ static V3_t spherical_to_cartesian(float r, float phi, float theta) {
 }
 
 struct Textured_sphere_t {
+  Textured_sphere_t(Allocator_t* allocator) : v(allocator), uv(allocator) {}
   Dynamic_array_t<V3_t> v; // normal are the same as v
   Dynamic_array_t<V2_t> uv;
 };
 
 static Textured_sphere_t generate_sphere(Allocator_t* allocator, float r, int n) {
   int vertex_count = n * ((n-2)*6 + 2*3);
-  Textured_sphere_t s;
-  s.v.init(allocator);
+  Textured_sphere_t s(allocator);
   s.v.reserve(vertex_count);
-  s.uv.init(allocator);
   s.uv.reserve(vertex_count);
   for (int i = 0; i < n; ++i) {
     float phi = 2 * M_pi_f * i/ n;
@@ -193,10 +192,8 @@ private:
 bool Gpu_window_t::init() {
   Window_t::init();
   Linear_allocator_t<> temp_allocator("gpu_init_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
 
-  m_gpu_allocator.init();
   if (g_cl.get_flag_value("--gpu").get_string().equals("dx12")) {
 #if M_os_is_win()
     m_gpu = g_persistent_allocator->construct<D3d12_t>();
@@ -340,7 +337,6 @@ bool Gpu_window_t::init() {
       E_format format;
       for (int i = 0; i < 6; ++i) {
         Linear_allocator_t<> png_temp_allocator("png_temp_allocator");
-        png_temp_allocator.init();
         M_scope_exit(png_temp_allocator.destroy());
         Png_loader_t cube_png;
         cube_png.init(&png_temp_allocator, paths[i]);
@@ -435,9 +431,9 @@ bool Gpu_window_t::init() {
         m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i].uniform_buffer->p;
         m_per_obj[i]->world = m4_identity();
 
-        Obj_loader_t obj;
+        Obj_loader_t obj(&temp_allocator);
         Path_t full_obj_path = g_exe_dir.join(obj_paths[i]);
-        obj.init(&temp_allocator, full_obj_path.m_path);
+        obj.init(full_obj_path.m_path);
         M_scope_exit(obj.destroy());
         m_obj_vertices_counts[i] = obj.m_vertices.len();
         int vertices_size = m_obj_vertices_counts[i] * sizeof(obj.m_vertices[0]);
@@ -698,7 +694,6 @@ void Gpu_window_t::on_mouse_move(int x, int y) {
 
 void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding) {
   Linear_allocator_t<> temp_allocator("texture_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
   Png_loader_t png;
   png.init(&temp_allocator, path);
@@ -733,7 +728,6 @@ void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv,
 
 int main(int argc, char** argv) {
   core_init(M_txt("gpu_sample.log"));
-  g_cl.init(g_persistent_allocator);
   g_cl.register_flag(NULL, "--gpu", e_value_type_string);
   g_cl.parse(argc, argv);
   Gpu_window_t w(M_txt("gpu_sample"), 1024, 768);

@@ -15,12 +15,11 @@
 
 class Command_line_t {
 public:
-  Command_line_t();
   struct Flag_t_ {
     const char* short_flag;
     const char* long_flag;
   };
-  bool init(Allocator_t* allocator);
+  Command_line_t(Allocator_t* allocator);
   void destroy();
   // |short_flag| must only be a digit or a letter.
   // |long_flag| length must be > 1.

@@ -61,8 +61,7 @@ Hash_map<Cstring_t_<T>, Cstring_t_<T>> string_format_setup(Allocator_t* allocato
   while (find_next_brace_pair(format, end_idx, &start_idx, &end_idx)) {
     ++brace_pair_count;
   }
-  Hash_map<Cstring_t_<T>, Cstring_t_<T>> dict;
-  dict.init(allocator);
+  Hash_map<Cstring_t_<T>, Cstring_t_<T>> dict(allocator);
   dict.reserve(brace_pair_count);
   maybe_assign(o_brace_pair_count, brace_pair_count);
   return dict;
@@ -76,8 +75,7 @@ Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format,
   int start_idx = 0;
   int end_idx = 0;
   int last_end_idx = 0;
-  Dynamic_array_t<T> buffer;
-  buffer.init(allocator);
+  Dynamic_array_t<T> buffer(allocator);
 
   while (find_next_brace_pair(format, end_idx, &start_idx, &end_idx)) {
     if (start_idx > last_end_idx) {

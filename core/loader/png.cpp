@@ -146,11 +146,10 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
   m_allocator = allocator;
 
   Linear_allocator_t<> temp_allocator("PNG_loader_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
   Dynamic_array_t<U8> data = File_t::read_whole_file_as_text(&temp_allocator, path.m_path);
   M_check_log_return_val(!memcmp(&data[0], &gc_png_signature_[0], gc_png_sig_len_), false, "Invalid PNG signature");
-  Dynamic_array_t<U8> idat_full;
+  Dynamic_array_t<U8> idat_full(&temp_allocator);
   for (int i = gc_png_sig_len_; i < data.len();) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
     i += 4;
@@ -221,7 +220,6 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
         M_unimplemented();
       }
       m_bytes_per_pixel = m_bit_depth / 8 * m_components_per_pixel;
-      idat_full.init(&temp_allocator);
       idat_full.reserve((m_width + 1) * m_height * m_bytes_per_pixel);
       U8 compression_method = *p++;
       M_check_log_return_val(!compression_method, false, "Invalid compression method");
@@ -239,8 +237,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       break;
     }
     case FOURCC_("IEND"): {
-      Bit_stream_t bs;
-      bs.init(idat_full.m_p);
+      Bit_stream_t bs(idat_full.m_p);
       // 2 bytes of zlib header.
       U32 zlib_compress_method = bs.consume_lsb(4);
       M_check_log_return_val(zlib_compress_method == 8, false, "Invalid zlib compression method");

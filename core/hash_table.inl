@@ -30,11 +30,7 @@ bool M_hash_table_c_::Iterator_t_::operator!=(const M_hash_table_c_::Iterator_t_
 }
 
 M_hash_table_t_
-bool M_hash_table_c_::init(Allocator_t* allocator) {
-  m_allocator = allocator;
-  bool rv = m_data.init(allocator);
-  return rv;
-}
+M_hash_table_c_::Hash_table_t_(Allocator_t* allocator) : m_data(allocator) {}
 
 M_hash_table_t_
 void M_hash_table_c_::destroy() {

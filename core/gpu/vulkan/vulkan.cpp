@@ -164,10 +164,8 @@ static VkBool32 debug_cb_(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEX
 
 bool Vulkan_t::init(Window_t* w) {
   m_window = w;
-  M_check_return_false(m_vk_allocator.init());
   M_check_return_false(vulkan_loader_init());
   Linear_allocator_t<> temp_allocator("vulkan_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
   {
     VkApplicationInfo app_info = {};
@@ -223,8 +221,7 @@ bool Vulkan_t::init(Window_t* w) {
   {
     U32 gpu_count = 0;
     M_vk_check(vkEnumeratePhysicalDevices(m_instance, &gpu_count, NULL));
-    Dynamic_array_t<VkPhysicalDevice> physical_devices;
-    physical_devices.init(&temp_allocator);
+    Dynamic_array_t<VkPhysicalDevice> physical_devices(&temp_allocator);
     M_scope_exit(physical_devices.destroy());
     physical_devices.resize(gpu_count);
     M_vk_check(vkEnumeratePhysicalDevices(m_instance, &gpu_count, physical_devices.m_p));
@@ -251,8 +248,7 @@ bool Vulkan_t::init(Window_t* w) {
   {
     U32 queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_chosen_device, &queue_family_count, NULL);
-    Dynamic_array_t<VkQueueFamilyProperties> queue_properties_array;
-    queue_properties_array.init(&temp_allocator);
+    Dynamic_array_t<VkQueueFamilyProperties> queue_properties_array(&temp_allocator);
     M_scope_exit(queue_properties_array.destroy());
     queue_properties_array.resize(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(m_chosen_device, &queue_family_count, queue_properties_array.m_p);
@@ -351,7 +347,6 @@ bool Vulkan_t::init(Window_t* w) {
     }
   }
 
-  m_swapchain_images.init(&m_vk_allocator);
   M_scope_exit(m_swapchain_images.destroy());
   // Select swap chain size
   VkExtent2D swapchain_extent = { (U32)m_window->m_width, (U32)m_window->m_height };
@@ -365,8 +360,7 @@ bool Vulkan_t::init(Window_t* w) {
 
     VkSurfaceFormatKHR surface_format = {};
     {
-      Dynamic_array_t<VkSurfaceFormatKHR> surface_formats;
-      surface_formats.init(&temp_allocator);
+      Dynamic_array_t<VkSurfaceFormatKHR> surface_formats(&temp_allocator);
       M_scope_exit(surface_formats.destroy());
       surface_formats.resize(format_count);
       M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(m_chosen_device, m_surface, &format_count, surface_formats.m_p));
@@ -423,7 +417,6 @@ bool Vulkan_t::init(Window_t* w) {
     m_swapchain_images.resize(swapchain_image_count);
 
     M_vk_check(vkGetSwapchainImagesKHR(m_device, m_swapchain, &swapchain_image_count, m_swapchain_images.m_p));
-    m_swapchain_image_views.init(&m_vk_allocator);
     m_swapchain_image_views.resize(m_swapchain_images.len());
     {
       for (int i = 0; i < m_swapchain_images.len(); ++i) {
@@ -451,7 +444,6 @@ bool Vulkan_t::init(Window_t* w) {
   create_buffer_(&m_uniform_buffer, 16*1024*1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   create_buffer_(&m_vertex_buffer, 100*1024*1024, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   create_buffer_(&m_upload_buffer, 100*1024*1024, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-  m_graphics_cmd_buffers.init(&m_vk_allocator);
   m_graphics_cmd_buffers.resize(m_swapchain_images.len());
   {
     VkCommandBufferAllocateInfo cmd_buffer_alloc_info = {};
@@ -466,7 +458,6 @@ bool Vulkan_t::init(Window_t* w) {
     M_vk_check_return_false(vkAllocateCommandBuffers(m_device, &cmd_buffer_alloc_info, &m_transfer_cmd_buffer));
   }
   {
-    m_fences.init(&m_vk_allocator);
     m_fences.resize(m_swapchain_images.len());
     VkFenceCreateInfo fence_ci = {};
     fence_ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -688,10 +679,8 @@ Resources_set_t* Vulkan_t::create_resources_set(Allocator_t* allocator, const Re
 Pipeline_layout_t* Vulkan_t::create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) {
   M_check_return_val(ci.set_count, NULL);
   Linear_allocator_t<> temp_allocator("vulkan_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
-  Dynamic_array_t<VkDescriptorSetLayout> layouts;
-  layouts.init(&temp_allocator);
+  Dynamic_array_t<VkDescriptorSetLayout> layouts(&temp_allocator);
   layouts.reserve(ci.set_count);
   for (int i = 0; i < ci.set_count; ++i) {
     layouts.append(((Vulkan_resources_set_t*)ci.sets[i])->layout);
@@ -729,14 +718,10 @@ Render_target_t* Vulkan_t::create_depth_stencil(Allocator_t* allocator, const De
 
 Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci) {
   Linear_allocator_t<> temp_allocator("vulkan_temp_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
   auto rv = allocator->construct<Vulkan_render_pass_t>();
-  rv->rt_descs.init(allocator);
-  rv->rt_descs.reserve(ci.render_target_count);
   Fixed_array_t<VkAttachmentDescription, 8> attachment_descs;
-  Dynamic_array_t<VkAttachmentReference> color_refs;
-  color_refs.init(&temp_allocator);
+  Dynamic_array_t<VkAttachmentReference> color_refs(&temp_allocator);
   color_refs.reserve(ci.render_target_count);
   VkAttachmentReference depth_stencil_ref;
   int depth_stencil_ref_count = 0;
@@ -963,7 +948,6 @@ Shader_t* Vulkan_t::compile_shader(Allocator_t* allocator, const Shader_create_i
     Linear_allocator_t<16*1024> temp_allocator("shader_allocator");
     Path_t path_with_ext = ci.path;
     path_with_ext.m_path_str.append(M_txt(".spv"));
-    temp_allocator.init();
     M_scope_exit(temp_allocator.destroy());
     Dynamic_array_t<U8> shader_file = File_t::read_whole_file_as_binary(&temp_allocator, path_with_ext.m_path);
     VkShaderModuleCreateInfo shader_ci = {};
@@ -979,10 +963,8 @@ Shader_t* Vulkan_t::compile_shader(Allocator_t* allocator, const Shader_create_i
 
 Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* allocator, const Pipeline_state_object_create_info_t& ci) {
   Linear_allocator_t<16*1024> temp_allocator("shader_allocator");
-  temp_allocator.init();
   M_scope_exit(temp_allocator.destroy());
-  Dynamic_array_t<VkPipelineShaderStageCreateInfo> shader_stage_cis;
-  shader_stage_cis.init(&temp_allocator);
+  Dynamic_array_t<VkPipelineShaderStageCreateInfo> shader_stage_cis(&temp_allocator);
   if (ci.vs) {
     VkPipelineShaderStageCreateInfo shader_stage_ci = {};
     shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1001,11 +983,9 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
     shader_stage_cis.append(shader_stage_ci);
   }
 
-  Dynamic_array_t<VkVertexInputBindingDescription> binding_descs;
-  binding_descs.init(&temp_allocator);
+  Dynamic_array_t<VkVertexInputBindingDescription> binding_descs(&temp_allocator);
   binding_descs.resize(ci.input_element_count);
-  Dynamic_array_t<VkVertexInputAttributeDescription> attribute_descs;
-  attribute_descs.init(&temp_allocator);
+  Dynamic_array_t<VkVertexInputAttributeDescription> attribute_descs(&temp_allocator);
   attribute_descs.resize(ci.input_element_count);
   for (int i = 0; i < ci.input_element_count; ++i) {
     auto& binding = binding_descs[i];

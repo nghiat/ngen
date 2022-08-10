@@ -6,13 +6,6 @@
 
 #include "core/bit_stream.h"
 
-bool Bit_stream_t::init(const U8* data) {
-  m_data = data;
-  m_byte_index = 0;
-  m_bit_index = 0;
-  return true;
-}
-
 U16 Bit_stream_t::consume_lsb(Sip bit_count) {
   U16 result = 0;
   Sip shift_count = 0;
