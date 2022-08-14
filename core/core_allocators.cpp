@@ -20,3 +20,8 @@ bool core_allocators_init() {
   rv &= g_general_allocator_.init();
   return rv;
 }
+
+void core_allocators_destroy() {
+  g_persistent_allocator_.destroy();
+  g_general_allocator_.destroy();
+}

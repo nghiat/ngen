@@ -16,25 +16,26 @@
 
 struct Linear_allocator_page_t_ {
   Sip size;
-  Linear_allocator_page_t_* prev;
+  Linear_allocator_page_t_* next;
 };
 
 template <Sz T_initial_size>
 Linear_allocator_t<T_initial_size>::Linear_allocator_t(const char* name) : Allocator_t(name, T_initial_size) {
   m_used_size += sizeof(Linear_allocator_page_t_);
   m_current_page = (Linear_allocator_page_t_*)&(m_stack_page[0]);
+  m_first_page = m_current_page;
   m_current_page->size = T_initial_size;
-  m_current_page->prev = NULL;
+  m_current_page->next = NULL;
   m_top = (U8*)(m_current_page + 1);
 }
 
 template <Sz T_initial_size>
 void Linear_allocator_t<T_initial_size>::destroy() {
-  Linear_allocator_page_t_* page = m_current_page;
-  while (page != (Linear_allocator_page_t_*)&(m_stack_page[0])) {
-    Linear_allocator_page_t_* prev = page->prev;
+  Linear_allocator_page_t_* page = m_first_page->next;
+  while (page) {
+    Linear_allocator_page_t_* next = page->next;
     ::free(page);
-    page = prev;
+    page = next;
   }
 }
 
@@ -42,20 +43,37 @@ template <Sz T_initial_size>
 void* Linear_allocator_t<T_initial_size>::aligned_alloc(Sip size, Sip alignment) {
   M_check_log_return_val(check_aligned_alloc_(size, alignment), NULL, "Alignment is not power of 2");
 
-  U8* p = m_top + sizeof(Alloc_header_t_);
-  p = align_forward_(p, alignment);
-  Sip real_size = (p - m_top) + size;
-  if (get_current_page_remaning_size_() < real_size) {
+  U8* p = NULL;
+  bool need_a_new_page = false;
+  Sip real_size = 0;
+  while (true) {
+    p = m_top + sizeof(Alloc_header_t_);
+    p = align_forward_(p, alignment);
+    real_size = (p - m_top) + size;
+    if (get_current_page_remaning_size_() >= real_size) {
+      break;
+    }
+    if (!m_current_page->next) {
+      need_a_new_page = true;
+      break;
+    }
+    m_current_page = m_current_page->next;
+    m_top = (U8*)(m_current_page + 1);
+  }
+
+  if (need_a_new_page) {
     // Create a new page.
     Sip new_page_size = sizeof(Linear_allocator_page_t_) + sizeof(Alloc_header_t_) + size + alignment;
-    if (new_page_size < sc_default_page_size)
+    if (new_page_size < sc_default_page_size) {
       new_page_size = sc_default_page_size;
+    }
     Linear_allocator_page_t_* new_page = (Linear_allocator_page_t_*)malloc(new_page_size);
     M_check_log_return_val(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
     m_total_size += new_page_size;
     m_used_size += get_current_page_remaning_size_() + sizeof(Linear_allocator_page_t_);
     new_page->size = new_page_size;
-    new_page->prev = m_current_page;
+    new_page->next = NULL;
+    m_current_page->next = new_page;
     m_current_page = new_page;
     m_top = (U8*)(m_current_page + 1);
     p = align_forward_(m_top + sizeof(Alloc_header_t_), alignment);
@@ -121,3 +139,25 @@ Sip Linear_allocator_t<T_initial_size>::get_current_page_remaning_size_() {
   return remaining_size;
 }
 
+template <Sz T>
+Scope_allocator_t<T>::~Scope_allocator_t() {
+  destroy();
+}
+
+template <Sz T>
+void Scope_allocator_t<T>::destroy() {
+  *m_main_allocator = m_main_allocator_snapshot;
+}
+
+template <Sz T>
+void* Scope_allocator_t<T>::aligned_alloc(Sip size, Sip alignment) {
+  return m_main_allocator->aligned_alloc(size, alignment);
+}
+
+template <Sz T>
+void* Scope_allocator_t<T>::realloc(void* p, Sip size) {
+  return m_main_allocator->realloc(p, size);
+}
+
+template <Sz T>
+void Scope_allocator_t<T>::free(void* p) {}

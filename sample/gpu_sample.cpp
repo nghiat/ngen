@@ -323,6 +323,7 @@ bool Gpu_window_t::init() {
     create_texture_and_srv_(&m_metallic_texture, &m_metallic_srv, g_exe_dir.join(M_txt("assets/metallic.png")), m_pbr_srvs, 2);
     create_texture_and_srv_(&m_roughness_texture, &m_roughness_srv, g_exe_dir.join(M_txt("assets/roughness.png")), m_pbr_srvs, 3);
     {
+      Scope_allocator_t<> scope_allocator(&temp_allocator);
       Path_t paths[6] = {
         g_exe_dir.join(M_txt("assets/posx.png")),
         g_exe_dir.join(M_txt("assets/negx.png")),
@@ -344,7 +345,7 @@ bool Gpu_window_t::init() {
         if (dimension == 0) {
           dimension = cube_png.m_width;
           png_size = dimension * dimension * cube_png.m_bytes_per_pixel;
-          cube_data = (U8*)temp_allocator.alloc(6 * png_size);
+          cube_data = (U8*)scope_allocator.alloc(6 * png_size);
           format = cube_png.m_format;
         } else {
           M_check(dimension == cube_png.m_width);
@@ -423,6 +424,7 @@ bool Gpu_window_t::init() {
     m_normals_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
     {
       for (int i = 0; i < m_obj_count; ++i) {
+        Scope_allocator_t<> scope_allocator(&temp_allocator);
         Uniform_buffer_create_info_t ub_ci = {};
         ub_ci.size = sizeof(Per_obj_t_);
         ub_ci.alignment = 256;
@@ -431,10 +433,9 @@ bool Gpu_window_t::init() {
         m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i].uniform_buffer->p;
         m_per_obj[i]->world = m4_identity();
 
-        Obj_loader_t obj(&temp_allocator);
+        Obj_loader_t obj(&scope_allocator);
         Path_t full_obj_path = g_exe_dir.join(obj_paths[i]);
         obj.init(full_obj_path.m_path);
-        M_scope_exit(obj.destroy());
         m_obj_vertices_counts[i] = obj.m_vertices.len();
         int vertices_size = m_obj_vertices_counts[i] * sizeof(obj.m_vertices[0]);
         int normals_size = m_obj_vertices_counts[i] * sizeof(obj.m_normals[0]);
@@ -595,7 +596,8 @@ bool Gpu_window_t::init() {
     pso_ci.render_pass = m_pbr_render_pass;
     m_pbr_pso = m_gpu->create_pipeline_state_object(&m_gpu_allocator, pso_ci);
 
-    auto sphere = generate_sphere(&temp_allocator, 5, 20);
+    Scope_allocator_t<> scope_allocator(&temp_allocator);
+    auto sphere = generate_sphere(&scope_allocator, 5, 20);
     Vertex_buffer_create_info_t vb_ci = {};
     vb_ci.size = 1024*1024;
     vb_ci.alignment = 256;
@@ -733,5 +735,6 @@ int main(int argc, char** argv) {
   Gpu_window_t w(M_txt("gpu_sample"), 1024, 768);
   w.init();
   w.os_loop();
+  core_destroy();
   return 0;
 }

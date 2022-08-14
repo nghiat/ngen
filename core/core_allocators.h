@@ -15,3 +15,4 @@ extern Allocator_t* g_persistent_allocator;
 extern Allocator_t* g_general_allocator;
 
 bool core_allocators_init();
+void core_allocators_destroy();
