@@ -62,6 +62,17 @@ executable("gpu_sample") {
   ]
 }
 
+executable("png_sample") {
+  sources = [
+    "png_sample.cpp",
+  ]
+
+  deps = [
+    "//assets",
+    "//core",
+  ]
+}
+
 executable("vulkan_sample") {
   sources = [
     "cam.cpp",
