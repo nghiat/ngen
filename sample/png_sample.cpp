@@ -31,23 +31,25 @@ int main(int argc, char** argv) {
     g_exe_dir.join(M_txt("assets/roughness.png")),
   };
   Linear_allocator_t<> png_temp_allocator("png_temp_allocator");
-  {
-    auto start = mono_time_now();
+  int count = 10;
+  auto start = mono_time_now();
+  for (int c = 0; c < count; ++c) {
     for (int i = 0; i < static_array_size(paths); ++i) {
       Scope_allocator_t<> scope_allocator(&png_temp_allocator);
       Png_loader_t png;
       png.init(&scope_allocator, paths[i]);
     }
-    M_logi("%f s", mono_time_to_s(mono_time_now() - start));
   }
-  {
-    auto start = mono_time_now();
+  M_logi("%f s", mono_time_to_s(mono_time_now() - start) / count);
+
+  start = mono_time_now();
+  for (int c = 0; c < count; ++c) {
     int x,y,n;
     for (int i = 0; i < static_array_size(paths); ++i) {
       unsigned char *data = stbi_load(paths[i].get_path8().m_path, &x, &y, &n, 0);
     }
-    M_logi("%f s", mono_time_to_s(mono_time_now() - start));
   }
+  M_logi("%f s", mono_time_to_s(mono_time_now() - start) / count);
   core_destroy();
   return 0;
 }
