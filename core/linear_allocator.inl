@@ -146,17 +146,18 @@ Scope_allocator_t<T>::~Scope_allocator_t() {
 
 template <Sz T>
 void Scope_allocator_t<T>::destroy() {
-  *m_main_allocator = m_main_allocator_snapshot;
+  m_allocator->m_current_page = m_current_page_snapshot;
+  m_allocator->m_top = m_top_snapshot;
 }
 
 template <Sz T>
 void* Scope_allocator_t<T>::aligned_alloc(Sip size, Sip alignment) {
-  return m_main_allocator->aligned_alloc(size, alignment);
+  return m_allocator->aligned_alloc(size, alignment);
 }
 
 template <Sz T>
 void* Scope_allocator_t<T>::realloc(void* p, Sip size) {
-  return m_main_allocator->realloc(p, size);
+  return m_allocator->realloc(p, size);
 }
 
 template <Sz T>

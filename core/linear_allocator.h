@@ -28,8 +28,8 @@ public:
 
   static const Sip sc_default_page_size = 32 * 1024 * 1024;
   U8 m_stack_page[T_initial_size];
-  Linear_allocator_page_t_* m_current_page;
   Linear_allocator_page_t_* m_first_page;
+  Linear_allocator_page_t_* m_current_page;
   U8* m_top;
 
 private:
@@ -39,13 +39,18 @@ private:
 template <Sz T = 4096>
 class Scope_allocator_t : public Allocator_t {
 public:
-  Scope_allocator_t(Linear_allocator_t<T>* allocator) : Allocator_t("scope_allocator", T), m_main_allocator(allocator), m_main_allocator_snapshot(*allocator) {}
+  Scope_allocator_t(Linear_allocator_t<T>* allocator)
+      : Allocator_t("scope_allocator", T),
+        m_allocator(allocator),
+        m_current_page_snapshot(allocator->m_current_page),
+        m_top_snapshot(allocator->m_top) {}
   ~Scope_allocator_t();
   void destroy() override;
   void* aligned_alloc(Sip size, Sip alignment) override;
   void* realloc(void* p, Sip size) override;
   void free(void* p) override;
 
-  Linear_allocator_t<T>* m_main_allocator = NULL;
-  Linear_allocator_t<T> m_main_allocator_snapshot;
+  Linear_allocator_t<T>* m_allocator = NULL;
+  Linear_allocator_page_t_* m_current_page_snapshot;
+  U8* m_top_snapshot;
 };
