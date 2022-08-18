@@ -28,9 +28,10 @@
 #endif
 
 #define FOURCC_(cc) (cc[0] | cc[1] << 8 | cc[2] << 16 | cc[3] << 24)
+#define M_fast_bit_count 11
 
 // From 0 - 15
-static const int gc_max_code__len_ = 16;
+static const int gc_max_code_len_ = 16;
 static const int gc_max_code_ = 286 + 30;
 static const int gc_png_sig_len_ = 8;
 
@@ -63,52 +64,95 @@ struct Codes_for_length_t_ {
   U16 count;
 };
 
+struct Symbol_t_ {
+  U16 val;
+  U8 len;
+};
+
 // |cfl| is a pointer to array of where the index is the length and value is the
 // codes for that length.
 struct Alphabet_t_ {
-  Codes_for_length_t_* cfl;
+  Codes_for_length_t_ cfls[gc_max_code_len_];
+  // Since Huffman codes use prefix code, so each code has unique prefix.
+  // But since reading msb is slow, we define |M_fast_bit_count| and reverse all the codes that are shorter or equal in length.
+  // So the reversed codes will have unique endings. And we fill the remaining bits with all possible prefixes and use them as the indices for |fast_table|.
+  // So when we read from a bit stream, we can just read |M_fast_bit_count| bits as the index.
+  // But since most of the codes have shorter lengths, we've benchmarked |M_fast_bit_count| and pick the current value.
+  Symbol_t_ fast_table[1 << M_fast_bit_count];
   U8 min_len;
   U8 max_len;
 };
 
+static U16 reverse16_(U16 n) {
+  n = ((n & 0xAAAA) >>  1) | ((n & 0x5555) << 1);
+  n = ((n & 0xCCCC) >>  2) | ((n & 0x3333) << 2);
+  n = ((n & 0xF0F0) >>  4) | ((n & 0x0F0F) << 4);
+  n = ((n & 0xFF00) >>  8) | ((n & 0x00FF) << 8);
+  return n;
+}
+
 // Build an alphabet based on lengths of codes from 0 to |count| - 1.
 static void build_alphabet_(U8* lens, int count, Alphabet_t_* alphabet) {
-  U8 len_counts[gc_max_code__len_] = {};
+  U8 len_counts[gc_max_code_len_] = {};
   for (int i = 0; i < count; ++i) {
     if (lens[i]) {
-      alphabet->cfl[lens[i]].codes[len_counts[lens[i]]] = i;
+      alphabet->cfls[lens[i]].codes[len_counts[lens[i]]] = i;
       len_counts[lens[i]]++;
     }
   }
-  for (int i = 0; i < gc_max_code__len_; ++i) {
+  for (int i = 0; i < gc_max_code_len_; ++i) {
     if (len_counts[i]) {
       alphabet->min_len = i;
       break;
     }
   }
-  for (U8 i = gc_max_code__len_ - 1; i > 0; --i) {
+  for (U8 i = gc_max_code_len_ - 1; i > 0; --i) {
     if (len_counts[i]) {
       alphabet->max_len = i;
       break;
     }
   }
+
   int smallest_code = 0;
   for (U8 i = alphabet->min_len; i <= alphabet->max_len; ++i) {
     smallest_code = smallest_code;
-    alphabet->cfl[i].min = smallest_code;
-    alphabet->cfl[i].count = len_counts[i];
+    alphabet->cfls[i].min = smallest_code;
+    alphabet->cfls[i].count = len_counts[i];
     smallest_code = (smallest_code + len_counts[i]) << 1;
+  }
+
+  for (int i = alphabet->min_len; i <= M_fast_bit_count; ++i) {
+    for (int j = 0; j < alphabet->cfls[i].count; ++j) {
+      U16 code = alphabet->cfls[i].codes[j];
+      Symbol_t_ fast_code = {code, (U8)i};
+      U16 c = alphabet->cfls[i].min + j;
+      c = reverse16_(c);
+      c = c >> (16 - i);
+      int max_prefix = 1 << (M_fast_bit_count - i);
+      for (int k = 0; k < max_prefix; ++k) {
+        alphabet->fast_table[c | (k << i)] = fast_code;
+      }
+    }
   }
 }
 
-static int decode_(Bit_stream_t* bs, const Alphabet_t_* c_alphabet) {
-  int code = bs->consume_msb(c_alphabet->min_len);
-  for (U8 i = c_alphabet->min_len; i <= c_alphabet->max_len; ++i) {
-    int delta_to_min = code - c_alphabet->cfl[i].min;
-    if (delta_to_min < c_alphabet->cfl[i].count) {
-      return c_alphabet->cfl[i].codes[delta_to_min];
+inline static int decode_(Bit_stream_t* bs, const Alphabet_t_* c_alphabet) {
+  U16 v = bs->peek_lsb(M_fast_bit_count);
+  Symbol_t_ code = c_alphabet->fast_table[v];
+  if (code.len) {
+    bs->skip(code.len);
+    return code.val;
+  }
+
+  bs->skip(M_fast_bit_count);
+  v = reverse16_(v) >> (16 - M_fast_bit_count);
+
+  for (U8 i = M_fast_bit_count; i <= c_alphabet->max_len; ++i) {
+    int delta_to_min = v - c_alphabet->cfls[i].min;
+    if (delta_to_min < c_alphabet->cfls[i].count) {
+      return c_alphabet->cfls[i].codes[delta_to_min];
     }
-    code = code << 1 | bs->consume_msb(1);
+    v = v << 1 | bs->consume_msb(1);
   }
   M_logf("Can't decode_");
   return -1;
@@ -129,7 +173,7 @@ static void decode_len_and_dist_(U8** o_deflated, int len_code, Bit_stream_t* bs
   }
 }
 
-static int paeth_(int a, int b, int c) {
+inline static int paeth_(int a, int b, int c) {
   int p = a + b - c;
   int pa = abs(p - a);
   int pb = abs(p - b);
@@ -140,6 +184,57 @@ static int paeth_(int a, int b, int c) {
     return b;
   }
   return c;
+}
+
+inline U16 Bit_stream_t::peek_lsb(Sip bit_count) {
+  M_check(bit_count <= 16);
+  int remaining_bit_count = 32 - m_bit_index;
+  if (bit_count <= remaining_bit_count) {
+    return (m_cache_lsb >> m_bit_index) & ((1 << bit_count) - 1);
+  }
+  U16 rv = m_cache_lsb >> m_bit_index;
+  bit_count -= remaining_bit_count;
+  if (bit_count <= 8) {
+    rv |= (m_data[m_byte_index + 4] & ((1 << bit_count) - 1)) << remaining_bit_count;
+    return rv;
+  }
+  rv |= m_data[m_byte_index + 4] << remaining_bit_count;
+  bit_count -= 8;
+  rv |= (m_data[m_byte_index + 5] & ((1 << bit_count) - 1)) << (remaining_bit_count + 8);
+  return rv;
+}
+
+inline U16 Bit_stream_t::consume_lsb(Sip bit_count) {
+  U16 rv = peek_lsb(bit_count);
+  skip(bit_count);
+  return rv;
+}
+
+inline U16 Bit_stream_t::consume_msb(Sip bit_count) {
+  U16 rv = consume_lsb(bit_count);
+  rv = ((rv & 0xAAAA) >>  1) | ((rv & 0x5555) << 1);
+  rv = ((rv & 0xCCCC) >>  2) | ((rv & 0x3333) << 2);
+  rv = ((rv & 0xF0F0) >>  4) | ((rv & 0x0F0F) << 4);
+  rv = ((rv & 0xFF00) >>  8) | ((rv & 0x00FF) << 8);
+  rv = rv >> (16 - bit_count);
+  return rv;
+}
+
+inline void Bit_stream_t::skip(Sip bit_count) {
+  m_bit_index += bit_count;
+  if (m_bit_index > 31) {
+    m_bit_index = m_bit_index % 32;
+    m_byte_index += 4;
+    cache_();
+  }
+}
+
+inline void Bit_stream_t::cache_() {
+  m_cache_lsb = 0;
+  // Little endian
+  for (int i = 0; i < 4 && m_byte_index + i < m_len; ++i) {
+    m_cache_lsb |= m_data[m_byte_index + i] << (i * 8);
+  }
 }
 
 bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
@@ -237,14 +332,14 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       break;
     }
     case FOURCC_("IEND"): {
-      Bit_stream_t bs(idat_full.m_p);
+      Bit_stream_t bs(idat_full.m_p, idat_full.len());
       // 2 bytes of zlib header.
       U32 zlib_compress_method = bs.consume_lsb(4);
       M_check_log_return_val(zlib_compress_method == 8, false, "Invalid zlib compression method");
       U32 zlib_compress_info = bs.consume_lsb(4);
       M_check_log_return_val((idat_full[0] * 256 + idat_full[1]) % 31 == 0, false, "Invalid FCHECK bits");
-      bs.skip(5);
-      U8 fdict = bs.consume_lsb( 1);
+      bs.consume_lsb(5);
+      U8 fdict = bs.consume_lsb(1);
       U8 flevel = bs.consume_lsb(2);
       U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_bytes_per_pixel);
       U8* deflated_p = deflated_data;
@@ -288,8 +383,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
           for (int j = 0; j < hclen; ++j) {
             len_of_len[c_len_alphabet[j]] = bs.consume_lsb(3);
           }
-          Codes_for_length_t_ code_lens_cfl[8] = {};
-          Alphabet_t_ code_len_alphabet = {code_lens_cfl, 0, 0};
+          Alphabet_t_ code_len_alphabet = {};
           build_alphabet_(len_of_len, 19, &code_len_alphabet);
           int index = 0;
           U8 lit_and_dist_lens[gc_max_code_] = {};
@@ -314,20 +408,18 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
             M_check_log_return_val(index <= hlit + hdist, false, "Can't decode_ literal and length alphabet, overflowed");
           }
           M_check_log_return_val(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
-          Codes_for_length_t_ lit_or_len_cfl[gc_max_code__len_] = {};
-          Alphabet_t_ lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
+          Alphabet_t_ lit_or_len_alphabet = {};
           build_alphabet_(lit_and_dist_lens, hlit, &lit_or_len_alphabet);
-          Codes_for_length_t_ dist_cfl[gc_max_code__len_] = {};
-          Alphabet_t_ dist_alphabet = {dist_cfl, 0, 0};
+          Alphabet_t_ dist_alphabet = {};
           build_alphabet_(lit_and_dist_lens + hlit, hdist, &dist_alphabet);
           for (;;) {
             int lit_or_len_code = decode_(&bs, &lit_or_len_alphabet);
-            if (lit_or_len_code == 256) {
-              break;
-            }
             if (lit_or_len_code < 256) {
               *deflated_p++ = lit_or_len_code;
               continue;
+            }
+            if (lit_or_len_code == 256) {
+              break;
             }
             decode_len_and_dist_(&deflated_p, lit_or_len_code, &bs, &dist_alphabet);
           }
@@ -388,7 +480,8 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + *b++ / 2;
             }
             for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
-              m_data[data_offset + j] = deflated_data[deflated_offset + j] + ((int)(*a++) + (int)(*b++)) / 2;
+              int p_i = j - m_bytes_per_pixel;
+              m_data[data_offset + j] = deflated_data[deflated_offset + j] + (a[p_i] + b[p_i]) / 2;
             }
           }
         } break;
@@ -402,7 +495,8 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
               m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(0, *b++, 0);
             }
             for (int j = m_bytes_per_pixel; j < bytes_per_data_row; ++j) {
-              m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(*(a++), *(b++), *(c++));
+              int p_i = j - m_bytes_per_pixel;
+              m_data[data_offset + j] = deflated_data[deflated_offset + j] + paeth_(a[p_i], b[p_i], c[p_i]);
             }
           }
         } break;

@@ -12,6 +12,25 @@
 
 struct Allocator_t;
 
+// Provide methods to read bits value from a bytes array.
+class Bit_stream_t {
+public:
+  Bit_stream_t(const U8* data, int len) : m_data(data), m_len(len) { cache_(); }
+
+  U16 peek_lsb(Sip bit_count);
+  U16 consume_lsb(Sip bit_count);
+  U16 consume_msb(Sip bit_count);
+  void skip(Sip bit_count);
+
+  const U8* m_data = NULL;
+  Sip m_len = 0;
+  U32 m_cache_lsb;
+  Sip m_byte_index = 0;
+  Sip m_bit_index = 0;
+private:
+  void cache_();
+};
+
 struct Png_loader_t {
 public:
   bool init(Allocator_t* allocator, const Path_t& path);
