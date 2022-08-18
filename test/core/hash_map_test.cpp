@@ -19,8 +19,7 @@ void hash_map_test() {
   {
     {
       constexpr int c_count = UINT8_MAX - 1;
-      Hash_map<int, int> u8_map;
-      u8_map.init(&allocator);
+      Hash_map<int, int> u8_map(&allocator);
       for (uint8_t i = 0; i < c_count; ++i) {
         u8_map[i] = i;
       }
@@ -41,8 +40,7 @@ void hash_map_test() {
     M_test(allocator.m_used_size == empty_allocator_used_size);
   }
   {
-    Hash_map<int, int> map;
-    map.init(&allocator);
+    Hash_map<int, int> map(&allocator);
     constexpr int c_count = 500;
     int correct_sum = 0;
     for (int i = 0; i < c_count; ++i) {

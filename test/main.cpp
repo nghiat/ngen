@@ -10,18 +10,16 @@
 #include "core/hash_table.inl"
 #include "test/test.h"
 
-Hash_map<const char*, void (*)()> g_tests_;
 int g_total_test_count_ = 0;
 int g_passed_test_count_ = 0;
 
 int main(int argc, char** argv) {
   g_is_log_in_testing = true;
   core_init(M_txt("test.log"));
-  Command_line_t cl;
-  cl.init(g_persistent_allocator);
+  Command_line_t cl(g_persistent_allocator);
   cl.parse(argc, argv);
 
-  g_tests_.init(g_persistent_allocator);
+  Hash_map<const char*, void (*)()> tests(g_persistent_allocator);
   M_register_test(bit_stream_test);
   M_register_test(command_line_test);
   M_register_test(linear_allocator_test);
@@ -30,7 +28,7 @@ int main(int argc, char** argv) {
   M_register_test(string_test);
   M_register_test(string_utils_test);
   M_register_test(utils_test);
-  for (auto& test : g_tests_) {
+  for (auto& test : tests) {
     M_logi("Running test %s", test.key);
     test.value();
   }

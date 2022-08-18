@@ -12,14 +12,12 @@
 
 void command_line_test() {
   Linear_allocator_t<> allocator("string_utils_test_allocator");
-  allocator.init();
   M_scope_exit(allocator.destroy());
 
   // Unregisted short flag
   {
-    Command_line_t cl;
+    Command_line_t cl(&allocator);
     M_scope_exit(cl.destroy());
-    cl.init(&allocator);
     const char* args[] = {
       "dummy",
       "-a",
@@ -28,9 +26,8 @@ void command_line_test() {
   }
   // Unregisted long flag
   {
-    Command_line_t cl;
+    Command_line_t cl(&allocator);
     M_scope_exit(cl.destroy());
-    cl.init(&allocator);
     const char* args[] = {
       "dummy",
       "--aa",
@@ -39,9 +36,8 @@ void command_line_test() {
   }
   // Test bool value
   {
-    Command_line_t cl;
+    Command_line_t cl(&allocator);
     M_scope_exit(cl.destroy());
-    cl.init(&allocator);
     cl.register_flag("-a", "--aa", e_value_type_bool);
     const char* args[] = {
       "dummy",
@@ -53,9 +49,8 @@ void command_line_test() {
   }
   // Test string value
   {
-    Command_line_t cl;
+    Command_line_t cl(&allocator);
     M_scope_exit(cl.destroy());
-    cl.init(&allocator);
     cl.register_flag("-a", "--aa", e_value_type_string);
     const char* args[] = {
       "dummy",

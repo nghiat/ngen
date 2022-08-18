@@ -9,14 +9,13 @@
 #include "core/hash_table.h"
 #include "core/log.h"
 
-extern Hash_map<const char*, void (*)()> g_tests_;
 // TODO: atomic?
 extern int g_total_test_count_;
 extern int g_passed_test_count_;
 
 #define M_register_test(func) \
   extern void func(); \
-  g_tests_[#func] = func
+  tests[#func] = func
 
 #define M_test(condition)                                                                        \
   ++g_total_test_count_;                                                                         \

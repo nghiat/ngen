@@ -17,7 +17,6 @@ void template_string_utils_test() {
   {
     const T* format = M_c_or_w(T, "abc");
     Linear_allocator_t<> allocator("string_utils_test_allocator");
-    allocator.init();
     M_scope_exit(allocator.destroy());
     int brace_pair_count = 1;
     auto dict = string_format_setup<T>(&allocator, format, &brace_pair_count);
@@ -47,7 +46,6 @@ void template_string_utils_test() {
   {
     const T* format = M_c_or_w(T, "{{id1}}");
     Linear_allocator_t<> allocator("string_utils_test_allocator");
-    allocator.init();
     M_scope_exit(allocator.destroy());
     int brace_pair_count = 0;
     auto dict = string_format_setup<T>(&allocator, format, &brace_pair_count);
@@ -64,7 +62,6 @@ void template_string_utils_test() {
   {
     const T* format = M_c_or_w(T, "{{id1}} {{id1}} {{id2}} aaa");
     Linear_allocator_t<> allocator("string_utils_test_allocator");
-    allocator.init();
     M_scope_exit(allocator.destroy());
     int brace_pair_count = 0;
     auto dict = string_format_setup<T>(&allocator, format, &brace_pair_count);
