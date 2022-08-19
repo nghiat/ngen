@@ -131,4 +131,20 @@ void linear_allocator_test() {
     M_test(allocator.realloc(p2, 64) == p2);
     M_test(allocator.realloc(p2, 256) == p2);
   }
+  // Scope_allocator_t
+  {
+    Linear_allocator_t<> allocator("test");
+    M_scope_exit(allocator.destroy());
+    void *p1;
+    {
+      Scope_allocator_t<> scope_allocator(&allocator);
+      p1 = scope_allocator.alloc(1024*1024*1024);
+    }
+    void *p2;
+    {
+      Scope_allocator_t<> scope_allocator(&allocator);
+      p2 = scope_allocator.alloc(1024*1024*1024);
+    }
+    M_test(p1 == p2);
+  }
 }
