@@ -1,0 +1,34 @@
+##----------------------------------------------------------------------------##
+## This file is distributed under the MIT License.                            ##
+## See LICENSE.txt for details.                                               ##
+## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             ##
+##----------------------------------------------------------------------------##
+
+template("texture") {
+  texture_sources = invoker.sources
+  format = invoker.format
+
+  pvr_exe = ""
+
+  if (is_win) {
+    pvr_exe = "//third_party/compressonator/bin/win64/compressonatorcli.exe"
+  } else if (is_linux) {
+    pvr_exe = "//third_party/compressonator/bin/linux64/compressonatorcli"
+  } else {
+    assert(false)
+  }
+
+  action_foreach("${target_name}") {
+    script = "//third_party/compressonator/compressonator_wrapper.py"
+    sources = texture_sources
+    output_folder = "${root_build_dir}/assets/{{source_root_relative_dir}}"
+    outputs = [ "${output_folder}/{{source_name_part}}.dds" ]
+    args = [
+      "--exe",
+      rebase_path(pvr_exe, root_build_dir),
+      "--format", format,
+      "--input", "{{source}}",
+      "--output", rebase_path(output_folder, root_build_dir) + "/{{source_name_part}}.dds",
+    ]
+  }
+}
