@@ -6,14 +6,30 @@
 
 #include "core/gpu/gpu.h"
 
+#include "core/loader/dds.h"
 #include "core/log.h"
+
+Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds) {
+  Texture_create_info_t ci = {};
+  ci.data = dds.m_data;
+  ci.width = dds.m_header->width;
+  ci.height = dds.m_header->height;
+  ci.format = dds.m_format;
+  if (ci.format == e_format_bc7_unorm) {
+    ci.row_pitch = ci.width * 4;
+    ci.row_count = ci.height / 4;
+  } else {
+    M_unimplemented();
+  }
+  return ci;
+}
 
 Texture_t* Gpu_t::create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) {
   M_unimplemented();
   return NULL;
 }
 
-Texture_t* Gpu_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
+Texture_t* Gpu_t::create_texture_cube(Allocator_t* allocator, const Texture_create_info_t& ci) {
   M_unimplemented();
   return NULL;
 }
@@ -123,6 +139,9 @@ int Gpu_t::convert_format_to_size_(E_format format) {
     case e_format_r16g16b16a16_unorm:
       return 8;
     case e_format_r24_unorm_x8_typeless:
+      return 4;
+    case e_format_bc7_unorm:
+    case e_format_bc7_typeless:
       return 4;
     default:
       M_unimplemented();

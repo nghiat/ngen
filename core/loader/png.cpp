@@ -27,7 +27,6 @@
 #  define M_bswap32_(x) bswap_32(x)
 #endif
 
-#define FOURCC_(cc) (cc[0] | cc[1] << 8 | cc[2] << 16 | cc[3] << 24)
 #define M_fast_bit_count 11
 
 // From 0 - 15
@@ -256,7 +255,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
     // U8* cRC = it;
     i += 4;
     switch (chunk_type) {
-    case FOURCC_("IHDR"): {
+    case four_cc("IHDR"): {
       M_check_return_val(data_len == 13, false);
       m_width = M_bswap32_(*(int*)p);
       p += 4;
@@ -324,14 +323,14 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       M_check_log_return_val(!interlace_method, false, "Invalid interlace method");
       break;
     }
-    case FOURCC_("PLTE"): {
+    case four_cc("PLTE"): {
       break;
     }
-    case FOURCC_("IDAT"): {
+    case four_cc("IDAT"): {
       idat_full.append_array(p, data_len);
       break;
     }
-    case FOURCC_("IEND"): {
+    case four_cc("IEND"): {
       Bit_stream_t bs(idat_full.m_p, idat_full.len());
       // 2 bytes of zlib header.
       U32 zlib_compress_method = bs.consume_lsb(4);

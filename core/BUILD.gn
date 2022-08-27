@@ -46,6 +46,8 @@ static_library("core") {
     "linear_allocator.inl",
     "loader/dae.cpp",
     "loader/dae.h",
+    "loader/dds.cpp",
+    "loader/dds.h",
     "loader/obj.cpp",
     "loader/obj.h",
     "loader/png.cpp",

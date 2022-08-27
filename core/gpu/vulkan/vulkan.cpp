@@ -116,6 +116,8 @@ static VkFormat convert_format_to_vk_format(E_format format) {
       return VK_FORMAT_R16G16B16A16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return VK_FORMAT_D24_UNORM_S8_UINT;
+    case e_format_bc7_unorm:
+      return VK_FORMAT_BC7_UNORM_BLOCK;
     default:
       M_unimplemented();
   }
@@ -493,7 +495,7 @@ void Vulkan_t::destroy() {
 }
 
 Texture_t* Vulkan_t::create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) {
-  Sz texture_size = ci.width * ci.height * convert_format_to_size_(ci.format);
+  Sz texture_size = ci.row_count * ci.row_pitch;
   memcpy(m_upload_buffer.cpu_p, ci.data, texture_size);
   VkBufferImageCopy copy_region = {};
   copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -560,16 +562,17 @@ Texture_t* Vulkan_t::create_texture(Allocator_t* allocator, const Texture_create
   return rv;
 }
 
-Texture_t* Vulkan_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
-  Sz texture_size = ci.dimension * ci.dimension * convert_format_to_size_(ci.format);
+Texture_t* Vulkan_t::create_texture_cube(Allocator_t* allocator, const Texture_create_info_t& ci) {
+  M_check(ci.width == ci.height);
+  Sz texture_size = ci.row_count * ci.row_pitch;
   memcpy(m_upload_buffer.cpu_p, ci.data, 6*texture_size);
   VkBufferImageCopy copy_region = {};
   copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   copy_region.imageSubresource.mipLevel = 0;
   copy_region.imageSubresource.baseArrayLayer = 0;
   copy_region.imageSubresource.layerCount = 6;
-  copy_region.imageExtent.width = ci.dimension;
-  copy_region.imageExtent.height = ci.dimension;
+  copy_region.imageExtent.width = ci.width;
+  copy_region.imageExtent.height = ci.height;
   copy_region.imageExtent.depth = 1;
   copy_region.bufferOffset = 0;
 
@@ -579,7 +582,7 @@ Texture_t* Vulkan_t::create_texture_cube(Allocator_t* allocator, const Texture_c
   vkBeginCommandBuffer(m_transfer_cmd_buffer, &cmd_buffer_begin_info);
   VkImage image;
   VkDeviceMemory memory;
-  create_image_(&image, &memory, ci.dimension, ci.dimension, convert_format_to_vk_format(ci.format), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+  create_image_(&image, &memory, ci.width, ci.height, convert_format_to_vk_format(ci.format), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
   VkImageSubresourceRange subresource_range = {};
   subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   subresource_range.baseMipLevel = 0;

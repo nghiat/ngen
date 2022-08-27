@@ -21,7 +21,7 @@ template("texture") {
   action_foreach("${target_name}") {
     script = "//third_party/compressonator/compressonator_wrapper.py"
     sources = texture_sources
-    output_folder = "${root_build_dir}/assets/{{source_root_relative_dir}}"
+    output_folder = "${root_build_dir}/{{source_root_relative_dir}}"
     outputs = [ "${output_folder}/{{source_name_part}}.dds" ]
     args = [
       "--exe",

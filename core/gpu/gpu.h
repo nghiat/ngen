@@ -11,6 +11,7 @@
 #include "core/types.h"
 
 class Allocator_t;
+class Dds_loader_t;
 
 enum E_shader_stage {
   e_shader_stage_vertex = 1 << 0,
@@ -49,6 +50,8 @@ enum E_format {
   e_format_r16g16b16a16_uint,
   e_format_r16g16b16a16_unorm,
   e_format_r24_unorm_x8_typeless,
+  e_format_bc7_unorm,
+  e_format_bc7_typeless,
 };
 
 enum E_render_pass_hint {
@@ -67,12 +70,8 @@ struct Texture_create_info_t {
   U8* data;
   U32 width;
   U32 height;
-  E_format format;
-};
-
-struct Texture_cube_create_info_t {
-  U8* data;
-  U32 dimension;
+  U32 row_pitch;
+  U32 row_count;
   E_format format;
 };
 
@@ -203,11 +202,13 @@ struct Resource_t {
   };
 };
 
+Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds);
+
 class Gpu_t {
 public:
   virtual void destroy() = 0;
   virtual Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci);
-  virtual Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci);
+  virtual Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_create_info_t& ci);
   virtual Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci);
   virtual Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci);
   virtual Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) = 0;
@@ -229,6 +230,5 @@ public:
   virtual void cmd_draw(int vertex_count, int first_vertex);
   virtual void cmd_end();
 
-protected:
   static int convert_format_to_size_(E_format format);
 };

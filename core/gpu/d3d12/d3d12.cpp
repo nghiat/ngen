@@ -106,7 +106,9 @@ static D3d12_descriptor_t_ allocate_descriptor_(D3d12_descriptor_heap_t_* descri
   descriptor.descriptor_heap = descriptor_heap;
   descriptor.index = descriptor_heap->curr_index;
   descriptor.cpu_handle.ptr = descriptor_heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + descriptor_heap->curr_index * descriptor_heap->increment_size;
-  descriptor.gpu_handle.ptr = descriptor_heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + descriptor_heap->curr_index * descriptor_heap->increment_size;
+  if (descriptor_heap->heap->GetDesc().Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE) {
+    descriptor.gpu_handle.ptr = descriptor_heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + descriptor_heap->curr_index * descriptor_heap->increment_size;
+  }
   ++descriptor_heap->curr_index;
   return descriptor;
 }
@@ -137,6 +139,10 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
       return DXGI_FORMAT_R16G16B16A16_UNORM;
     case e_format_r24_unorm_x8_typeless:
       return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case e_format_bc7_unorm:
+      return DXGI_FORMAT_BC7_UNORM;
+    case e_format_bc7_typeless:
+      return DXGI_FORMAT_BC7_TYPELESS;
     default:
       M_unimplemented();
   }
@@ -367,18 +373,17 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
 
   D3D12_SUBRESOURCE_FOOTPRINT pitched_desc = {};
-  int row_size = ci.width * convert_format_to_size_(ci.format);
   pitched_desc.Format = convert_format_to_dxgi_format(ci.format);
   pitched_desc.Width = ci.width;
   pitched_desc.Height = ci.height;
   pitched_desc.Depth = 1;
-  pitched_desc.RowPitch = (row_size + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+  pitched_desc.RowPitch = (ci.row_pitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, ci.row_count * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
   placed_texture.Offset = m_texture_subbuffer.offset;
   placed_texture.Footprint = pitched_desc;
-  for (int i = 0; i < pitched_desc.Height; ++i) {
-    memcpy(m_texture_subbuffer.cpu_p + i * row_size, &ci.data[i * row_size], row_size);
+  for (int i = 0; i < ci.row_count; ++i) {
+    memcpy(m_texture_subbuffer.cpu_p + i * ci.row_pitch, &ci.data[i * ci.row_pitch], ci.row_pitch);
   }
   D3D12_TEXTURE_COPY_LOCATION src = {};
   src.pResource = m_texture_subbuffer.buffer->buffer;
@@ -398,14 +403,15 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   return rv;
 }
 
-Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cube_create_info_t& ci) {
+Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_create_info_t& ci) {
+  M_check(ci.width == ci.height);
   auto rv = allocator->construct<D3d12_texture_t>();
   rv->is_cube = true;
   D3D12_RESOURCE_DESC texture_desc = {};
   texture_desc.MipLevels = 1;
   texture_desc.Format = convert_format_to_dxgi_format(ci.format);
-  texture_desc.Width = ci.dimension;
-  texture_desc.Height = ci.dimension;
+  texture_desc.Width = ci.width;
+  texture_desc.Height = ci.height;
   texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
   texture_desc.DepthOrArraySize = 6;
   texture_desc.SampleDesc.Count = 1;
@@ -418,14 +424,15 @@ Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cu
   m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
 
   D3D12_SUBRESOURCE_FOOTPRINT pitched_desc = {};
-  int row_size = ci.dimension * convert_format_to_size_(ci.format);
   pitched_desc.Format = convert_format_to_dxgi_format(ci.format);
-  pitched_desc.Width = ci.dimension;
-  pitched_desc.Height = ci.dimension;
+  pitched_desc.Width = ci.width;
+  pitched_desc.Height = ci.height;
   pitched_desc.Depth = 1;
-  pitched_desc.RowPitch = (row_size + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, 6 * pitched_desc.Height * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-  memcpy(m_texture_subbuffer.cpu_p, ci.data, 6 * ci.dimension * row_size);
+  pitched_desc.RowPitch = (ci.row_pitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+  auto m_texture_subbuffer = allocate_sub_buffer_(&m_upload_buffer, 6 * ci.row_count * pitched_desc.RowPitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+  for (int i = 0; i < 6* ci.row_count; ++i) {
+    memcpy(m_texture_subbuffer.cpu_p + i * ci.row_pitch, &ci.data[i * ci.row_pitch], ci.row_pitch);
+  }
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_texture = {};
   placed_texture.Footprint = pitched_desc;
   D3D12_TEXTURE_COPY_LOCATION src = {};
@@ -438,7 +445,7 @@ Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cu
   m_cmd_allocators[m_frame_no]->Reset();
   m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL);
   for (int i = 0; i < 6; ++i) {
-    src.PlacedFootprint.Offset = m_texture_subbuffer.offset + i * ci.dimension * row_size;
+    src.PlacedFootprint.Offset = m_texture_subbuffer.offset + i * ci.row_pitch * ci.row_count;
     dest.SubresourceIndex = i;
     m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
   }

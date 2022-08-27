@@ -13,6 +13,7 @@
 #endif
 #include "core/gpu/vulkan/vulkan.h"
 #include "core/linear_allocator.inl"
+#include "core/loader/dds.h"
 #include "core/loader/obj.h"
 #include "core/loader/png.h"
 #include "core/log.h"
@@ -186,7 +187,7 @@ public:
   int m_sphere_vertice_count;
 
 private:
-  void create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding);
+  void create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format);
 };
 
 bool Gpu_window_t::init() {
@@ -318,49 +319,48 @@ bool Gpu_window_t::init() {
       ci.visibility = e_shader_stage_fragment;
       m_pbr_srvs = m_gpu->create_resources_set(&m_gpu_allocator, ci);
     }
-    create_texture_and_srv_(&m_albedo_texture, &m_albedo_srv, g_exe_dir.join(M_txt("assets/basecolor.png")), m_pbr_srvs, 0);
-    create_texture_and_srv_(&m_normal_texture, &m_normal_srv, g_exe_dir.join(M_txt("assets/normal.png")), m_pbr_srvs, 1);
-    create_texture_and_srv_(&m_metallic_texture, &m_metallic_srv, g_exe_dir.join(M_txt("assets/metallic.png")), m_pbr_srvs, 2);
-    create_texture_and_srv_(&m_roughness_texture, &m_roughness_srv, g_exe_dir.join(M_txt("assets/roughness.png")), m_pbr_srvs, 3);
+    create_texture_and_srv_(&m_albedo_texture, &m_albedo_srv, g_exe_dir.join(M_txt("assets/basecolor.dds")), m_pbr_srvs, 0, e_format_bc7_unorm);
+    create_texture_and_srv_(&m_normal_texture, &m_normal_srv, g_exe_dir.join(M_txt("assets/normal.dds")), m_pbr_srvs, 1, e_format_bc7_unorm);
+    create_texture_and_srv_(&m_metallic_texture, &m_metallic_srv, g_exe_dir.join(M_txt("assets/metallic.dds")), m_pbr_srvs, 2, e_format_bc7_unorm);
+    create_texture_and_srv_(&m_roughness_texture, &m_roughness_srv, g_exe_dir.join(M_txt("assets/roughness.dds")), m_pbr_srvs, 3, e_format_bc7_unorm);
     {
       Scope_allocator_t<> scope_allocator(&temp_allocator);
       Path_t paths[6] = {
-        g_exe_dir.join(M_txt("assets/posx.png")),
-        g_exe_dir.join(M_txt("assets/negx.png")),
-        g_exe_dir.join(M_txt("assets/posy.png")),
-        g_exe_dir.join(M_txt("assets/negy.png")),
-        g_exe_dir.join(M_txt("assets/posz.png")),
-        g_exe_dir.join(M_txt("assets/negz.png")),
+        g_exe_dir.join(M_txt("assets/posx.dds")),
+        g_exe_dir.join(M_txt("assets/negx.dds")),
+        g_exe_dir.join(M_txt("assets/posy.dds")),
+        g_exe_dir.join(M_txt("assets/negy.dds")),
+        g_exe_dir.join(M_txt("assets/posz.dds")),
+        g_exe_dir.join(M_txt("assets/negz.dds")),
       };
       U8* cube_data = NULL;
       U32 dimension = 0;
-      U32 png_size = 0;
+      U32 one_face_size = 0;
       E_format format;
+      Texture_create_info_t ci = {};
       for (int i = 0; i < 6; ++i) {
-        Linear_allocator_t<> png_temp_allocator("png_temp_allocator");
-        M_scope_exit(png_temp_allocator.destroy());
-        Png_loader_t cube_png;
-        cube_png.init(&png_temp_allocator, paths[i]);
-        M_check(cube_png.m_width == cube_png.m_height);
+        Linear_allocator_t<> texture_temp_allocator("texture_temp_allocator");
+        M_scope_exit(texture_temp_allocator.destroy());
+        Dds_loader_t cube_texture;
+        cube_texture.init(&texture_temp_allocator, paths[i]);
+        ci = get_texture_create_info(cube_texture);
+        M_check(cube_texture.m_header->width == cube_texture.m_header->height);
         if (dimension == 0) {
-          dimension = cube_png.m_width;
-          png_size = dimension * dimension * cube_png.m_bytes_per_pixel;
-          cube_data = (U8*)scope_allocator.alloc(6 * png_size);
-          format = cube_png.m_format;
+          dimension = cube_texture.m_header->width;
+          one_face_size = ci.row_count * ci.row_pitch;
+          cube_data = (U8*)scope_allocator.alloc(6 * one_face_size);
+          format = cube_texture.m_format;
         } else {
-          M_check(dimension == cube_png.m_width);
-          M_check(format == cube_png.m_format);
+          M_check(dimension == cube_texture.m_header->width);
+          M_check(format == cube_texture.m_format);
         }
-        memcpy(cube_data + i*png_size, cube_png.m_data, png_size);
+        memcpy(cube_data + i*one_face_size, cube_texture.m_data, one_face_size);
       }
-      Texture_cube_create_info_t ci = {};
       ci.data = cube_data;
-      ci.dimension = dimension;
-      ci.format = format;
       m_cube_texture = m_gpu->create_texture_cube(&m_gpu_allocator, ci);
       Image_view_create_info_t cube_srv_ci = {};
       cube_srv_ci.texture = m_cube_texture;
-      cube_srv_ci.format = e_format_r8g8b8a8_unorm;
+      cube_srv_ci.format = e_format_bc7_unorm;
       m_cube_srv = m_gpu->create_image_view(&m_gpu_allocator, cube_srv_ci);
       m_gpu->bind_resource_to_set(m_cube_srv, m_cube_srvs, 0);
     }
@@ -694,36 +694,16 @@ void Gpu_window_t::on_mouse_move(int x, int y) {
   m_cam.mouse_move(x, y);
 }
 
-void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding) {
+void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format) {
   Linear_allocator_t<> temp_allocator("texture_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
-  Png_loader_t png;
-  png.init(&temp_allocator, path);
-  Texture_create_info_t ci = {};
-  ci.data = png.m_data;
-  ci.width = png.m_width;
-  ci.height = png.m_height;
-  ci.format = png.m_format;
-  *texture = m_gpu->create_texture(&m_gpu_allocator, ci);
+  Dds_loader_t dds;
+  dds.init(&temp_allocator, path);
+  *texture = m_gpu->create_texture(&m_gpu_allocator, get_texture_create_info(dds));
 
   Image_view_create_info_t image_view_ci = {};
   image_view_ci.texture = *texture;
-  switch (ci.format) {
-    case e_format_r8_uint:
-      image_view_ci.format = e_format_r8_unorm;
-      break;
-    case e_format_r8g8b8a8_uint:
-      image_view_ci.format = e_format_r8g8b8a8_unorm;
-      break;
-    case e_format_r16_uint:
-      image_view_ci.format = e_format_r16_unorm;
-      break;
-    case e_format_r16g16b16a16_uint:
-      image_view_ci.format = e_format_r16g16b16a16_unorm;
-      break;
-    default:
-      M_unimplemented();
-  }
+  image_view_ci.format = srv_format;
   *srv = m_gpu->create_image_view(&m_gpu_allocator, image_view_ci);
   m_gpu->bind_resource_to_set(*srv, set, binding);
 }

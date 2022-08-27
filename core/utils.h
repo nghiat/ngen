@@ -47,6 +47,10 @@ auto make_scope_exit_(T f) {
   return Scope_exit_t<T>(f);
 }
 
+constexpr U32 four_cc(const char cc[4]) {
+  return cc[0] | cc[1] << 8 | cc[2] << 16 | cc[3] << 24;
+}
+
 #define M_unused(a) (void)a
 
 #define M_string_join_expanded_(arg1, arg2) arg1 ## arg2
