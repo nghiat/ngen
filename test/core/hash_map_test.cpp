@@ -7,6 +7,7 @@
 #include "core/hash_table.inl"
 
 #include "core/free_list_allocator.h"
+#include "core/linear_allocator.inl"
 #include "test/test.h"
 
 void hash_map_test() {
@@ -59,25 +60,15 @@ void hash_map_test() {
     M_test(sum == correct_sum);
     M_test(allocator.m_used_size == empty_allocator_used_size);
   }
-  // {
-  //   hash_map_t<int, int> map;
-  //   ht_init(&map, &allocator);
-  //   ht_insert_or_get(&map, 1, 1);
-  //   ht_insert_or_get(&map, 3, 3);
-  //   ht_insert_or_get(&map, 2, 2);
-  //   ht_insert_or_get(&map, 4, 4);
-  //   ht_remove_key(&map, 2);
-  //   ht_remove_key(&map, 1);
-  //   ht_remove_key(&map, 4);
-  //   ht_insert_or_get(&map, 1, -1);
-  //   REQUIRE(ht_find(&map, 1)->value == -1);
-  //   REQUIRE(ht_find(&map, 3)->value == 3);
-
-  //   ht_remove_it(&map, ht_insert_or_get(&map, 5, 5).first);
-  //   ht_remove_it(&map, ht_insert_or_get(&map, 6, 6).first);
-  //   REQUIRE(map.length == 2);
-  //   REQUIRE(ht_find(&map, 5) == end(map));
-  //   REQUIRE(ht_find(&map, 6) == end(map));
-  //   ht_destroy(&map);
-  // }
+  {
+    // Make sure Hash_map::destroy() works gracefully with Linear_allocator_t
+    Linear_allocator_t<> temp_allocator("hash_map_allocator");
+    Hash_map<int, int> map(&temp_allocator);
+    Sip old_used_size = temp_allocator.m_used_size;
+    for (int i = 0; i < 100; ++i) {
+      map[i] = i;
+    }
+    map.destroy();
+    M_test(temp_allocator.m_used_size == old_used_size);
+  }
 }

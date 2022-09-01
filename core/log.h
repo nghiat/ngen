@@ -49,12 +49,12 @@ void log_destroy();
 #define M_logw(format, ...) ng_log_(e_log_level_warning, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #if M_is_dev()
-#  define M_logf(format, ...)                                                 \
-    {                                                                       \
+#  define M_logf(format, ...)                                                \
+    {                                                                        \
       ng_log_(e_log_level_fatal, __FILE__, __LINE__, format, ##__VA_ARGS__); \
-      if (debug_is_debugger_attached()) {                                   \
-        M_debug_break_debugger();                                             \
-      }                                                                     \
+      if (debug_is_debugger_attached() && !g_is_log_in_testing) {            \
+        M_debug_break_debugger();                                            \
+      }                                                                      \
     }
 #else
 #  define M_logf(format, ...) ng_log_(e_log_level_fatal, __FILE__, __LINE__, format, ##__VA_ARGS__)
