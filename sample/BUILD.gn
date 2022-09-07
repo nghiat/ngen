@@ -13,6 +13,17 @@ group("sample") {
   ]
 }
 
+executable("dae_sample") {
+  sources = [
+    "dae_sample.cpp",
+  ]
+
+  deps = [
+    "//assets",
+    "//core",
+  ]
+}
+
 executable("net_sample") {
   sources = [
     "net.cpp",

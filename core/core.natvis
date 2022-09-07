@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
     <Type Name="Dynamic_array_t&lt;*&gt;">
-        <DisplayString>{{ length={length} }}</DisplayString>
+        <DisplayString>{{ length={m_length} }}</DisplayString>
         <Expand>
             <Item Name="[length]" ExcludeView="simple">m_length</Item>
             <Item Name="[capacity]" ExcludeView="simple">m_capacity</Item>
@@ -9,6 +9,12 @@
                 <Size>m_length</Size>
                 <ValuePointer>m_p</ValuePointer>
             </ArrayItems>
+        </Expand>
+    </Type>
+    <Type Name="String_t_&lt;*&gt;">
+        <DisplayString>{{ str={m_p,[m_length]} }}</DisplayString>
+        <Expand>
+            <Item Name="[length]" ExcludeView="simple">m_length</Item>
         </Expand>
     </Type>
 </AutoVisualizer>

@@ -4,18 +4,17 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#pragma once
-
-#include "core/dynamic_array.h"
-#include "core/math/vec4.h"
+#include "core/core_init.h"
+#include "core/linear_allocator.inl"
+#include "core/loader/dae.h"
 #include "core/path.h"
+#include "core/path_utils.h"
 
-struct Allocator_t;
-
-class Dae_loader_t {
-public:
-  bool init(Allocator_t* allocator, const Path_t& path);
-  void destroy();
-
-  Dynamic_array_t<V4_t> m_vertices;
-};
+int main(int argc, char** argv) {
+  core_init(M_txt("dae_sample.log"));
+  Linear_allocator_t<> allocator("allocator");
+  Dae_loader_t dae;
+  dae.init(&allocator, g_exe_dir.join(M_txt("assets/wolf.dae")));
+  core_destroy();
+  return 0;
+}
