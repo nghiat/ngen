@@ -68,3 +68,11 @@ inline F32 v4_len(const V4_t& v) {
 inline V4_t v4_normalize(const V4_t& v) {
   return v / v4_len(v);
 }
+
+inline V4_t vec4_lerp(const V4_t& v1, const V4_t& v2, float f) {
+  return v1*(1 - f) + v2*f;
+}
+
+inline V4_t vec4_lerp(const V4_t& v1, const V4_t& v2, float from, float to, float f) {
+  return vec4_lerp(v1, v2, (f - from)/(to - from));
+}

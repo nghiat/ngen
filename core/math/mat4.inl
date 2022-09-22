@@ -9,16 +9,27 @@
 #include "core/math/mat4.h"
 
 #include "core/math/vec4.inl"
+#include "core/utils.h"
 
 #include <string.h>
 
 inline M4_t m4_identity() {
   M4_t m;
-  m.a[0][0] = 1.0f;
-  m.a[1][1] = 1.0f;
-  m.a[2][2] = 1.0f;
-  m.a[3][3] = 1.0f;
+  m.m[0][0] = 1.0f;
+  m.m[1][1] = 1.0f;
+  m.m[2][2] = 1.0f;
+  m.m[3][3] = 1.0f;
   return m;
+}
+
+inline M4_t m4_transpose(const M4_t& m) {
+  M4_t rv = m;
+  for (int i = 1; i < 4; ++i) {
+    for (int j = 0; j < i; ++j) {
+      swap(&rv.m[i][j], &rv.m[j][i]);
+    }
+  }
+  return rv;
 }
 
 inline V4_t operator*(const M4_t& m, const V4_t& v) {
@@ -36,7 +47,7 @@ inline M4_t operator*(const M4_t& m1, const M4_t& m2) {
     // Each row of result is the sum of products of m1 row with every m2 row.
     for (int j = 0; j < 4; ++j) {
       for (int k = 0; k < 4; ++k) {
-        result.a[i][k] += m1.a[i][j] * m2.a[j][k];
+        result.m[i][k] += m1.m[i][j] * m2.m[j][k];
       }
     }
   }
