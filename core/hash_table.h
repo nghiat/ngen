@@ -50,7 +50,7 @@ public:
   void destroy();
   T_value& operator[](const T_key& key);
   T_value* find(const T_key& key) const;
-  Sip len() const;
+  Sip len() const { return m_count; }
   void reserve(int key_count);
 
 // iterator (for each)

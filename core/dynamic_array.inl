@@ -97,6 +97,11 @@ const T& Dynamic_array_t<T>::operator[](Sz index) const {
 }
 
 template <typename T>
+T& Dynamic_array_t<T>::last() {
+  return m_p[m_length - 1];
+}
+
+template <typename T>
 T* Dynamic_array_t<T>::begin() const {
   return m_p;
 }

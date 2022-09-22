@@ -27,6 +27,7 @@ public:
   void append_array(const T* array, int len);
   T& operator[](Sz index);
   const T& operator[](Sz index) const;
+  T& last();
 
 // iterator (for each)
   T* begin() const;
