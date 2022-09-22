@@ -44,6 +44,11 @@ Pipeline_layout_t* Gpu_t::create_pipeline_layout(Allocator_t* allocator, const P
   return NULL;
 }
 
+Index_buffer_t* Gpu_t::create_index_buffer(Allocator_t* allocator, const Index_buffer_create_info_t& ci) {
+  M_unimplemented();
+  return NULL;
+}
+
 Render_pass_t* Gpu_t::create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci) {
   M_unimplemented();
   return NULL;
@@ -102,11 +107,19 @@ void Gpu_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   M_unimplemented();
 }
 
+void Gpu_t::cmd_set_index_buffer(Index_buffer_t* ib) {
+  M_unimplemented();
+}
+
 void Gpu_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
   M_unimplemented();
 }
 
 void Gpu_t::cmd_draw(int vertex_count, int first_vertex) {
+  M_unimplemented();
+}
+
+void Gpu_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
   M_unimplemented();
 }
 
@@ -117,6 +130,8 @@ void Gpu_t::cmd_end() {
 int Gpu_t::convert_format_to_size_(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:
+      return 16;
+    case e_format_r32g32b32a32_uint:
       return 16;
     case e_format_r32g32b32_float:
       return 12;

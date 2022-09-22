@@ -56,6 +56,10 @@ struct Vulkan_vertex_buffer_t : Vertex_buffer_t {
   Vk_sub_buffer_t_ sub_buffer;
 };
 
+struct Vulkan_index_buffer_t : Index_buffer_t {
+  Vk_sub_buffer_t_ sub_buffer;
+};
+
 struct Vulkan_shader_t : Shader_t {
   VkShaderModule shader;
 };
@@ -94,6 +98,8 @@ static VkFormat convert_format_to_vk_format(E_format format) {
   switch (format) {
     case e_format_r32g32b32a32_float:
       return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case e_format_r32g32b32a32_uint:
+      return VK_FORMAT_R32G32B32A32_UINT;
     case e_format_r32g32b32_float:
       return VK_FORMAT_R32G32B32_SFLOAT;
     case e_format_r32g32_float:
@@ -444,7 +450,7 @@ bool Vulkan_t::init(Window_t* w) {
     M_vk_check(vkCreateDescriptorPool(m_device, &descriptor_pool_ci, NULL, &m_descriptors_pool));
   }
   create_buffer_(&m_uniform_buffer, 16*1024*1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-  create_buffer_(&m_vertex_buffer, 100*1024*1024, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+  create_buffer_(&m_vertex_buffer, 100*1024*1024, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   create_buffer_(&m_upload_buffer, 100*1024*1024, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
   m_graphics_cmd_buffers.resize(m_swapchain_images.len());
   {
@@ -701,6 +707,13 @@ Pipeline_layout_t* Vulkan_t::create_pipeline_layout(Allocator_t* allocator, cons
 Vertex_buffer_t* Vulkan_t::create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) {
   auto rv = allocator->construct<Vulkan_vertex_buffer_t>();
   allocate_sub_buffer_(&rv->sub_buffer, &m_vertex_buffer, ci.size, ci.alignment);
+  rv->p = rv->sub_buffer.cpu_p;
+  return rv;
+}
+
+Index_buffer_t* Vulkan_t::create_index_buffer(Allocator_t* allocator, const Index_buffer_create_info_t& ci) {
+  auto rv = allocator->construct<Vulkan_index_buffer_t>();
+  allocate_sub_buffer_(&rv->sub_buffer, &m_vertex_buffer, ci.size, 256);
   rv->p = rv->sub_buffer.cpu_p;
   return rv;
 }
@@ -986,27 +999,36 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
     shader_stage_cis.append(shader_stage_ci);
   }
 
-  Dynamic_array_t<VkVertexInputBindingDescription> binding_descs(&temp_allocator);
-  binding_descs.resize(ci.input_element_count);
-  Dynamic_array_t<VkVertexInputAttributeDescription> attribute_descs(&temp_allocator);
-  attribute_descs.resize(ci.input_element_count);
-  for (int i = 0; i < ci.input_element_count; ++i) {
-    auto& binding = binding_descs[i];
-    const auto& elem = ci.input_elements[i];
-    binding.binding = elem.input_slot;
-    binding.stride = elem.stride;
+  Fixed_array_t<VkVertexInputBindingDescription, 16> binding_descs;
+  Fixed_array_t<VkVertexInputAttributeDescription, 16> attribute_descs;
+  int location = 0;
+  for (int i = 0; i < ci.input_slot_count; ++i) {
+    const auto& slot = ci.input_slots[i];
+    VkVertexInputBindingDescription binding = {};
+    binding.binding = slot.slot_num;
+    binding.stride = slot.stride;
     binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    auto& attribute = attribute_descs[i];
-    attribute.binding = elem.input_slot;
-    attribute.location = elem.input_slot;
-    attribute.format = convert_format_to_vk_format(elem.format);
-    attribute.offset = 0;
+    binding_descs.append(binding);
+    int offset = 0;
+    for (int j = 0; j < slot.input_element_count; ++j) {
+      const auto& ci_elem = slot.input_elements[j];
+      VkVertexInputAttributeDescription attribute = {};
+      int matrix_row_count = ci_elem.matrix_row_count ? ci_elem.matrix_row_count : 1;
+      attribute.binding = slot.slot_num;
+      attribute.format = convert_format_to_vk_format(ci_elem.format);
+      for (int k = 0; k < matrix_row_count; ++k) {
+        attribute.location = location++;
+        attribute_descs.append(attribute);
+        attribute.offset = offset;
+        offset += convert_format_to_size_(ci_elem.format);
+      }
+    }
   }
   VkPipelineVertexInputStateCreateInfo vertex_input_ci = {};
   vertex_input_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_ci.vertexBindingDescriptionCount = ci.input_element_count;
+  vertex_input_ci.vertexBindingDescriptionCount = binding_descs.len();
   vertex_input_ci.pVertexBindingDescriptions = binding_descs.m_p;
-  vertex_input_ci.vertexAttributeDescriptionCount = ci.input_element_count;
+  vertex_input_ci.vertexAttributeDescriptionCount = attribute_descs.len();
   vertex_input_ci.pVertexAttributeDescriptions = attribute_descs.m_p;
 
   VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = {};
@@ -1162,6 +1184,12 @@ void Vulkan_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   vkCmdBindVertexBuffers(get_active_cmd_buffer_(), binding, 1, &m_vertex_buffer.buffer, &offset1);
 }
 
+void Vulkan_t::cmd_set_index_buffer(Index_buffer_t* ib) {
+  auto vulkan_ib = (Vulkan_index_buffer_t*)ib;
+  VkDeviceSize offset = vulkan_ib->sub_buffer.bi.offset;
+  vkCmdBindIndexBuffer(get_active_cmd_buffer_(), m_vertex_buffer.buffer, offset, VK_INDEX_TYPE_UINT32);
+}
+
 void Vulkan_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
   auto vk_pipeline_layout = (Vulkan_pipeline_layout_t*)pipeline_layout;
   auto vk_set = (Vulkan_resources_set_t*)set;
@@ -1170,6 +1198,10 @@ void Vulkan_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* p
 
 void Vulkan_t::cmd_draw(int vertex_count, int first_vertex) {
   vkCmdDraw(get_active_cmd_buffer_(), vertex_count, 1, first_vertex, 0);
+}
+
+void Vulkan_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
+  vkCmdDrawIndexed(get_active_cmd_buffer_(), index_count, instance_count, first_index, vertex_offset, first_index);
 }
 
 void Vulkan_t::cmd_end() {
@@ -1230,7 +1262,7 @@ VkImageView Vulkan_t::create_image_view_(VkImage image, VkImageViewType view_typ
   return image_view;
 }
 
-bool Vulkan_t::create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlagBits usage_flags, VkMemoryPropertyFlagBits mem_prop_flags) {
+bool Vulkan_t::create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlagBits mem_prop_flags) {
   VkBufferCreateInfo buffer_ci = {};
   buffer_ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_ci.size = size;

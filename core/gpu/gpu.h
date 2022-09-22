@@ -39,6 +39,7 @@ enum E_render_target_type {
 
 enum E_format {
   e_format_r32g32b32a32_float,
+  e_format_r32g32b32a32_uint,
   e_format_r32g32b32_float,
   e_format_r32g32_float,
   e_format_r8_uint,
@@ -104,10 +105,19 @@ struct Vertex_buffer_create_info_t {
   Sz stride;
 };
 
+struct Index_buffer_create_info_t {
+  Sz size;
+};
+
 struct Vertex_buffer_t {
   Sz stride;
   void* p;
 };
+
+struct Index_buffer_t {
+  void* p;
+};
+
 struct Depth_stencil_create_info_t {
   bool can_be_sampled;
 };
@@ -162,18 +172,24 @@ struct Shader_t {
 };
 
 struct Input_element_t {
-  const char* semantic_name = NULL;
+  const char* semantic_name;
   E_format format;
-  U8 semantic_index;
-  U8 input_slot;
+  // 0 and 1 mean the same
+  U8 matrix_row_count;
+};
+
+struct Input_slot_t {
   Sz stride;
+  U8 slot_num;
+  U8 input_element_count = 0;
+  Input_element_t* input_elements;
 };
 
 struct Pipeline_state_object_create_info_t {
   Shader_t* vs = NULL;
   Shader_t* ps = NULL;
-  U8 input_element_count = 0;
-  Input_element_t* input_elements = NULL;
+  U8 input_slot_count = 0;
+  Input_slot_t* input_slots;
   Pipeline_layout_t* pipeline_layout = NULL;
   Render_pass_t* render_pass = NULL;
   bool enable_depth = false;
@@ -212,6 +228,7 @@ public:
   virtual Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci);
   virtual Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci);
   virtual Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) = 0;
+  virtual Index_buffer_t* create_index_buffer(Allocator_t* allocator, const Index_buffer_create_info_t& ci);
   virtual Render_target_t* create_depth_stencil(Allocator_t* allocator, const Depth_stencil_create_info_t& ci) = 0;
   virtual Render_pass_t* create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci);
   virtual Resource_t create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci);
@@ -220,14 +237,18 @@ public:
   virtual void bind_resource_to_set(const Resource_t& resource, const Resources_set_t* set, int binding);
   virtual Shader_t* compile_shader(Allocator_t* allocator, const Shader_create_info_t& ci);
   virtual Pipeline_state_object_t* create_pipeline_state_object(Allocator_t* allocator, const Pipeline_state_object_create_info_t& ci);
+
   virtual void get_back_buffer();
+
   virtual void cmd_begin();
   virtual void cmd_begin_render_pass(Render_pass_t* render_pass);
   virtual void cmd_end_render_pass(Render_pass_t* render_pass);
   virtual void cmd_set_pipeline_state(Pipeline_state_object_t* pso);
   virtual void cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding);
+  virtual void cmd_set_index_buffer(Index_buffer_t* ib);
   virtual void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
   virtual void cmd_draw(int vertex_count, int first_vertex);
+  virtual void cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance);
   virtual void cmd_end();
 
   static int convert_format_to_size_(E_format format);

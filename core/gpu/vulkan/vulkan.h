@@ -32,6 +32,7 @@ public:
   Resources_set_t* create_resources_set(Allocator_t* allocator, const Resources_set_create_info_t& ci) override;
   Pipeline_layout_t* create_pipeline_layout(Allocator_t* allocator, const Pipeline_layout_create_info_t& ci) override;
   Vertex_buffer_t* create_vertex_buffer(Allocator_t* allocator, const Vertex_buffer_create_info_t& ci) override;
+  Index_buffer_t* create_index_buffer(Allocator_t* allocator, const Index_buffer_create_info_t& ci) override;
   Render_target_t* create_depth_stencil(Allocator_t* allocator, const Depth_stencil_create_info_t& ci) override;
   Render_pass_t* create_render_pass(Allocator_t* allocator, const Render_pass_create_info_t& ci) override;
   Resource_t create_uniform_buffer(Allocator_t* allocator, const Uniform_buffer_create_info_t& ci) override;
@@ -46,8 +47,10 @@ public:
   void cmd_end_render_pass(Render_pass_t* render_pass) override;
   void cmd_set_pipeline_state(Pipeline_state_object_t* pso) override;
   void cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) override;
+  void cmd_set_index_buffer(Index_buffer_t* ib) override;
   void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
   void cmd_draw(int vertex_count, int first_vertex) override;
+  void cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) override;
   void cmd_end() override;
 
   Window_t* m_window = NULL;
@@ -85,7 +88,7 @@ public:
 private:
   int get_mem_type_idx_(U32 mem_type_bits, VkFlags mem_flags);
   VkImageView create_image_view_(VkImage image, VkImageViewType view_type, VkFormat format, VkImageAspectFlags aspect_flags);
-  bool create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlagBits usage_flags, VkMemoryPropertyFlagBits mem_prop_flags);
+  bool create_buffer_(Vk_buffer_t_* buffer, Sz size, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlagBits mem_prop_flags);
   void allocate_sub_buffer_(Vk_sub_buffer_t_* sub_buffer, Vk_buffer_t_* buffer, Sip size, int alignment);
   VkCommandBuffer get_active_cmd_buffer_() const;
   void create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, VkImageCreateFlags flags);

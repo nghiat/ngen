@@ -82,6 +82,10 @@ struct D3d12_vertex_buffer_t : Vertex_buffer_t {
   D3d12_sub_buffer_t_ sub_buffer;
 };
 
+struct D3d12_index_buffer_t : Index_buffer_t {
+  D3d12_sub_buffer_t_ sub_buffer;
+};
+
 struct D3d12_shader_t : Shader_t {
   ID3DBlob* blob;
 };
@@ -117,6 +121,8 @@ static DXGI_FORMAT convert_format_to_dxgi_format(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:
       return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case e_format_r32g32b32a32_uint:
+      return DXGI_FORMAT_R32G32B32A32_UINT;
     case e_format_r32g32b32_float:
       return DXGI_FORMAT_R32G32B32_FLOAT;
     case e_format_r32g32_float:
@@ -548,6 +554,13 @@ Vertex_buffer_t* D3d12_t::create_vertex_buffer(Allocator_t* allocator, const Ver
   return rv;
 }
 
+Index_buffer_t* D3d12_t::create_index_buffer(Allocator_t* allocator, const Index_buffer_create_info_t& ci) {
+  auto rv = allocator->construct<D3d12_index_buffer_t>();
+  rv->sub_buffer = allocate_sub_buffer_(&m_vertex_buffer, ci.size, 256);
+  rv->p = rv->sub_buffer.cpu_p;
+  return rv;
+}
+
 Render_target_t* D3d12_t::create_depth_stencil(Allocator_t* allocator, const Depth_stencil_create_info_t& ci) {
   D3D12_RESOURCE_DESC depth_tex_desc = {};
   depth_tex_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -749,20 +762,26 @@ Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allo
 
   pso_desc.DepthStencilState = {};
 
-  Dynamic_array_t<D3D12_INPUT_ELEMENT_DESC> elems(&temp_allocator);
-  elems.resize(ci.input_element_count);
-  for (int i = 0; i < ci.input_element_count; ++i) {
-    auto& elem = elems[i];
-    auto& ci_elem = ci.input_elements[i];
-    elem.SemanticName = ci_elem.semantic_name;
-    elem.SemanticIndex = ci_elem.semantic_index;
-    elem.Format = convert_format_to_dxgi_format(ci_elem.format);
-    elem.InputSlot = ci_elem.input_slot;
-    elem.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-    elem.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-    elem.InstanceDataStepRate = 0;
+  Fixed_array_t<D3D12_INPUT_ELEMENT_DESC, 16> elems;
+  for (int i = 0; i < ci.input_slot_count; ++i) {
+    const auto& slot = ci.input_slots[i];
+    for (int j = 0; j < slot.input_element_count; ++j) {
+      const auto& ci_elem = slot.input_elements[j];
+      D3D12_INPUT_ELEMENT_DESC elem = {};
+      elem.SemanticName = ci_elem.semantic_name;
+      elem.Format = convert_format_to_dxgi_format(ci_elem.format);
+      elem.InputSlot = slot.slot_num;
+      elem.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+      elem.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+      elem.InstanceDataStepRate = 0;
+      int matrix_row_count = ci_elem.matrix_row_count ? ci_elem.matrix_row_count : 1;
+      for (int k = 0; k < matrix_row_count; ++k) {
+        elem.SemanticIndex = k;
+        elems.append(elem);
+      }
+    }
   }
-  pso_desc.InputLayout.NumElements = ci.input_element_count;
+  pso_desc.InputLayout.NumElements = elems.len();
   pso_desc.InputLayout.pInputElementDescs = elems.m_p;
   pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
   pso_desc.NumRenderTargets = 1;
@@ -880,6 +899,16 @@ void D3d12_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
   m_cmd_list->IASetVertexBuffers(binding, 1, &vb_view);
 }
 
+void D3d12_t::cmd_set_index_buffer(Index_buffer_t* ib) {
+  auto d3d12_ib = (D3d12_index_buffer_t*)ib;
+  const D3d12_sub_buffer_t_& sub_buffer = d3d12_ib->sub_buffer;
+  D3D12_INDEX_BUFFER_VIEW ib_view = {};
+  ib_view.BufferLocation = sub_buffer.gpu_p;
+  ib_view.SizeInBytes =  sub_buffer.size;
+  ib_view.Format = DXGI_FORMAT_R32_UINT;
+  m_cmd_list->IASetIndexBuffer(&ib_view);
+}
+
 void D3d12_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) {
   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
   switch(resource.type) {
@@ -901,6 +930,11 @@ void D3d12_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pi
 void D3d12_t::cmd_draw(int vertex_count, int first_vertex) {
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->DrawInstanced(vertex_count, 1, first_vertex, 0);
+}
+
+void D3d12_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
+  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  m_cmd_list->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
 void D3d12_t::cmd_end() {
