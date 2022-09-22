@@ -54,17 +54,17 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         is_self_closing = true;
       }
 
-      // Parse tag_name
+      // Parse m_tag_name
       tag_p = tag_start;
       while(tag_p != tag_end && isspace(*tag_p)) {
         ++tag_p;
       }
-      const char* tag_name_start = tag_p;
+      const char* m_tag_name_start = tag_p;
       while (tag_p != tag_end && !isspace(*tag_p)) {
         ++tag_p;
       }
-      const char* tag_name_end = tag_p;
-      node->tag_name = alloc_string_(allocator, tag_name_start, tag_name_end);
+      const char* m_tag_name_end = tag_p;
+      node->m_tag_name = alloc_string_(allocator, m_tag_name_start, m_tag_name_end);
 
       // Parse attribute
       while (tag_p != tag_end) {
@@ -82,7 +82,7 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         }
         const char* a_name_end = tag_p;
         char* a_name = alloc_string_(allocator, a_name_start, a_name_end);
-        node->attr_names.append(a_name);
+        node->m_attr_names.append(a_name);
         ++tag_p;
 
         // attribute val
@@ -95,7 +95,7 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         }
         const char* a_val_end = tag_p;
         char* a_val = alloc_string_(allocator, a_val_start, a_val_end);
-        node->attr_vals.append(a_val);
+        node->m_attr_vals.append(a_val);
         ++tag_p;
       }
 
@@ -116,13 +116,13 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         const char* text_start = p;
         const char* text_end = (const char*)memchr(p, '<', end - text_start);
         M_check_log_return_val(text_end, NULL, "Can't find closing tag");
-        node->text = alloc_string_(allocator, text_start, text_end);
+        node->m_text = alloc_string_(allocator, text_start, text_end);
         p = text_end + 1;
 
         const char* closing_name_start = ++p;
         const char* closing_name_end = (const char*)memchr(p, '>', end - p);
         M_check_log_return_val(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
-        M_check_log_return_val(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name.m_p, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
+        M_check_log_return_val(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->m_tag_name.m_p, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
         if (last_pos) {
           *last_pos = closing_name_end;
         }
@@ -142,7 +142,7 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
           const char* closing_name_start = ++p;
           const char* closing_name_end = (const char*)memchr(p, '>', end - p);
           M_check_log_return_val(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
-          M_check_log_return_val(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name.m_p, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
+          M_check_log_return_val(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->m_tag_name.m_p, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
           if (last_pos) {
             *last_pos = closing_name_end;
           }
@@ -150,12 +150,66 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         }
 
         Xml_node_t* child = parse_xml_(&p, allocator, opening_bracket, end);
-        node->children.append(child);
+        node->m_children.append(child);
         ++p;
       }
     }
   }
   return node;
+}
+
+const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
+  const Xml_node_t* rv = NULL;
+  const Xml_node_t* curr = this;
+  Cstring_t curr_name = name;
+  while (true) {
+    // const char* slash = (const char*)memchr(name, '/', name_len);
+    Cstring_t slash = curr_name.find_char('/');
+    Cstring_t child_name;
+    bool is_final = false;
+    if (slash.m_length) {
+      child_name = curr_name.get_substr_till(slash);
+    } else {
+      child_name = curr_name;
+      is_final = true;
+    }
+    bool found_child = false;
+    for (const auto& child : curr->m_children) {
+      if (child->m_tag_name.equals(child_name)) {
+        curr = child;
+        found_child = true;
+        break;
+      }
+    }
+    // Final subelement.
+    if (is_final) {
+      if (found_child) {
+        rv = curr;
+      }
+      break;
+    }
+    curr_name = slash.get_substr_from_offset(1);
+  }
+  return rv;
+}
+
+const Xml_node_t* Xml_node_t::find_id(const Cstring_t& id) const {
+  const Xml_node_t* curr = this;
+  for (const auto& child : curr->m_children) {
+    for (int i = 0; i < child->m_attr_names.len(); ++i) {
+      if (child->m_attr_names[i].equals("id")) {
+        if (child->m_attr_vals[i].equals(id)) {
+          return child;
+        }
+        break;
+      }
+    }
+    const Xml_node_t* child_rv = child->find_id(id);
+    if (child_rv) {
+      return child_rv;
+    }
+  }
+  return NULL;
 }
 
 void Xml_node_t::destory() {
@@ -174,34 +228,4 @@ bool Xml_t::init(const char* buffer, int length) {
 }
 
 void Xml_t::destroy() {
-}
-
-const Xml_node_t* Xml_t::find_node(const char* name, const Xml_node_t* parent) {
-  const Xml_node_t* rv = NULL;
-  const Xml_node_t* curr = m_root;
-  if (parent) {
-    curr = parent;
-  }
-  while (true) {
-    int name_len = strlen(name);
-    const char* slash = (const char*)memchr(name, '/', name_len);
-    int sub_elem_len = slash ? slash - name : strlen(name);
-    bool found_child = false;
-    for (const auto& child : curr->children) {
-      if (child->tag_name.equals(Cstring_t(name, sub_elem_len))) {
-        curr = child;
-        found_child = true;
-        break;
-      }
-    }
-    // Final subelement.
-    if (!slash) {
-      if (found_child) {
-        rv = curr;
-      }
-      break;
-    }
-    name = slash + 1;
-  }
-  return rv;
 }

@@ -12,15 +12,19 @@
 
 struct Allocator_t;
 
-struct Xml_node_t {
-  Xml_node_t(Allocator_t* allocator) : attr_names(allocator), attr_vals(allocator), children(allocator) {}
+class Xml_node_t {
+public:
+  Xml_node_t(Allocator_t* allocator) : m_attr_names(allocator), m_attr_vals(allocator), m_children(allocator) {}
   void destory();
 
-  Mstring_t tag_name;
-  Mstring_t text;
-  Dynamic_array_t<Mstring_t> attr_names;
-  Dynamic_array_t<Mstring_t> attr_vals;
-  Dynamic_array_t<Xml_node_t*> children;
+  const Xml_node_t* find_child(const Cstring_t& name) const;
+  const Xml_node_t* find_id(const Cstring_t& id) const;
+
+  Mstring_t m_tag_name;
+  Mstring_t m_text;
+  Dynamic_array_t<Mstring_t> m_attr_names;
+  Dynamic_array_t<Mstring_t> m_attr_vals;
+  Dynamic_array_t<Xml_node_t*> m_children;
 };
 
 class Xml_t {
@@ -29,7 +33,6 @@ public:
   bool init(const Path_t& path);
   bool init(const char* buffer, int length);
   void destroy();
-  const Xml_node_t* find_node(const char* name, const Xml_node_t* parent = NULL);
   Allocator_t* m_allocator = NULL;
   Xml_node_t* m_root = NULL;
 };
