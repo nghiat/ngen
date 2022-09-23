@@ -39,7 +39,7 @@ int main(int argc, const char** argv) {
 
   Linear_allocator_t<> allocator("hash_table_allocator");
   allocator.init();
-  Hash_map<int, int> hash_table;
+  Hash_map_t<int, int> hash_table;
   hash_table.init(&allocator);
   hash_table.reserve(num);
   F64 hash_table_insert_time = time_func([&]() {
@@ -62,7 +62,7 @@ int main(int argc, const char** argv) {
 
   Linear_allocator_t<> allocator2("hash_table2_allocator");
   allocator2.init();
-  Hash_map2<int, int> hash_table2;
+  Hash_map_t2<int, int> hash_table2;
   hash_table2.init(&allocator2);
   hash_table2.reserve(num);
   F64 hash_table2_insert_time = time_func([&]() {

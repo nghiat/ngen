@@ -54,24 +54,24 @@ bool find_next_brace_pair(const Cstring_t_<T>& str, int from, int* start_idx, in
 }
 
 template <typename T>
-Hash_map<Cstring_t_<T>, Cstring_t_<T>> string_format_setup(Allocator_t* allocator, const Cstring_t_<T>& format, int* o_brace_pair_count) {
+Hash_map_t<Cstring_t_<T>, Cstring_t_<T>> string_format_setup(Allocator_t* allocator, const Cstring_t_<T>& format, int* o_brace_pair_count) {
   int brace_pair_count = 0;
   int start_idx = 0;
   int end_idx = 0;
   while (find_next_brace_pair(format, end_idx, &start_idx, &end_idx)) {
     ++brace_pair_count;
   }
-  Hash_map<Cstring_t_<T>, Cstring_t_<T>> dict(allocator);
+  Hash_map_t<Cstring_t_<T>, Cstring_t_<T>> dict(allocator);
   dict.reserve(brace_pair_count);
   maybe_assign(o_brace_pair_count, brace_pair_count);
   return dict;
 }
 
-template Hash_map<Cstring_t_<char>, Cstring_t_<char>> string_format_setup(Allocator_t* allocator, const Cstring_t_<char>& format, int* o_brace_pair_count);
-template Hash_map<Cstring_t_<wchar_t>, Cstring_t_<wchar_t>> string_format_setup(Allocator_t* allocator, const Cstring_t_<wchar_t>& format, int* o_brace_pair_count);
+template Hash_map_t<Cstring_t_<char>, Cstring_t_<char>> string_format_setup(Allocator_t* allocator, const Cstring_t_<char>& format, int* o_brace_pair_count);
+template Hash_map_t<Cstring_t_<wchar_t>, Cstring_t_<wchar_t>> string_format_setup(Allocator_t* allocator, const Cstring_t_<wchar_t>& format, int* o_brace_pair_count);
 
 template <typename T>
-Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format, Hash_map<Cstring_t_<T>, Cstring_t_<T>>& dict) {
+Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format, Hash_map_t<Cstring_t_<T>, Cstring_t_<T>>& dict) {
   int start_idx = 0;
   int end_idx = 0;
   int last_end_idx = 0;
@@ -99,5 +99,5 @@ Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format,
   return Mstring_t_<T>(buffer.m_p, buffer.m_length - 1, buffer.m_capacity);
 }
 
-template Mstring_t_<char> string_format(Allocator_t* allocator, const Cstring_t_<char>& format, Hash_map<Cstring_t_<char>, Cstring_t_<char>>& dict);
-template Mstring_t_<wchar_t> string_format(Allocator_t* allocator, const Cstring_t_<wchar_t>& format, Hash_map<Cstring_t_<wchar_t>, Cstring_t_<wchar_t>>& dict);
+template Mstring_t_<char> string_format(Allocator_t* allocator, const Cstring_t_<char>& format, Hash_map_t<Cstring_t_<char>, Cstring_t_<char>>& dict);
+template Mstring_t_<wchar_t> string_format(Allocator_t* allocator, const Cstring_t_<wchar_t>& format, Hash_map_t<Cstring_t_<wchar_t>, Cstring_t_<wchar_t>>& dict);

@@ -20,7 +20,7 @@ void hash_map_test() {
   {
     {
       constexpr int c_count = UINT8_MAX - 1;
-      Hash_map<int, int> u8_map(&allocator);
+      Hash_map_t<int, int> u8_map(&allocator);
       for (uint8_t i = 0; i < c_count; ++i) {
         u8_map[i] = i;
       }
@@ -41,7 +41,7 @@ void hash_map_test() {
     M_test(allocator.m_used_size == empty_allocator_used_size);
   }
   {
-    Hash_map<int, int> map(&allocator);
+    Hash_map_t<int, int> map(&allocator);
     constexpr int c_count = 500;
     int correct_sum = 0;
     for (int i = 0; i < c_count; ++i) {
@@ -61,9 +61,9 @@ void hash_map_test() {
     M_test(allocator.m_used_size == empty_allocator_used_size);
   }
   {
-    // Make sure Hash_map::destroy() works gracefully with Linear_allocator_t
+    // Make sure Hash_map_t::destroy() works gracefully with Linear_allocator_t
     Linear_allocator_t<> temp_allocator("hash_map_allocator");
-    Hash_map<int, int> map(&temp_allocator);
+    Hash_map_t<int, int> map(&temp_allocator);
     Sip old_used_size = temp_allocator.m_used_size;
     for (int i = 0; i < 100; ++i) {
       map[i] = i;

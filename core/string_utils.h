@@ -21,7 +21,7 @@ template <typename T>
 Mstring_t_<T> string_printf(Allocator_t* allocator, const T* format, ...);
 
 template <typename T>
-Hash_map<Cstring_t_<T>, Cstring_t_<T>> string_format_setup(Allocator_t* allocator, const Cstring_t_<T>& format, int* o_brace_pair_count);
+Hash_map_t<Cstring_t_<T>, Cstring_t_<T>> string_format_setup(Allocator_t* allocator, const Cstring_t_<T>& format, int* o_brace_pair_count);
 
 template <typename T>
-Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format, Hash_map<Cstring_t_<T>, Cstring_t_<T>>& dict);
+Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format, Hash_map_t<Cstring_t_<T>, Cstring_t_<T>>& dict);

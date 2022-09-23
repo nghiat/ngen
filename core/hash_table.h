@@ -94,7 +94,7 @@ union FakePair_ {
 };
 
 template <typename T_key, typename T_value, typename T_hash = Hash_t<std::remove_const_t<T_key>>, typename T_equal = Equal_t<T_key>>
-using Hash_map = Hash_table_t_<T_key, T_value, Pair_t_<T_key, T_value>, T_hash, T_equal>;
+using Hash_map_t = Hash_table_t_<T_key, T_value, Pair_t_<T_key, T_value>, T_hash, T_equal>;
 
 template <typename T_key, typename T_hash = Hash_t<std::remove_const_t<T_key>>, typename T_equal = Equal_t<T_key>>
-using Hash_set = Hash_table_t_<T_key, T_key, Pair_t_<T_key, T_key>, T_hash, T_equal>;
+using Hash_set_t = Hash_table_t_<T_key, T_key, Pair_t_<T_key, T_key>, T_hash, T_equal>;

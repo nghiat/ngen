@@ -33,7 +33,7 @@ public:
 // private:
   static const U8 sc_max_printable_char = 'z';
   const char* m_short_to_long_flag_map[sc_max_printable_char] = {};
-  Hash_map<const char*, Value_t> m_flags;
+  Hash_map_t<const char*, Value_t> m_flags;
   Linear_allocator_t<128> m_unnamed_args_allocator;
   Dynamic_array_t<const char*> m_unnamed_args;
 };
