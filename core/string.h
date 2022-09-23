@@ -18,6 +18,7 @@ public:
   String_t_(T* str);
   String_t_(T* str, Sip len);
   String_t_(T* str, Sip len, Sip capacity);
+  String_t_(T* from, T* to);
 
   bool operator==(const String_t_<const T>& str) const;
   bool equals(const String_t_<const T>& str) const;
@@ -25,6 +26,7 @@ public:
   bool find_substr(Sip* o_index, const String_t_<const T>& substr, Sip from = 0) const;
   bool find_char(Sip* o_index, T c, Sip from = 0) const;
   bool find_char_reverse(Sip* o_index, T c, Sip from = -1) const;
+  int count(const String_t_<const T>& str) const;
   String_t_<T> get_substr(Sip from, Sip to = -1) const;
   String_t_<const T> to_const() const;
 

@@ -1,5 +1,7 @@
 cbuffer per_obj_cb : register(b0, space0) {
     float4x4 world;
+    float4x4 inv_bind_mat[100];
+    float4x4 joints[100];
 };
 
 cbuffer shared_cb : register(b0, space1) {
@@ -17,7 +19,7 @@ struct PSInput {
     float4 p : SV_POSITION;
 };
 
-PSInput VSMain([[vk::location(0)]] float4 v: V) {
+PSInput VSMain([[vk::location(0)]] float4 v: POSITION) {
     PSInput result;
     float4x4 light_mvp = mul(world, mul(light_view, light_proj));
     result.p = mul(v, light_mvp);

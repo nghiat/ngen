@@ -69,6 +69,10 @@ void template_cstring_test_() {
     M_test(cstr.find_char_reverse(&index, M_c_or_w(T, 'b')) && index == 1);
     M_test(cstr.find_char_reverse(&index, M_c_or_w(T, '\0')) && index == 3);
   }
+  {
+    T_string cstr(M_c_or_w(T, "ababcabab"));
+    M_test(cstr.count(M_c_or_w(T, "ab")) == 4);
+  }
 }
 
 template <typename T_string, typename T_char>

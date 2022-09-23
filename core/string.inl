@@ -68,6 +68,9 @@ template <typename T>
 String_t_<T>::String_t_(T* str, Sip len, Sip capacity) : m_p(str), m_length(len), m_capacity(capacity) {}
 
 template <typename T>
+String_t_<T>::String_t_(T* from, T* to) : m_p(from), m_length(to - from), m_capacity(m_length) {}
+
+template <typename T>
 bool String_t_<T>::ends_with(const String_t_<const T>& str) const {
   if (m_length == 0 || str.m_length == 0 || m_length < str.m_length) {
     return false;
@@ -95,7 +98,7 @@ bool String_t_<T>::find_substr(Sip* o_index, const String_t_<const T>& substr, S
     return false;
   }
   Sip index = from;
-  while (index + substr.m_length < m_length) {
+  while (index + substr.m_length <= m_length) {
     if (!find_char_(&index, m_p, substr.m_p[0], index, m_length - index)) {
       break;
     }
@@ -131,6 +134,16 @@ bool String_t_<T>::find_char_reverse(Sip* o_index, T c, Sip from) const {
     }
   }
   return false;
+}
+
+template <typename T>
+int String_t_<T>::count(const String_t_<const T>& str) const {
+  int rv = 0;
+  Sip index = -str.m_length;
+  while (find_substr(&index, str, index + str.m_length)) {
+    ++rv;
+  }
+  return rv;
 }
 
 template <typename T>

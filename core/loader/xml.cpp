@@ -8,6 +8,7 @@
 
 #include "core/dynamic_array.inl"
 #include "core/file.h"
+#include "core/hash_table.inl"
 #include "core/intrusive_list.inl"
 #include "core/linear_allocator.h"
 #include "core/string.inl"
@@ -67,6 +68,8 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
       const char* m_tag_name_end = tag_p;
       node->m_tag_name = alloc_string_(allocator, m_tag_name_start, m_tag_name_end);
 
+      Cstring_t tag_str(tag_p, tag_end);
+      node->m_attributes.reserve(tag_str.count('='));
       // Parse attribute
       while (tag_p != tag_end) {
         // attribute name
@@ -83,7 +86,6 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         }
         const char* a_name_end = tag_p;
         char* a_name = alloc_string_(allocator, a_name_start, a_name_end);
-        node->m_attr_names.append(a_name);
         ++tag_p;
 
         // attribute val
@@ -96,7 +98,7 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
         }
         const char* a_val_end = tag_p;
         char* a_val = alloc_string_(allocator, a_val_start, a_val_end);
-        node->m_attr_vals.append(a_val);
+        node->m_attributes[a_name] = a_val;
         ++tag_p;
       }
 
@@ -193,18 +195,28 @@ const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
   return rv;
 }
 
-const Xml_node_t* Xml_node_t::find_id(const Cstring_t& id) const {
+const Xml_node_t* Xml_node_t::find_by_attr(const Cstring_t& name, const Cstring_t& val) const {
   const Xml_node_t* curr = this;
   for (const auto& child : curr->m_children) {
-    for (int i = 0; i < child->m_attr_names.len(); ++i) {
-      if (child->m_attr_names[i].equals("id")) {
-        if (child->m_attr_vals[i].equals(id)) {
-          return child;
-        }
-        break;
-      }
+    Cstring_t* id_val = child->m_attributes.find(name);
+    if (id_val && *id_val == val) {
+      return child;
     }
-    const Xml_node_t* child_rv = child->find_id(id);
+    const Xml_node_t* child_rv = child->find_by_attr(name, val);
+    if (child_rv) {
+      return child_rv;
+    }
+  }
+  return NULL;
+}
+
+const Xml_node_t* Xml_node_t::find_first_tag(const Cstring_t& name) const {
+  const Xml_node_t* curr = this;
+  for (const auto& child : curr->m_children) {
+    if (child->m_tag_name == name) {
+      return child;
+    }
+    const Xml_node_t* child_rv = child->find_first_tag(name);
     if (child_rv) {
       return child_rv;
     }
