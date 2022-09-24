@@ -23,6 +23,7 @@
 #include "core/math/vec3.h"
 #include "core/mono_time.h"
 #include "core/path_utils.h"
+#include "core/string.inl"
 #include "core/utils.h"
 #include "core/window/window.h"
 #include "sample/cam.h"

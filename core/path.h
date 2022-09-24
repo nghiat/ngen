@@ -24,8 +24,6 @@ public:
   static Path_t_<T> from_char(const Cstring_t& path);
   Path_t_<char> get_path8() const;
 
-  void replace_separator_();
-
   void update_path_str();
 
   bool is_dir() const;

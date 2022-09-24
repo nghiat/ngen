@@ -7,10 +7,7 @@
 #include "core/path.h"
 
 #include "core/log.h"
-
-#include <wchar.h>
-
-#include <type_traits>
+#include "core/string.inl"
 
 #if M_os_is_win()
 #include <Windows.h>
@@ -23,23 +20,35 @@ template <>
 wchar_t Path_t_<wchar_t>::s_native_separator_ = L'\\';
 
 template <typename T>
+void replace_separator_(Mstring_t_<T>* str);
+
+template <>
+void replace_separator_<char>(Mstring_t_<char>* str) {
+}
+
+template <>
+void replace_separator_<wchar_t>(Mstring_t_<wchar_t>* str) {
+  str->replace(L'/', Path_t_<wchar_t>::s_native_separator_);
+}
+
+template <typename T>
 Path_t_<T>::Path_t_() : m_path_str(m_path, M_max_path_len) {}
 
 template <typename T>
 Path_t_<T>::Path_t_(const Cstring_t_<T>& path) {
   m_path_str = Mstring_t_<T>(m_path, M_max_path_len);
   m_path_str.copy(path);
-  replace_separator_();
+  replace_separator_(&m_path_str);
 }
 
 template <typename T>
 Path_t_<T>::Path_t_(const Path_t_<T>& other) : Path_t_() {
-  m_path_str.copy(other.m_path_str);
+  m_path_str.copy(other.m_path_str.to_const());
 }
 
 template <typename T>
 Path_t_<T>& Path_t_<T>::operator=(const Path_t_<T>& other) {
-  m_path_str.copy(other.m_path_str);
+  m_path_str.copy(other.m_path_str.to_const());
   return *this;
 }
 
@@ -56,7 +65,7 @@ Path_t_<wchar_t> Path_t_<wchar_t>::from_char(const Cstring_t& path) {
   M_check_return_val(len < M_max_path_len, rv);
   MultiByteToWideChar(CP_UTF8, 0, path.m_p, path.m_length, rv.m_path, M_max_path_len);
   rv.update_path_str();
-  rv.replace_separator_();
+  replace_separator_(&rv.m_path_str);
   return rv;
 }
 #endif // M_os_is_win()
@@ -79,15 +88,9 @@ Path_t_<char> Path_t_<wchar_t>::get_path8() const {
 #endif // M_os_is_win()
 
 template <typename T>
-void Path_t_<T>::replace_separator_() {
-  if constexpr (std::is_same_v<T, wchar_t>) {
-    m_path_str.replace(L'/', s_native_separator_);
-  }
-}
-
-template <typename T>
 void Path_t_<T>::update_path_str() {
-  m_path_str = Mstring_t_<T>(m_path, M_max_path_len);
+  m_path_str = Mstring_t_<T>(m_path);
+  m_path_str.m_capacity = M_max_path_len;
 }
 
 template <typename T>
@@ -102,15 +105,15 @@ bool Path_t_<T>::is_file() const {
 
 template <typename T>
 bool Path_t_<T>::equals(const Path_t_<T>& other) const {
-  return m_path_str.equals(other.m_path_str);
+  return m_path_str.equals(other.m_path_str.to_const());
 }
 
 template <typename T>
 Cstring_t_<T> Path_t_<T>::get_name() const {
   Cstring_t_<T> rv = m_path_str.to_const();
-  Cstring_t_<T> temp = rv.find_char_reverse(s_native_separator_);
-  if (temp.m_p) {
-    rv = temp.get_substr_from_offset(1);
+  Sip index;
+  if (rv.find_char_reverse(&index, s_native_separator_)) {
+    rv = rv.get_substr(index);
   }
   return rv;
 }
@@ -122,10 +125,10 @@ Path_t_<T> Path_t_<T>::get_parent_dir() const {
   if (rv_str.m_length) {
     // We ignore the last char just in case it is a separator
     rv_str.m_length--;
-    Mstring_t_<T> temp = rv_str.find_char_reverse(s_native_separator_);
-    if (temp.m_p) {
-      temp.m_p[0] = 0;
-      rv_str.m_length -= temp.m_length;
+    Sip index;
+    if (rv_str.find_char_reverse(&index, s_native_separator_)) {
+      rv_str.m_p[index] = 0;
+      rv_str.m_length = index;
     }
   }
   return rv;

@@ -10,6 +10,7 @@
 #include "core/file.h"
 #include "core/intrusive_list.inl"
 #include "core/linear_allocator.h"
+#include "core/string.inl"
 #include "core/utils.h"
 
 #include <ctype.h>
@@ -163,12 +164,11 @@ const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
   const Xml_node_t* curr = this;
   Cstring_t curr_name = name;
   while (true) {
-    // const char* slash = (const char*)memchr(name, '/', name_len);
-    Cstring_t slash = curr_name.find_char('/');
+    Sip slash_index;
     Cstring_t child_name;
     bool is_final = false;
-    if (slash.m_length) {
-      child_name = curr_name.get_substr_till(slash);
+    if (curr_name.find_char(&slash_index, '/')) {
+      child_name = curr_name.get_substr(0, slash_index);
     } else {
       child_name = curr_name;
       is_final = true;
@@ -188,7 +188,7 @@ const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
       }
       break;
     }
-    curr_name = slash.get_substr_from_offset(1);
+    curr_name = curr_name.get_substr(1);
   }
   return rv;
 }

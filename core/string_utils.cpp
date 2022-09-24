@@ -8,6 +8,7 @@
 
 #include "core/dynamic_array.inl"
 #include "core/hash_table.inl"
+#include "core/string.inl"
 
 template <>
 const char* c_or_w_(const char* c, const wchar_t* w) {
@@ -81,7 +82,7 @@ Mstring_t_<T> string_format(Allocator_t* allocator, const Cstring_t_<T>& format,
     if (start_idx > last_end_idx) {
       buffer.append_array(format.m_p + last_end_idx, start_idx - last_end_idx);
     }
-    Cstring_t_<T> key = format.get_substr_from_offset(start_idx + 2, end_idx - start_idx - 3);
+    Cstring_t_<T> key = format.get_substr(start_idx + 2, end_idx - 1);
     Cstring_t_<T>* value = dict.find(key);
     if (!value) {
       M_logf("Can't find key \"%.*s\" in dict", key.m_length, key.m_p);

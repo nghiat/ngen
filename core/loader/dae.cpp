@@ -10,6 +10,9 @@
 #include "core/linear_allocator.inl"
 #include "core/loader/xml.h"
 #include "core/log.h"
+#include "core/math/quat.inl"
+#include "core/math/vec4.inl"
+#include "core/string.inl"
 #include "core/utils.h"
 
 #include <math.h>
@@ -134,17 +137,23 @@ bool Dae_loader_t::init(Allocator_t* allocator, const Path_t& path) {
     Cstring_t joints_text = joints_node->m_text.to_const();
     m_joint_refs.m_allocator = allocator;
     m_joint_refs.reserve(joint_map.len());
-    do {
-      Cstring_t remaining_joints_text = joints_text.find_char(' ');
-      Cstring_t joint_name = joints_text;
-      if (remaining_joints_text.m_length) {
-        joint_name = joints_text.get_substr_till(remaining_joints_text);
-        joints_text = remaining_joints_text.get_substr_from_offset(1);
+    Sip space_index;
+    Sip from = 0;
+    while(true) {
+      Cstring_t joint_name;
+      bool should_break = false;
+      if (joints_text.find_char(&space_index, ' ', from)) {
+        joint_name = joints_text.get_substr(from, space_index);
+        from = space_index + 1;
       } else {
-        joints_text = Cstring_t();
+        joint_name = joints_text.get_substr(from);
+        should_break = true;
       }
       m_joint_refs.append(&(*joint_map.find(joint_name))->mat);
-    } while (joints_text.m_length);
+      if (should_break) {
+        break;
+      }
+    };
     const Xml_node_t* vertex_weights = xml.m_root->find_child("library_controllers/controller/skin/vertex_weights");
     M_check(strtol(vertex_weights->m_attr_vals[0].m_p, NULL, 10) == m_vertices.len());
     char* vcount_p = vertex_weights->m_children[2]->m_text.m_p;
@@ -210,7 +219,9 @@ bool Dae_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       const Xml_node_t* channel_node = animation_node->m_children.last();
       M_check(channel_node->m_tag_name == "channel");
       Cstring_t target = channel_node->m_attr_vals[1].to_const();
-      animation.joint = *joint_map.find(target.get_substr_till(target.find_char('/')));
+      Sip slash_index;
+      M_check(target.find_char(&slash_index, '/'));
+      animation.joint = *joint_map.find(target.get_substr(0, slash_index));
       m_animations.append(animation);
     }
   }

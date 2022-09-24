@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/string.h"
+#include "core/string.inl"
 
 #include "core/string_utils.h"
 #include "test/test.h"
@@ -48,38 +48,26 @@ void template_cstring_test_() {
   }
   {
     T_string cstr(M_c_or_w(T, "abc"));
-    M_test(cstr.find_substr(M_c_or_w(T, "c")).m_p);
-    M_test(cstr.find_substr(M_c_or_w(T, "c")).m_length);
-    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_p == NULL);
-    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_length == 0);
+    Sip index;
+    M_test(cstr.find_substr(&index, M_c_or_w(T, "c")) && index == 2);
+    M_test(!cstr.find_substr(&index, T_string(M_c_or_w(T, "c"), 2)));
+    M_test(!cstr.find_substr(&index, M_c_or_w(T, '\0')));
+    M_test(!cstr.find_char(&index, M_c_or_w(T, '\0')));
+    M_test(!cstr.find_char_reverse(&index, '\0'));
     cstr = T_string(M_c_or_w(T, "abc"), 4);
-    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_p);
-    M_test(cstr.find_substr(T_string(M_c_or_w(T, "c"), 2)).m_length);
-  }
-  {
-    T_string cstr(M_c_or_w(T, "abc"));
-    M_test(cstr.find_substr(M_c_or_w(T, "a")).m_p == cstr.m_p);
-    M_test(cstr.find_substr(M_c_or_w(T, "ab")).m_p == cstr.m_p);
-    M_test(cstr.find_substr(M_c_or_w(T, "b")).m_p == cstr.m_p + 1);
-    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == NULL);
-    cstr = T_string(M_c_or_w(T, "abc"), 4);
-    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
-  }
-  {
-    T_string cstr(M_c_or_w(T, "abc"));
-    M_test(cstr.find_char(M_c_or_w(T, 'a')).m_p == cstr.m_p);
-    M_test(cstr.find_char(M_c_or_w(T, 'b')).m_p == cstr.m_p + 1);
-    M_test(cstr.find_char(M_c_or_w(T, '\0')).m_p == NULL);
-    cstr = T_string(M_c_or_w(T, "abc"), 4);
-    M_test(cstr.find_substr(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
-  }
-  {
-    T_string cstr(M_c_or_w(T, "abc"));
-    M_test(cstr.find_char_reverse(M_c_or_w(T, 'a')).m_p == cstr.m_p);
-    M_test(cstr.find_char_reverse(M_c_or_w(T, 'b')).m_p == cstr.m_p + 1);
-    M_test(cstr.find_char_reverse('\0').m_p == NULL);
-    cstr = T_string(M_c_or_w(T, "abc"), 4);
-    M_test(cstr.find_char_reverse(M_c_or_w(T, '\0')).m_p == cstr.m_p + 3);
+    M_test(cstr.find_substr(&index, T_string(M_c_or_w(T, "c"), 2)) && index == 2);
+    M_test(cstr.find_substr(&index, M_c_or_w(T, "a")) && index == 0);
+    M_test(cstr.find_substr(&index, M_c_or_w(T, "ab")) && index == 0);
+    M_test(cstr.find_substr(&index, M_c_or_w(T, "b")) && index == 1);
+    M_test(cstr.find_substr(&index, M_c_or_w(T, '\0')) && index == 3);
+
+    M_test(cstr.find_char(&index, M_c_or_w(T, 'a')) && index == 0);
+    M_test(cstr.find_char(&index, M_c_or_w(T, 'b')) && index == 1);
+    M_test(cstr.find_substr(&index, M_c_or_w(T, '\0')) && index == 3);
+
+    M_test(cstr.find_char_reverse(&index, M_c_or_w(T, 'a')) && index == 0);
+    M_test(cstr.find_char_reverse(&index, M_c_or_w(T, 'b')) && index == 1);
+    M_test(cstr.find_char_reverse(&index, M_c_or_w(T, '\0')) && index == 3);
   }
 }
 
@@ -88,7 +76,8 @@ void template_mstring_test_() {
   using T = T_char;
   {
     T buffer[100] = {};
-    T_string mstr(buffer, 100);
+    T_string mstr(buffer, 0);
+    mstr.m_capacity = 100;
     mstr.append(M_c_or_w(T, 'a'));
     M_test(mstr.equals(M_c_or_w(T, "a")));
     mstr.append(M_c_or_w(T, "bc"));

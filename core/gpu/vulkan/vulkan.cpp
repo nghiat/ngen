@@ -12,6 +12,7 @@
 #include "core/linear_allocator.inl"
 #include "core/os.h"
 #include "core/log.h"
+#include "core/string.inl"
 #include "core/utils.h"
 
 #define M_vk_check(condition) { \
