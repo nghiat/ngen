@@ -37,8 +37,8 @@ Command_line_t g_cl(g_persistent_allocator);
 
 struct Per_obj_t_ {
   M4_t world = {};
-  M4_t inv_bind_mat[100] = {};
-  M4_t joints[100] = {};
+  M4_t joints[300] = {};
+  M4_t inv_bind_mat[300] = {};
 };
 
 struct Shared_t_ {
@@ -215,9 +215,9 @@ bool Gpu_window_t::init() {
   }
 
   // The light is static for now.
-  m_cam.init({-1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, this);
+  m_cam.init({200.0f, 200.0f, 200.0f}, {0.0f, 0.0f, 0.0f}, this);
   Cam_t light_cam;
-  light_cam.init({10.0f, 10.0f, 10.0f}, {0.0f, 0.0f, 0.0f}, this);
+  light_cam.init({1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, this);
 
   // TODO: ortho?
   M4_t perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.001f, 10000.0f);
@@ -351,8 +351,8 @@ bool Gpu_window_t::init() {
       for (int i = 0; i < 6; ++i) {
         Linear_allocator_t<> texture_temp_allocator("texture_temp_allocator");
         M_scope_exit(texture_temp_allocator.destroy());
-        Dds_loader_t cube_texture;
-        cube_texture.init(&texture_temp_allocator, paths[i]);
+        Dds_loader_t cube_texture(&texture_temp_allocator);
+        cube_texture.init(paths[i]);
         ci = get_texture_create_info(cube_texture);
         M_check(cube_texture.m_header->width == cube_texture.m_header->height);
         if (dimension == 0) {
@@ -422,14 +422,14 @@ bool Gpu_window_t::init() {
     //     M_txt("assets/plane.obj"),
     // };
     const Os_char* dae_paths[] = {
-        M_txt("assets/wolf.dae"),
+        M_txt("assets/pirate.dae"),
     };
     Sip vertices_offset = 0;
     Sip normals_offset = 0;
     m_obj_count = static_array_size(dae_paths);
 
     Vertex_buffer_create_info_t vb_ci = {};
-    vb_ci.size = 16 * 1024 * 1024;
+    vb_ci.size = 32 * 1024 * 1024;
     vb_ci.alignment = 256;
     vb_ci.stride = sizeof(Vertex_t);
     m_vertices_vb = m_gpu->create_vertex_buffer(&m_gpu_allocator, vb_ci);
@@ -447,23 +447,18 @@ bool Gpu_window_t::init() {
         m_per_obj[i] = (Per_obj_t_*)m_per_obj_uniforms[i].uniform_buffer->p;
 
         Path_t full_obj_path = g_exe_dir.join(dae_paths[i]);
-        m_dae_model.init(&m_gpu_allocator, full_obj_path);
+        m_dae_model.init(full_obj_path);
         memset(m_per_obj[i], 0, sizeof(Per_obj_t_));
-        m_per_obj[i]->world = m_dae_model.m_transform_matrix;
+        m_per_obj[i]->world = m4_identity();
+        m_dae_model.update_joint_matrices_at(0.f);
+        memcpy(m_per_obj[i]->joints, m_dae_model.m_joint_matrices.m_p, m_dae_model.m_joint_matrices.len() * sizeof(M4_t));
         memcpy(m_per_obj[i]->inv_bind_mat, m_dae_model.m_inv_bind_matrices.m_p, m_dae_model.m_inv_bind_matrices.len() * sizeof(M4_t));
-        {
-          auto joints = m_dae_model.get_joint_matricies_at(&m_gpu_allocator, 0.f);
-          memcpy(m_per_obj[i]->joints, joints.m_p, joints.len() * sizeof(M4_t));
-          joints.destroy();
-        }
         m_obj_vertices_counts[i] = m_dae_model.m_vertices.len();
-        m_obj_indices_counts[i] = m_dae_model.m_index_buffer.len();
         int vertices_size = m_obj_vertices_counts[i] * sizeof(m_dae_model.m_vertices[0]);
         // int normals_size = m_obj_vertices_counts[i] * sizeof(obj.m_normals[0]);
         // M_check_return_false(vertices_offset + vertices_size <= m_vertices_subbuffer.bi.range);
         // M_check_return_false(normals_offset + normals_size <= m_normals_subbuffer.bi.range);
         memcpy((U8*)m_vertices_vb->p + vertices_offset, &m_dae_model.m_vertices[0], vertices_size);
-        memcpy((U8*)m_index_buffer->p, &m_dae_model.m_index_buffer[0], m_dae_model.m_index_buffer.len() * sizeof(U32));
         // memcpy((U8*)m_normals_vb->p + normals_offset, &obj.m_normals[0], normals_size);
         vertices_offset += vertices_size;
         // normals_offset += normals_size;
@@ -477,7 +472,12 @@ bool Gpu_window_t::init() {
     input_elem.format = e_format_r32g32b32a32_float;
     input_elems.append(input_elem);
   }
-
+  {
+    Input_element_t input_elem = {};
+    input_elem.semantic_name = "NORMAL";
+    input_elem.format = e_format_r32g32b32_float;
+    input_elems.append(input_elem);
+  }
   {
     Input_element_t input_elem = {};
     input_elem.semantic_name = "BLENDINDICES";
@@ -672,13 +672,11 @@ void Gpu_window_t::destroy() {
 void Gpu_window_t::loop() {
   m_cam.update();
   m_shared->view = m_cam.m_view_mat;
-  F64 delta_s = mono_time_to_s(mono_time_now() - m_time_start);
+  F64 delta_s = mono_time_to_s(mono_time_now() - m_time_start) / 2.f;
 
-  {
-    auto joints = m_dae_model.get_joint_matricies_at(&m_gpu_allocator, delta_s);
-    memcpy(m_per_obj[0]->joints, joints.m_p, joints.len() * sizeof(M4_t));
-    joints.destroy();
-  }
+  m_dae_model.update_joint_matrices_at(delta_s);
+
+  memcpy(m_per_obj[0]->joints, m_dae_model.m_joint_matrices.m_p, m_dae_model.m_joint_matrices.len() * sizeof(M4_t));
 
   m_gpu->get_back_buffer();
   m_gpu->cmd_begin();
@@ -691,7 +689,8 @@ void Gpu_window_t::loop() {
     int vertex_offset = 0;
     for (int i = 0; i < m_obj_count; ++i) {
       m_gpu->cmd_set_resource(m_per_obj_uniforms[i], m_shadow_pipeline_layout, m_per_obj_resources_set, 0);
-      m_gpu->cmd_draw_index(m_obj_indices_counts[i], 1, 0, 0, 0);
+      // m_gpu->cmd_draw_index(m_obj_indices_counts[i], 1, 0, 0, 0);
+      m_gpu->cmd_draw(m_obj_vertices_counts[i], 0);
       vertex_offset += m_obj_vertices_counts[i];
     }
     m_gpu->cmd_end_render_pass(m_shadow_render_pass);
@@ -707,7 +706,8 @@ void Gpu_window_t::loop() {
     int vertex_offset = 0;
     for (int i = 0; i < m_obj_count; ++i) {
       m_gpu->cmd_set_resource(m_per_obj_uniforms[i], m_final_pipeline_layout, m_per_obj_resources_set, 0);
-      m_gpu->cmd_draw_index(m_obj_indices_counts[i], 1, 0, 0, 0);
+      // m_gpu->cmd_draw_index(m_obj_indices_counts[i], 1, 0, 0, 0);
+      m_gpu->cmd_draw(m_obj_vertices_counts[i], 0);
       vertex_offset += m_obj_vertices_counts[i];
     }
     m_gpu->cmd_end_render_pass(m_final_render_pass);
@@ -752,8 +752,8 @@ void Gpu_window_t::on_mouse_move(int x, int y) {
 void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format) {
   Linear_allocator_t<> temp_allocator("texture_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
-  Dds_loader_t dds;
-  dds.init(&temp_allocator, path);
+  Dds_loader_t dds(&temp_allocator);
+  dds.init(path);
   *texture = m_gpu->create_texture(&m_gpu_allocator, get_texture_create_info(dds));
 
   Image_view_create_info_t image_view_ci = {};

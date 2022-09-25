@@ -187,7 +187,8 @@ struct Dds_header_dxt10_t {
 
 class Dds_loader_t {
 public:
-  bool init(Allocator_t* allocator, const Path_t& path);
+  Dds_loader_t(Allocator_t* allocator) : m_file_data(allocator) {}
+  bool init(const Path_t& path);
   void destroy();
 
   Dynamic_array_t<U8> m_file_data;

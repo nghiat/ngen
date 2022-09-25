@@ -55,51 +55,16 @@ inline M4_t quat_to_m4(const Quat_t& q) {
           V4_t{0.f, 0.f, 0.f, 1.f}};
 }
 
+// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
 inline Quat_t quat_from_m4(const M4_t& m) {
   Quat_t q;
-  float a = m.m[0][0] + m.m[1][1] + m.m[2][2]; // 4a^2 - 1
-  float b = m.m[0][0] - m.m[1][1] - m.m[2][2]; // 4b^2 - 1
-  float c = m.m[1][1] - m.m[0][0] - m.m[2][2]; // 4c^2 - 1
-  float d = m.m[2][2] - m.m[0][0] - m.m[1][1]; // 4d^2 - 1
-  float max = a;
-  if (b > max) {
-    max = b;
-  }
-  if (c > max) {
-    max = c;
-  }
-  if (d > max) {
-    max = d;
-  }
-  if(max == a) {
-    float s = sqrt(a + 1.f)/2;
-    float o = 0.25f/s;
-    q.a = s;
-    q.b = (m.m[1][2] - m.m[2][1])*o;
-    q.c = (m.m[2][0] - m.m[0][2])*o;
-    q.d = (m.m[0][1] - m.m[1][0])*o;
-  } else if (max == b) {
-    float s = sqrtf(b + 1.f)/2;
-    float o = 0.25/s;
-    q.a = (m.m[1][2] - m.m[2][1])*o;
-    q.b = s;
-    q.c = (m.m[1][0] + m.m[0][1])*o;
-    q.d = (m.m[2][0] + m.m[0][2])*o;
-  } else if (max == c) {
-    float s = sqrtf(c + 1.f)/2;
-    float o = 0.25f/s;
-    q.a = (m.m[2][0] - m.m[0][2])*o;
-    q.b = (m.m[1][0] + m.m[0][1])*o;
-    q.c = s;
-    q.d = (m.m[2][1] + m.m[1][2])*o;
-  } else {
-    float s = sqrtf(d + 1.0f)/2;
-    float o = 0.25/s;
-    q.a = (m.m[0][1] - m.m[1][0])*o;
-    q.b = (m.m[2][0] + m.m[0][2])*o;
-    q.c = (m.m[2][1] + m.m[1][2])*o;
-    q.d = s;
-  }
+  q.a = sqrt(max(0, 1 + m.m[0][0] + m.m[1][1] + m.m[2][2]))/2;
+  q.b = sqrt(max(0, 1 + m.m[0][0] - m.m[1][1] - m.m[2][2]))/2;
+  q.c = sqrt(max(0, 1 - m.m[0][0] + m.m[1][1] - m.m[2][2]))/2;
+  q.d = sqrt(max(0, 1 - m.m[0][0] - m.m[1][1] + m.m[2][2]))/2;
+  q.b = copysignf(q.b, m.m[1][2] - m.m[2][1]);
+  q.c = copysignf(q.c, m.m[2][0] - m.m[0][2]);
+  q.d = copysignf(q.d, m.m[0][1] - m.m[1][0]);
   return q;
 }
 

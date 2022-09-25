@@ -27,22 +27,22 @@ bool Cam_t::update() {
   bool need_update_view = false;
   V3_t cam_right = v3_normalize(v3_cross(m_forward, m_up));
   if (m_w->m_key_down[e_key_w]) {
-    V3_t forward = m_forward * 0.1f;
+    V3_t forward = m_forward * 1.f;
     m_eye += forward;
     need_update_view = true;
   }
   if (m_w->m_key_down[e_key_s]) {
-    V3_t backward = m_forward * -0.1f;
+    V3_t backward = m_forward * -1.f;
     m_eye += backward;
     need_update_view = true;
   }
   if (m_w->m_key_down[e_key_d]) {
-    V3_t right = cam_right * 0.1f;
+    V3_t right = cam_right * 1.f;
     m_eye += right;
     need_update_view = true;
   }
   if (m_w->m_key_down[e_key_a]) {
-    V3_t left = cam_right * -0.1f;
+    V3_t left = cam_right * -1.f;
     m_eye += left;
     need_update_view = true;
   }

@@ -17,4 +17,13 @@
             <Item Name="[length]" ExcludeView="simple">m_length</Item>
         </Expand>
     </Type>
+    <Type Name="Hash_table_t_&lt;*&gt;">
+        <DisplayString>{{ length={m_count} }}</DisplayString>
+        <Expand>
+            <IndexListItems>
+                <Size>m_bucket_count</Size>
+                <ValueNode Condition="m_states_p[$i] == e_slot_state_alive">m_data_p[$i]</ValueNode>
+            </IndexListItems>
+        </Expand>
+    </Type>
 </AutoVisualizer>

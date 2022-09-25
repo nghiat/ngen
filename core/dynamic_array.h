@@ -14,7 +14,6 @@ template <typename T>
 class Dynamic_array_t {
 public:
   using T_value = T;
-  Dynamic_array_t() {}
   Dynamic_array_t(Allocator_t* allocator);
   void destroy();
   Sip len() const;

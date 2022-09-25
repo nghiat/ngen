@@ -18,17 +18,17 @@ template <typename T>
 static bool find_char_(Sip* o_index, const T* str, T c, Sip from, Sz len);
 
 template <>
-Sip get_str_len_<char>(const char* str) {
+inline Sip get_str_len_<char>(const char* str) {
   return strlen(str);
 }
 
 template <>
-Sip get_str_len_<wchar_t>(const wchar_t* str) {
+inline Sip get_str_len_<wchar_t>(const wchar_t* str) {
   return wcslen(str);
 }
 
 template <>
-bool find_char_<char>(Sip* o_index, const char* str, char c, Sip from, Sz len) {
+inline bool find_char_<char>(Sip* o_index, const char* str, char c, Sip from, Sz len) {
   auto found = (const char*)memchr((const void*)(str + from), c, len);
   if (found) {
     maybe_assign(o_index, found - str);
@@ -38,7 +38,7 @@ bool find_char_<char>(Sip* o_index, const char* str, char c, Sip from, Sz len) {
 }
 
 template <>
-bool find_char_<wchar_t>(Sip* o_index, const wchar_t* str, wchar_t c, Sip from, Sz len) {
+inline bool find_char_<wchar_t>(Sip* o_index, const wchar_t* str, wchar_t c, Sip from, Sz len) {
   auto found = wmemchr(str + from, c, len);
   if (found) {
     maybe_assign(o_index, found - str);

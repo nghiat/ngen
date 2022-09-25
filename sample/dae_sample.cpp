@@ -13,8 +13,8 @@
 int main(int argc, char** argv) {
   core_init(M_txt("dae_sample.log"));
   Linear_allocator_t<> allocator("allocator");
-  Dae_loader_t dae;
-  dae.init(&allocator, g_exe_dir.join(M_txt("assets/wolf.dae")));
+  Dae_loader_t dae(&allocator);
+  dae.init(g_exe_dir.join(M_txt("assets/pirate.dae")));
   core_destroy();
   return 0;
 }

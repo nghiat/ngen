@@ -161,7 +161,7 @@ static Xml_node_t* parse_xml_(const char** last_pos, Allocator_t* allocator, con
   return node;
 }
 
-const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
+const Xml_node_t* Xml_node_t::find_first_by_path(const Cstring_t& name) const {
   const Xml_node_t* rv = NULL;
   const Xml_node_t* curr = this;
   Cstring_t curr_name = name;
@@ -195,14 +195,14 @@ const Xml_node_t* Xml_node_t::find_child(const Cstring_t& name) const {
   return rv;
 }
 
-const Xml_node_t* Xml_node_t::find_by_attr(const Cstring_t& name, const Cstring_t& val) const {
+const Xml_node_t* Xml_node_t::find_first_by_attr(const Cstring_t& name, const Cstring_t& val) const {
   const Xml_node_t* curr = this;
   for (const auto& child : curr->m_children) {
     Cstring_t* id_val = child->m_attributes.find(name);
     if (id_val && *id_val == val) {
       return child;
     }
-    const Xml_node_t* child_rv = child->find_by_attr(name, val);
+    const Xml_node_t* child_rv = child->find_first_by_attr(name, val);
     if (child_rv) {
       return child_rv;
     }
@@ -210,18 +210,38 @@ const Xml_node_t* Xml_node_t::find_by_attr(const Cstring_t& name, const Cstring_
   return NULL;
 }
 
-const Xml_node_t* Xml_node_t::find_first_tag(const Cstring_t& name) const {
+const Xml_node_t* Xml_node_t::find_first_by_tag(const Cstring_t& name) const {
   const Xml_node_t* curr = this;
   for (const auto& child : curr->m_children) {
     if (child->m_tag_name == name) {
       return child;
     }
-    const Xml_node_t* child_rv = child->find_first_tag(name);
+    const Xml_node_t* child_rv = child->find_first_by_tag(name);
     if (child_rv) {
       return child_rv;
     }
   }
   return NULL;
+}
+
+void Xml_node_t::find_all_by_tag(Xml_nodes_t* nodes, const Cstring_t& name) const {
+  for (const auto& child : m_children) {
+    if (child->m_tag_name == name) {
+      nodes->append(child);
+    }
+    child->find_all_by_tag(nodes, name);
+  }
+}
+
+int Xml_node_t::count_all_by_tag(const Cstring_t& name) const {
+  int rv = 0;
+  for (const auto& child : m_children) {
+    if (child->m_tag_name == name) {
+      ++rv;
+    }
+    rv += child->count_all_by_tag(name);
+  }
+  return rv;
 }
 
 void Xml_node_t::destory() {

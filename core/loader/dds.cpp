@@ -10,8 +10,8 @@
 #include "core/log.h"
 #include "core/utils.h"
 
-bool Dds_loader_t::init(Allocator_t* allocator, const Path_t& path) {
-  m_file_data = File_t::read_whole_file_as_binary(allocator, path.m_path);
+bool Dds_loader_t::init(const Path_t& path) {
+  m_file_data = File_t::read_whole_file_as_binary(m_file_data.m_allocator, path.m_path);
   U8* p = m_file_data.m_p;
   U32 magic_num = *(U32*)p;
   p += 4;

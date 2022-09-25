@@ -21,3 +21,10 @@ inline bool float_equal_0(float a) {
 float degree_to_rad(float deg) {
   return deg / 180.0f * M_pi_f;
 }
+
+float max(float a, float b) {
+  if (a > b) {
+    return a;
+  }
+  return b;
+}

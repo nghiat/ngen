@@ -27,10 +27,10 @@ Sz static_array_size(const T(&)[N]) {
 
 template <typename T>
 void swap(T* a, T* b) {
-  T temp;
-  temp = *a;
+  char temp[sizeof(T)];
+  *(T*)temp = *a;
   *a = *b;
-  *b = temp;
+  *b = *(T*)temp;
 }
 
 template <typename T>
