@@ -217,10 +217,10 @@ bool Gpu_window_t::init() {
   // The light is static for now.
   m_cam.init({200.0f, 200.0f, 200.0f}, {0.0f, 0.0f, 0.0f}, this);
   Cam_t light_cam;
-  light_cam.init({1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, this);
+  light_cam.init({200.0f, 200.0f, 200.0f}, {0.0f, 0.0f, 0.0f}, this);
 
   // TODO: ortho?
-  M4_t perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.001f, 10000.0f);
+  M4_t perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 500.0f);
 
   {
     m_shadow_depth_stencil = m_gpu->create_depth_stencil(&m_gpu_allocator, { .can_be_sampled = true } );
@@ -297,7 +297,7 @@ bool Gpu_window_t::init() {
     m_shared->view = m_cam.m_view_mat;
     m_shared->eye_pos = V3o_v4(m_cam.m_eye, 1.0f);
     m_shared->obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
-    m_shared->light_pos = {10.0f, 10.0f, 10.0f, 1.0f};
+    m_shared->light_pos = {200.0f, 200.0f, 200.0f, 1.0f};
     m_shared->light_color = {1.0f, 1.0f, 1.0f, 1.0f};
     m_shared->proj = perspective_m4;
     m_shared->light_view = light_cam.m_view_mat;
@@ -672,10 +672,9 @@ void Gpu_window_t::destroy() {
 void Gpu_window_t::loop() {
   m_cam.update();
   m_shared->view = m_cam.m_view_mat;
-  F64 delta_s = mono_time_to_s(mono_time_now() - m_time_start) / 2.f;
+  F64 delta_s = mono_time_to_s(mono_time_now() - m_time_start);
 
   m_dae_model.update_joint_matrices_at(delta_s);
-
   memcpy(m_per_obj[0]->joints, m_dae_model.m_joint_matrices.m_p, m_dae_model.m_joint_matrices.len() * sizeof(M4_t));
 
   m_gpu->get_back_buffer();
