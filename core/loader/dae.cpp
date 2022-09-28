@@ -243,6 +243,12 @@ M4_t anim_get_at(const Animation_t* animation, float time) {
       const M4_t& m2 = animation->matrices[i + 1];
       Quat_t q1 = quat_from_m4(m1);
       Quat_t q2 = quat_from_m4(m2);
+      for (int j = 0; j < 4; ++j) {
+        if (abs(q1.v.a[j] - q2.v.a[j]) > 0.5f) {
+          q2.v = q2.v * -1.f;
+          break;
+        }
+      }
       M4_t rv = quat_to_m4(quat_lerp(q1, q2, animation->times[i], animation->times[i+1], time_mod));
       V4_t translate1 = V4_t{m1.m[0][3], m1.m[1][3], m1.m[2][3], 1.f};
       V4_t translate2 = V4_t{m2.m[0][3], m2.m[1][3], m2.m[2][3], 1.f};
