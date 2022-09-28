@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "sample/cam.h"
+#include "eins/cam.h"
 
 #include "core/log.h"
 #include "core/math/quat.inl"

@@ -5,11 +5,13 @@
 ##----------------------------------------------------------------------------##
 
 import("//core/reflection/reflection.gni")
-import("//third_party/dxc/dxc.gni")
 
 group("sample") {
   deps = [
-    ":dx12_sample",
+    ":dae_sample",
+    ":net_sample",
+    ":reflection_sample",
+    ":hash_table",
   ]
 }
 
@@ -58,21 +60,6 @@ reflection("test_reflection") {
   ]
 }
 
-executable("gpu_sample") {
-  sources = [
-    "cam.cpp",
-    "cam.h",
-    "gpu_sample.cpp",
-  ]
-
-  deps = [
-    "//assets",
-    "//core",
-    ":shaders_spirv",
-    ":shaders_hlsl",
-  ]
-}
-
 executable("png_sample") {
   sources = [
     "png_sample.cpp",
@@ -84,43 +71,6 @@ executable("png_sample") {
   ]
 }
 
-executable("vulkan_sample") {
-  sources = [
-    "cam.cpp",
-    "cam.h",
-    "vulkan_sample.cpp",
-  ]
-
-  deps = [
-    "//assets",
-    "//core",
-    ":shaders_spirv",
-  ]
-}
-
-executable("dx12_sample") {
-  sources = [
-    "cam.cpp",
-    "cam.h",
-    "dx12_sample.cpp",
-    "quake_console.cpp",
-    "quake_console.h",
-  ]
-
-  deps = [
-    ":shaders_hlsl",
-    "//assets",
-    "//core",
-    "//third_party/libclang",
-  ]
-
-  libs = [
-    "D3D12.lib",
-    "D3DCompiler.lib",
-    "DXGI.lib",
-  ]
-}
-
 executable("hash_table") {
   sources = [
     "hash_table.cpp",
@@ -128,17 +78,5 @@ executable("hash_table") {
 
   deps = [
     "//core",
-  ]
-}
-
-dxc("shaders") {
-  shaders = [
-    [ "cube.hlsl", "VSMain", "vs_5_0", "cube_vs" ],
-    [ "cube.hlsl", "PSMain", "ps_5_0", "cube_ps" ],
-    [ "shadow.hlsl", "VSMain", "vs_5_0", "shadow_vs" ],
-    [ "shader.hlsl", "VSMain", "vs_5_0", "shader_vs" ],
-    [ "shader.hlsl", "PSMain", "ps_5_0", "shader_ps" ],
-    [ "pbr.hlsl", "VSMain", "vs_5_0", "pbr_vs" ],
-    [ "pbr.hlsl", "PSMain", "ps_5_0", "pbr_ps" ],
   ]
 }

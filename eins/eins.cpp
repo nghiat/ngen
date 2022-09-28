@@ -28,7 +28,7 @@
 #include "core/string.inl"
 #include "core/utils.h"
 #include "core/window/window.h"
-#include "sample/cam.h"
+#include "eins/cam.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
@@ -122,9 +122,9 @@ static Textured_sphere_t generate_sphere(Allocator_t* allocator, float r, int n)
   return s;
 }
 
-class Gpu_window_t : public Window_t {
+class Eins_window_t : public Window_t {
 public:
-  Gpu_window_t(const Os_char* title, int w, int h) : Window_t(title, w, h), m_gpu_allocator("gpu_allocator"), m_dae_model(&m_gpu_allocator) {}
+  Eins_window_t(const Os_char* title, int w, int h) : Window_t(title, w, h), m_gpu_allocator("gpu_allocator"), m_dae_model(&m_gpu_allocator) {}
 
   bool init();
   void destroy() override;
@@ -199,7 +199,7 @@ private:
   void create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format);
 };
 
-bool Gpu_window_t::init() {
+bool Eins_window_t::init() {
   Window_t::init();
   Linear_allocator_t<> temp_allocator("gpu_init_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
@@ -666,10 +666,10 @@ bool Gpu_window_t::init() {
   return true;
 }
 
-void Gpu_window_t::destroy() {
+void Eins_window_t::destroy() {
 }
 
-void Gpu_window_t::loop() {
+void Eins_window_t::loop() {
   m_cam.update();
   m_shared->view = m_cam.m_view_mat;
   F64 delta_s = mono_time_to_s(mono_time_now() - m_time_start);
@@ -740,15 +740,15 @@ void Gpu_window_t::loop() {
   m_gpu->cmd_end();
 }
 
-void Gpu_window_t::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
+void Eins_window_t::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
   m_cam.mouse_event(mouse, x, y, is_down);
 }
 
-void Gpu_window_t::on_mouse_move(int x, int y) {
+void Eins_window_t::on_mouse_move(int x, int y) {
   m_cam.mouse_move(x, y);
 }
 
-void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format) {
+void Eins_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format) {
   Linear_allocator_t<> temp_allocator("texture_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
   Dds_loader_t dds(&temp_allocator);
@@ -763,10 +763,10 @@ void Gpu_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv,
 }
 
 int main(int argc, char** argv) {
-  core_init(M_txt("gpu_sample.log"));
+  core_init(M_txt("eins.log"));
   g_cl.register_flag(NULL, "--gpu", e_value_type_string);
   g_cl.parse(argc, argv);
-  Gpu_window_t w(M_txt("gpu_sample"), 1024, 768);
+  Eins_window_t w(M_txt("eins"), 1024, 768);
   w.init();
   w.os_loop();
   core_destroy();
