@@ -11,6 +11,17 @@
             </ArrayItems>
         </Expand>
     </Type>
+    <Type Name="Fixed_array_t&lt;*,*&gt;">
+        <DisplayString>{{ length={m_length} }}</DisplayString>
+        <Expand>
+            <Item Name="[length]" ExcludeView="simple">m_length</Item>
+            <Item Name="[capacity]" ExcludeView="simple">$T2</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_p</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
     <Type Name="String_t_&lt;*&gt;">
         <DisplayString>{{ str={m_p,[m_length]} }}</DisplayString>
         <Expand>

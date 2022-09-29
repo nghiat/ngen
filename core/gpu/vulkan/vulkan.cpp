@@ -1019,8 +1019,8 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
       attribute.format = convert_format_to_vk_format(ci_elem.format);
       for (int k = 0; k < matrix_row_count; ++k) {
         attribute.location = location++;
-        attribute_descs.append(attribute);
         attribute.offset = offset;
+        attribute_descs.append(attribute);
         offset += convert_format_to_size_(ci_elem.format);
       }
     }
