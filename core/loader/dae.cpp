@@ -244,7 +244,11 @@ M4_t anim_get_at(const Animation_t* animation, float time) {
       Quat_t q1 = quat_from_m4(m1);
       Quat_t q2 = quat_from_m4(m2);
       for (int j = 0; j < 4; ++j) {
-        if (abs(q1.v.a[j] - q2.v.a[j]) > 0.5f) {
+        Quat_t sub;
+        sub.v = q1.v - q2.v;
+        Quat_t sum;
+        sum.v = q1.v + q2.v;
+        if (quat_norm(sub) > quat_norm(sum)) {
           q2.v = q2.v * -1.f;
           break;
         }
