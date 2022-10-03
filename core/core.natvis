@@ -31,10 +31,16 @@
     <Type Name="Hash_table_t_&lt;*&gt;">
         <DisplayString>{{ length={m_count} }}</DisplayString>
         <Expand>
-            <IndexListItems>
-                <Size>m_bucket_count</Size>
-                <ValueNode Condition="m_states_p[$i] == e_slot_state_alive">m_data_p[$i]</ValueNode>
-            </IndexListItems>
+          <CustomListItems>
+              <Variable Name="index" InitialValue="0" />
+              <Size>m_count</Size>
+              <Loop>
+                <If Condition="m_states_p[index] == e_slot_state_alive">
+                  <Item>m_data_p[index]</Item>
+                </If>
+                <Exec>++index</Exec>
+              </Loop>
+          </CustomListItems>
         </Expand>
     </Type>
 </AutoVisualizer>

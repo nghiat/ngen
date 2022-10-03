@@ -15,6 +15,17 @@ group("sample") {
   ]
 }
 
+executable("temp_sample") {
+  sources = [
+    "sample.cpp",
+  ]
+
+  deps = [
+    "//assets",
+    "//core",
+  ]
+}
+
 executable("dae_sample") {
   sources = [
     "dae_sample.cpp",
