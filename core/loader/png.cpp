@@ -248,6 +248,7 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
     int data_len = M_bswap32_(*((int*)(&data[0] + i)));
     i += 4;
     const U8* chunk_it = &data[0] + i;
+    M_unused(chunk_it);
     const int chunk_type = *((int*)(&data[0] + i));
     i += 4;
     U8* p = &data[0] + i;
@@ -336,10 +337,13 @@ bool Png_loader_t::init(Allocator_t* allocator, const Path_t& path) {
       U32 zlib_compress_method = bs.consume_lsb(4);
       M_check_log_return_val(zlib_compress_method == 8, false, "Invalid zlib compression method");
       U32 zlib_compress_info = bs.consume_lsb(4);
+      M_unused(zlib_compress_info);
       M_check_log_return_val((idat_full[0] * 256 + idat_full[1]) % 31 == 0, false, "Invalid FCHECK bits");
       bs.consume_lsb(5);
       U8 fdict = bs.consume_lsb(1);
+      M_unused(fdict);
       U8 flevel = bs.consume_lsb(2);
+      M_unused(flevel);
       U8* deflated_data = (U8*)temp_allocator.alloc((m_width + 1) * m_height * m_bytes_per_pixel);
       U8* deflated_p = deflated_data;
       while (true) {

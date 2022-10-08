@@ -12,9 +12,17 @@
 
 struct Allocator_t;
 
+struct Point_t_ {
+  S16 x = 0;
+  S16 y = 0;
+  U8 flag = 0;
+};
+
 class Ttf_loader_t {
 public:
   Ttf_loader_t(Allocator_t* allocator);
   bool init(const Path_t& path);
   void destroy();
+
+  Dynamic_array_t<Point_t_> m_points;
 };

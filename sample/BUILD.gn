@@ -5,6 +5,7 @@
 ##----------------------------------------------------------------------------##
 
 import("//core/reflection/reflection.gni")
+import("//third_party/dxc/dxc.gni")
 
 group("sample") {
   deps = [
@@ -12,6 +13,7 @@ group("sample") {
     ":net_sample",
     ":reflection_sample",
     ":hash_table",
+    ":font_sample",
   ]
 }
 
@@ -23,6 +25,25 @@ executable("temp_sample") {
   deps = [
     "//assets",
     "//core",
+  ]
+}
+
+executable("font_sample") {
+  sources = [
+    "font_sample.cpp",
+  ]
+
+  deps = [
+    ":shaders_spirv",
+    "//assets",
+    "//core",
+  ]
+}
+
+dxc("shaders") {
+  shaders = [
+    [ "text.hlsl", "VSMain", "vs_5_0", "text_vs" ],
+    [ "text.hlsl", "PSMain", "ps_5_0", "text_ps" ],
   ]
 }
 

@@ -14,6 +14,8 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "third_party/stb/stb_truetype.h"
 
+#include <stdio.h>
+
 struct Table_t_ {
   U32 checksum;
   U32 offset;
@@ -63,7 +65,7 @@ Cstring_t read_tag_(const U8** p) {
   return rv;
 }
 
-Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) {
+Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) : m_points(allocator) {
 }
 
 bool Ttf_loader_t::init(const Path_t& path) {
@@ -109,7 +111,57 @@ bool Ttf_loader_t::init(const Path_t& path) {
   S16 number_of_contours = read_be_<S16>(glyf);
   const U8* end_pts_of_contours = glyf + 10;
   p = end_pts_of_contours + number_of_contours * sizeof(U16);
+  U16 point_count = read_be_<U16>(end_pts_of_contours + (number_of_contours -1)*sizeof(U16)) + 1;
   U16 instruction_length = consume_be_<U16>(&p);
-  const U8* instructions = p;;
+  const U8* instructions = p;
+  const U8* flags = instructions + instruction_length;
+  m_points.resize(point_count);
+  for (int i = 0; i < point_count; ++i) {
+    U8 flag = *(flags++);
+    m_points[i].flag = flag;
+    if (flag & 8) {
+      U8 repeat_count = *(flags++);
+      for (int j = 1; j <= repeat_count; ++j) {
+        m_points[i + j].flag = flag;
+      }
+      i += repeat_count;
+    }
+  }
+
+  const U8* x_coords = flags;
+  for (int i = 0; i < point_count; ++i) {
+    U8 flag = m_points[i].flag;
+    if (flag & 2) {
+      if (flag & 0x10) {
+        m_points[i].x = *x_coords++;
+      } else {
+        m_points[i].x = -*x_coords++;
+      }
+    } else {
+      if (flag & 0x10) {
+        m_points[i].x = m_points[i - 1].x;
+      } else {
+        m_points[i].x = consume_be_<S16>(&x_coords);
+      }
+    }
+  }
+
+  const U8* y_coords = x_coords;
+  for (int i = 0; i < point_count; ++i) {
+    U8 flag = m_points[i].flag;
+    if (flag & 4) {
+      if (flag & 0x20) {
+        m_points[i].y = *y_coords++;
+      } else {
+        m_points[i].y = -*y_coords++;
+      }
+    } else {
+      if (flag & 0x20) {
+        m_points[i].y = m_points[i - 1].y;
+      } else {
+        m_points[i].y = consume_be_<S16>(&y_coords);
+      }
+    }
+  }
   return true;
 }
