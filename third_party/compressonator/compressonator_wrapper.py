@@ -1,6 +1,7 @@
 import argparse
 import os
 import subprocess
+import sys
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -11,7 +12,10 @@ if __name__ == "__main__":
   parser.add_argument("--format")
   options = parser.parse_args()
 
-  cmd = [options.exe]
+  cmd = []
+  if sys.platform == "linux":
+    cmd += ["bash"]
+  cmd += [options.exe]
   cmd += ["-fd", options.format]
   cmd += ["-EncodeWith", "GPU"]
   cmd += [options.input]
