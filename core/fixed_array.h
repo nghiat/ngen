@@ -29,3 +29,5 @@ public:
   T m_p[T_capacity];
   Sip m_length = 0;
 };
+
+#include "core/fixed_array.inl"

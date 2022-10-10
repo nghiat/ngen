@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/linear_allocator.h"
-
 #include "core/allocator_internal.h"
 #include "core/log.h"
 

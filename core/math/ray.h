@@ -20,3 +20,5 @@ V3_t ray_at(const Ray_t& r, F32 t);
 bool ray_hit_plane(F32* out_t, const Ray_t& r, const Plane_t& p);
 bool ray_hit_sphere(F32* out_t, const Ray_t& r, const Sphere_t& s);
 bool ray_hit_triangle(const Ray_t& r, const Triangle_t& t);
+
+#include "core/math/ray.inl"

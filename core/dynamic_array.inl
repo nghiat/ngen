@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/dynamic_array.h"
-
 #include "core/allocator.h"
 #include "core/log.h"
 

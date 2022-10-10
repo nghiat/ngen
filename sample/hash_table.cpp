@@ -1,7 +1,7 @@
 #include "core/core_init.h"
-#include "core/hash_table.inl"
-#include "core/hash_table2.inl"
-#include "core/linear_allocator.inl"
+#include "core/hash_table.h"
+#include "core/hash_table2.h"
+#include "core/linear_allocator.h"
 #include "core/log.h"
 #include "core/mono_time.h"
 #include <unordered_map>

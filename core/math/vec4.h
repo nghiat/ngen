@@ -41,3 +41,5 @@ F32 vec4_len(const V4_t& v);
 V4_t vec4_normalize(const V4_t& v);
 V4_t vec4_lerp(const V4_t& v1, const V4_t& v2, float f);
 V4_t vec4_lerp(const V4_t& v1, const V4_t& v2, float from, float to, float f);
+
+#include "core/math/vec4.inl"

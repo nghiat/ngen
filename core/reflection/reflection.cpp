@@ -1,6 +1,6 @@
 #include "core/reflection/reflection.h"
 
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 
 bool Class_info_t::has_field(const Cstring_t& name) {
   for (int i = 0; i < m_fields.len(); ++i) {

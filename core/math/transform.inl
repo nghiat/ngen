@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include "core/math/transform.h"
-
-#include "core/math/vec3.inl"
+#include "core/math/vec3.h"
 
 #include <math.h>
 

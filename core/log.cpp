@@ -7,7 +7,7 @@
 #include "core/log.h"
 
 #include "core/file.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/utils.h"
 
 #include <stdarg.h>

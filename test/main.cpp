@@ -7,7 +7,7 @@
 #include "core/command_line.h"
 #include "core/core_allocators.h"
 #include "core/core_init.h"
-#include "core/hash_table.inl"
+#include "core/hash_table.h"
 #include "test/test.h"
 
 int g_total_test_count_ = 0;

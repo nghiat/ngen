@@ -5,9 +5,9 @@
 //----------------------------------------------------------------------------//
 
 #include "core/command_line.h"
-#include "core/dynamic_array.inl"
-#include "core/hash_table.inl"
-#include "core/linear_allocator.inl"
+#include "core/dynamic_array.h"
+#include "core/hash_table.h"
+#include "core/linear_allocator.h"
 #include "core/log.h"
 
 #include <ctype.h>

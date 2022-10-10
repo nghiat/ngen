@@ -5,7 +5,7 @@
 #include "core/reflection/reflection.h"
 
 #include "core/core_allocators.h"
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/string.h"
 #include "core/string_utils.h"
 

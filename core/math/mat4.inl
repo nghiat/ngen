@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include "core/math/mat4.h"
-
-#include "core/math/vec4.inl"
+#include "core/math/vec4.h"
 #include "core/utils.h"
 
 #include <string.h>

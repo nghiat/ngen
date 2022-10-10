@@ -59,3 +59,5 @@ using Mstring_t = String_t_<char>;
 using Cwstring_t = String_t_<const wchar_t>;
 using Mwstring_t = String_t_<wchar_t>;
 #endif
+
+#include "core/string.inl"

@@ -7,10 +7,10 @@
 #include "core/loader/ttf.h"
 
 #include "core/file.h"
-#include "core/hash_table.inl"
+#include "core/hash_table.h"
 #include "core/linear_allocator.h"
 #include "core/log.h"
-#include "core/string.inl"
+#include "core/string.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "third_party/stb/stb_truetype.h"
 

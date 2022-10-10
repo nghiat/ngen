@@ -11,9 +11,9 @@
 
 #include "core/allocator.h"
 #include "core/bit_stream.h"
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/file.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/log.h"
 #include "core/os.h"
 #include "core/utils.h"

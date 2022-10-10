@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/math/ray.h"
-
 #include <math.h>
 
 V3_t ray_at(Ray_t r, F32 t) {

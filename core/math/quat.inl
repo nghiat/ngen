@@ -6,11 +6,9 @@
 
 #pragma once
 
-#include "core/math/quat.h"
-
 #include "core/math/float.h"
-#include "core/math/mat4.inl"
-#include "core/math/vec3.inl"
+#include "core/math/mat4.h"
+#include "core/math/vec3.h"
 
 #include <math.h>
 

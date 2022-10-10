@@ -8,7 +8,7 @@
 
 #include "core/allocator.h"
 #include "core/core_allocators.h"
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/log.h"
 #include "core/utils.h"
 

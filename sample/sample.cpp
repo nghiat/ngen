@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------//
 
 #include "core/core_init.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/loader/ttf.h"
 #include "core/path.h"
 #include "core/path_utils.h"

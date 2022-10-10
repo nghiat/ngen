@@ -15,3 +15,5 @@ M4_t perspective(F32 fovy, F32 aspect, F32 z_near, F32 z_far);
 M4_t rotate(const V3_t& axis, F32 angle);
 M4_t scale(F32 sx, F32 sy, F32 sz);
 M4_t translate(const V3_t& v);
+
+#include "core/math/transform.inl"

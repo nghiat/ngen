@@ -6,12 +6,12 @@
 
 #include "core/loader/xml.h"
 
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/file.h"
-#include "core/hash_table.inl"
-#include "core/intrusive_list.inl"
+#include "core/hash_table.h"
+#include "core/intrusive_list.h"
 #include "core/linear_allocator.h"
-#include "core/string.inl"
+#include "core/string.h"
 #include "core/utils.h"
 
 #include <ctype.h>

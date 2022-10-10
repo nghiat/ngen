@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include "core/hash_table.h"
-
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/utils.h"
 
 #define M_hash_table_t_ template <typename T_key, typename T_value, typename T_data, typename T_hash, typename T_equal>

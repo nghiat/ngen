@@ -7,7 +7,7 @@
 #include "core/path.h"
 
 #include "core/log.h"
-#include "core/string.inl"
+#include "core/string.h"
 
 #if M_os_is_win()
 #include <Windows.h>

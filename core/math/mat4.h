@@ -25,3 +25,5 @@ M4_t operator*(const M4_t& m1, const M4_t& m2);
 bool operator==(const M4_t& m1, const M4_t& m2);
 
 M4_t& operator*=(M4_t& m1, const M4_t& m2);
+
+#include "core/math/mat4.inl"

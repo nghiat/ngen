@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/math/float.h"
-
 #include <math.h>
 
 inline bool float_equal(float a, float b) {
@@ -18,11 +16,11 @@ inline bool float_equal_0(float a) {
   return fabs(a) < M_epsilon_f;
 }
 
-float degree_to_rad(float deg) {
+inline float degree_to_rad(float deg) {
   return deg / 180.0f * M_pi_f;
 }
 
-float max(float a, float b) {
+inline float max(float a, float b) {
   if (a > b) {
     return a;
   }

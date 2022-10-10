@@ -39,3 +39,5 @@ V3_t v3_cross(const V3_t& v1, const V3_t& v2);
 F32 v3_dot(const V3_t& v1, const V3_t& v2);
 F32 v3_len(const V3_t& v);
 V3_t v3_normalize(const V3_t& v);
+
+#include "core/math/vec3.inl"

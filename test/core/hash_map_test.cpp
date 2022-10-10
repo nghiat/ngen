@@ -4,10 +4,10 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/hash_table.inl"
+#include "core/hash_table.h"
 
 #include "core/free_list_allocator.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "test/test.h"
 
 void hash_map_test() {

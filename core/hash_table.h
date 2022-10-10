@@ -98,3 +98,5 @@ using Hash_map_t = Hash_table_t_<T_key, T_value, Pair_t_<T_key, T_value>, T_hash
 
 template <typename T_key, typename T_hash = Hash_t<std::remove_const_t<T_key>>, typename T_equal = Equal_t<T_key>>
 using Hash_set_t = Hash_table_t_<T_key, T_key, Pair_t_<T_key, T_key>, T_hash, T_equal>;
+
+#include "core/hash_table.inl"

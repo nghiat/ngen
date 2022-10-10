@@ -54,3 +54,5 @@ public:
   Linear_allocator_page_t_* m_current_page_snapshot;
   U8* m_top_snapshot;
 };
+
+#include "core/linear_allocator.inl"

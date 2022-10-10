@@ -7,9 +7,9 @@
 #include "eins/cam.h"
 
 #include "core/log.h"
-#include "core/math/quat.inl"
-#include "core/math/transform.inl"
-#include "core/math/vec3.inl"
+#include "core/math/quat.h"
+#include "core/math/transform.h"
+#include "core/math/vec3.h"
 #include "core/window/window.h"
 
 bool Cam_t::init(const V3_t& eye, const V3_t& target, Window_t* w) {

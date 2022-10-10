@@ -6,11 +6,11 @@
 
 #include "core/loader/obj.h"
 
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/file.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/log.h"
-#include "core/math/vec3.inl"
+#include "core/math/vec3.h"
 #include "core/utils.h"
 
 #include <ctype.h>

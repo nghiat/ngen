@@ -5,12 +5,12 @@
 //----------------------------------------------------------------------------//
 
 #include "core/core_init.h"
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/gpu/vulkan/vulkan.h"
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/loader/ttf.h"
-#include "core/math/mat4.inl"
-#include "core/math/transform.inl"
+#include "core/math/mat4.h"
+#include "core/math/transform.h"
 #include "core/math/vec2.h"
 #include "core/path.h"
 #include "core/path_utils.h"

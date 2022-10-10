@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 
 #include "core/free_list_allocator.h"
 #include "test/test.h"

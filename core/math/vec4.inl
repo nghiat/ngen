@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/math/vec4.h"
-
 #include "core/math/vec3.h"
 
 #include <math.h>

@@ -6,13 +6,13 @@
 
 #include "core/gpu/vulkan/vulkan.h"
 
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/file.h"
-#include "core/fixed_array.inl"
-#include "core/linear_allocator.inl"
+#include "core/fixed_array.h"
+#include "core/linear_allocator.h"
 #include "core/os.h"
 #include "core/log.h"
-#include "core/string.inl"
+#include "core/string.h"
 #include "core/utils.h"
 
 #define M_vk_check(condition) { \

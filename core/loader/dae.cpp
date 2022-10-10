@@ -6,15 +6,15 @@
 
 #include "core/loader/dae.h"
 
-#include "core/dynamic_array.inl"
-#include "core/fixed_array.inl"
-#include "core/hash_table.inl"
-#include "core/linear_allocator.inl"
+#include "core/dynamic_array.h"
+#include "core/fixed_array.h"
+#include "core/hash_table.h"
+#include "core/linear_allocator.h"
 #include "core/loader/xml.h"
 #include "core/log.h"
-#include "core/math/quat.inl"
-#include "core/math/vec4.inl"
-#include "core/string.inl"
+#include "core/math/quat.h"
+#include "core/math/vec4.h"
+#include "core/string.h"
 #include "core/utils.h"
 
 #include <ctype.h>

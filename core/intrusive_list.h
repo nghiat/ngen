@@ -28,3 +28,5 @@ public:
   Intrusive_list_t<T>* m_next = nullptr;
   Intrusive_list_t<T>* m_prev = nullptr;
 };
+
+#include "core/intrusive_list.inl"

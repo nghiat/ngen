@@ -6,7 +6,7 @@
 
 #include "core/loader/xml.h"
 
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/utils.h"
 #include "test/test.h"
 

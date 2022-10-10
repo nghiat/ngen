@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/linear_allocator.inl"
+#include "core/linear_allocator.h"
 #include "core/utils.h"
 #include "test/test.h"
 

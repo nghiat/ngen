@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/fixed_array.h"
-
 #include "core/log.h"
 
 #include <stdlib.h>

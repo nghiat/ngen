@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/string.inl"
+#include "core/string.h"
 
 #include "core/string_utils.h"
 #include "test/test.h"

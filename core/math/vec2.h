@@ -36,3 +36,5 @@ V2_t& operator/=(V2_t& v, F32 f);
 
 F32 v2_dot(const V2_t& v1, const V2_t& v2);
 V2_t v2_normalize(const V2_t& v);
+
+#include "core/math/vec2.inl"

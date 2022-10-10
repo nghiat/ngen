@@ -37,3 +37,5 @@ public:
   Sip m_length = 0;
   Sip m_capacity = 0;
 };
+
+#include "core/dynamic_array.inl"

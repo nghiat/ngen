@@ -6,9 +6,9 @@
 
 #include "core/string_utils.h"
 
-#include "core/dynamic_array.inl"
-#include "core/hash_table.inl"
-#include "core/string.inl"
+#include "core/dynamic_array.h"
+#include "core/hash_table.h"
+#include "core/string.h"
 
 template <>
 const char* c_or_w_(const char* c, const wchar_t* w) {

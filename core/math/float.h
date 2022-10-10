@@ -13,3 +13,5 @@ bool float_equal(float a, float b);
 bool float_equal_0(float a);
 float degree_to_rad(float deg);
 float max(float a, float b);
+
+#include "core/math/float.inl"

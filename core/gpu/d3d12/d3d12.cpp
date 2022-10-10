@@ -6,9 +6,9 @@
 
 #include "core/gpu/d3d12/d3d12.h"
 
-#include "core/dynamic_array.inl"
-#include "core/fixed_array.inl"
-#include "core/linear_allocator.inl"
+#include "core/dynamic_array.h"
+#include "core/fixed_array.h"
+#include "core/linear_allocator.h"
 #include "core/log.h"
 #include "core/utils.h"
 

@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/intrusive_list.h"
+#pragma once
 
 #include "core/allocator.h"
 

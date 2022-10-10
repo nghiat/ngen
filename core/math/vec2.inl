@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "core/math/vec2.h"
-
 #include <math.h>
 
 inline V2_t operator+(const V2_t& v1, const V2_t& v2) {

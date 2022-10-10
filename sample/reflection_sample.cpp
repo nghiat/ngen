@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------//
 
 #include "core/core_init.h"
-#include "core/dynamic_array.inl"
+#include "core/dynamic_array.h"
 #include "core/log.h"
 #include "core/reflection/reflection.h"
 #include "sample/test_reflection_class.h"

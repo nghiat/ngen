@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
-#include "core/string.h"
+#pragma once
 
 #include "core/log.h"
 #include "core/utils.h"
