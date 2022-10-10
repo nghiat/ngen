@@ -497,9 +497,9 @@ bool Eins_window_t::init() {
   input_slot.slot_num = 0;
   input_slot.input_elements = input_elems.m_p;
 
-  Shader_t* shadow_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/shadow_vs"))});
-  Shader_t* final_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/shader_vs"))});
-  Shader_t* final_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/shader_ps"))});
+  Shader_t* shadow_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/shadow_vs"))});
+  Shader_t* final_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/shader_vs"))});
+  Shader_t* final_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/shader_ps"))});
 
   {
     input_slot.input_element_count = 1;
@@ -535,8 +535,8 @@ bool Eins_window_t::init() {
     cube_input_slot.input_elements = &cube_input_elem;
 
     Pipeline_state_object_create_info_t pso_ci = {};
-    Shader_t* cube_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/cube_vs"))});
-    Shader_t* cube_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/cube_ps"))});
+    Shader_t* cube_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/cube_vs"))});
+    Shader_t* cube_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/cube_ps"))});
     pso_ci.vs = cube_vs;
     pso_ci.ps = cube_ps;
     pso_ci.input_slot_count = 1;
@@ -631,8 +631,8 @@ bool Eins_window_t::init() {
     pbr_input_slots[2].stride = sizeof(V3_t);
 
     Pipeline_state_object_create_info_t pso_ci = {};
-    Shader_t* pbr_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/pbr_vs"))});
-    Shader_t* pbr_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/sample/pbr_ps"))});
+    Shader_t* pbr_vs = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/pbr_vs"))});
+    Shader_t* pbr_ps = m_gpu->compile_shader(&m_gpu_allocator, {g_exe_dir.join(M_txt("assets/eins/pbr_ps"))});
     pso_ci.vs = pbr_vs;
     pso_ci.ps = pbr_ps;
     pso_ci.input_slot_count = 3;
