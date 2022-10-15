@@ -783,7 +783,16 @@ Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allo
   }
   pso_desc.InputLayout.NumElements = elems.len();
   pso_desc.InputLayout.pInputElementDescs = elems.m_p;
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+  switch (ci.topology) {
+    case e_topology_triangle:
+      pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      break;
+    case e_topology_line:
+      pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+      break;
+    default:
+      M_unimplemented();
+  }
   pso_desc.NumRenderTargets = 1;
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
   pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;

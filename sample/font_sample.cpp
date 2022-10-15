@@ -4,8 +4,10 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
+#include "core/core_allocators.h"
 #include "core/core_init.h"
 #include "core/dynamic_array.h"
+#include "core/file.h"
 #include "core/gpu/vulkan/vulkan.h"
 #include "core/linear_allocator.h"
 #include "core/loader/ttf.h"
@@ -16,6 +18,9 @@
 #include "core/path_utils.h"
 #include "core/utils.h"
 #include "core/window/window.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "third_party/stb/stb_truetype.h"
 
 class Font_window_t : public Window_t {
 public:
@@ -33,7 +38,7 @@ public:
   Resource_t m_uniform;
   M4_t* m_world_mat;
   Vertex_buffer_t* m_vb;
-  int m_vertex_count;
+  int m_vertex_count = 0;
   Pipeline_state_object_t* m_pso;
 };
 
@@ -69,7 +74,7 @@ bool Font_window_t::init() {
     m_uniform = m_gpu->create_uniform_buffer(&m_allocator, ub_ci);
     m_gpu->bind_resource_to_set(m_uniform, m_resources_set, 0);
     m_world_mat = (M4_t*)m_uniform.uniform_buffer->p;
-    *m_world_mat = scale(0.01f, 0.01f, 0.01f);
+    *m_world_mat = scale(0.001f, 0.001f, 0.001f);
   }
   {
     Vertex_buffer_create_info_t vb_ci = {};
@@ -79,21 +84,8 @@ bool Font_window_t::init() {
     m_vb = m_gpu->create_vertex_buffer(&m_allocator, vb_ci);
     Ttf_loader_t ttf(&temp_allocator);
     ttf.init(g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf")));
-    for (int i = 0; i < ttf.m_points.len() - 1; ++i) {
-      V2_t v[3];
-      v[0] = (V2_t){(float)ttf.m_points[i].x, (float)ttf.m_points[i].y};
-      v[1] = (V2_t){(float)ttf.m_points[i+1].x, (float)ttf.m_points[i+1].y};
-      v[2] = (V2_t){v[1].x - 0.01f, v[1].y - 0.01f};
-      memcpy((U8*)m_vb->p + 3*i*sizeof(V2_t), v, 3*sizeof(V2_t));
-    }
-    {
-      V2_t v[3];
-      v[0] = (V2_t){(float)ttf.m_points.last().x, (float)ttf.m_points.last().y};
-      v[1] = (V2_t){(float)ttf.m_points[0].x, (float)ttf.m_points[0].y};
-      v[2] = (V2_t){v[1].x - 0.01f, v[1].y - 0.01f};
-      memcpy((U8*)m_vb->p + 3*(ttf.m_points.len() - 1)*sizeof(V2_t), v, 3*sizeof(V2_t));
-    }
-    m_vertex_count = 3 * ttf.m_points.len();
+    memcpy(m_vb->p, ttf.m_points.m_p, ttf.m_points.len()*sizeof(V2_t));
+    m_vertex_count = ttf.m_points.len();
   }
   {
     Input_element_t input_elem = {};
@@ -113,6 +105,7 @@ bool Font_window_t::init() {
     pso_ci.input_slots = &input_slot;
     pso_ci.pipeline_layout = m_pipeline_layout;
     pso_ci.render_pass = m_render_pass;
+    pso_ci.topology = e_topology_line;
     m_pso = m_gpu->create_pipeline_state_object(&m_allocator, pso_ci);
   }
 
@@ -136,6 +129,28 @@ void Font_window_t::destroy() {
 
 int main(int argc, char** argv) {
   core_init(M_txt("font_sample.log"));
+
+  {
+    unsigned char screen[20][79];
+    stbtt_fontinfo font;
+    int i, j, ascent, baseline, ch = 0;
+    float scale, xpos = 2; // leave a little padding in case the character extends left
+    char c = 'a';          // intentionally misspelled to show 'lj' brokenness
+
+    Dynamic_array_t<U8> buffer = File_t::read_whole_file_as_binary(g_persistent_allocator, g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf")).m_path);
+    stbtt_InitFont(&font, (const unsigned char*)buffer.m_p, 0);
+
+    scale = stbtt_ScaleForPixelHeight(&font, 15);
+    stbtt_GetFontVMetrics(&font, &ascent, 0, 0);
+    baseline = (int)(ascent * scale);
+
+    int advance, lsb, x0, y0, x1, y1;
+    float x_shift = xpos - (float)floor(xpos);
+    stbtt_GetCodepointHMetrics(&font, c, &advance, &lsb);
+    stbtt_GetCodepointBitmapBoxSubpixel(&font, c, scale, scale, x_shift, 0, &x0, &y0, &x1, &y1);
+    stbtt_MakeCodepointBitmapSubpixel(&font, &screen[baseline + y0][(int)xpos + x0], x1 - x0, y1 - y0, 79, scale, scale, x_shift, 0, c);
+  }
+
   Font_window_t w;
   w.init();
   w.os_loop();

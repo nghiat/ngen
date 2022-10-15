@@ -11,12 +11,7 @@
 #include "core/types.h"
 
 struct Allocator_t;
-
-struct Point_t_ {
-  S16 x = 0;
-  S16 y = 0;
-  U8 flag = 0;
-};
+struct V2_t;
 
 class Ttf_loader_t {
 public:
@@ -24,5 +19,5 @@ public:
   bool init(const Path_t& path);
   void destroy();
 
-  Dynamic_array_t<Point_t_> m_points;
+  Dynamic_array_t<V2_t> m_points;
 };

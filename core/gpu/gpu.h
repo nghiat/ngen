@@ -67,6 +67,11 @@ enum E_resource_type {
   e_resource_type_sampler,
 };
 
+enum E_topology {
+  e_topology_triangle,
+  e_topology_line,
+};
+
 struct Texture_create_info_t {
   U8* data;
   U32 width;
@@ -188,10 +193,11 @@ struct Input_slot_t {
 struct Pipeline_state_object_create_info_t {
   Shader_t* vs = NULL;
   Shader_t* ps = NULL;
-  U8 input_slot_count = 0;
   Input_slot_t* input_slots;
   Pipeline_layout_t* pipeline_layout = NULL;
   Render_pass_t* render_pass = NULL;
+  E_topology topology = e_topology_triangle;
+  U8 input_slot_count = 0;
   bool enable_depth = false;
 };
 

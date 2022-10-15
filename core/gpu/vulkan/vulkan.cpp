@@ -397,7 +397,7 @@ bool Vulkan_t::init(Window_t* w) {
       surface_transform = surface_capabilities.currentTransform;
     }
 
-    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR ;
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_MAILBOX_KHR ;
 
     // Finally, create the swap chain
     VkSwapchainCreateInfoKHR swapchain_ci = {};
@@ -1034,7 +1034,16 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
 
   VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = {};
   input_assembly_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  input_assembly_ci.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  switch (ci.topology) {
+    case e_topology_triangle:
+      input_assembly_ci.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+      break;
+    case e_topology_line:
+      input_assembly_ci.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+      break;
+    default:
+      M_unimplemented();
+  }
   input_assembly_ci.primitiveRestartEnable = VK_FALSE;
 
   // Flipped viewport
