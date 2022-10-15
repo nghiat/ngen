@@ -178,7 +178,7 @@ bool vulkan_loader_init() {
 #if M_os_is_win()
   g_vulkan_lib_.open("vulkan-1.dll");
 #elif M_os_is_linux()
-  g_vulkan_lib_.open("libvulkan.so");
+  g_vulkan_lib_.open("libvulkan.so.1");
 #endif
 
   vkCreateInstance = (PFN_vkCreateInstance)g_vulkan_lib_.get_proc("vkCreateInstance");
