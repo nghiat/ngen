@@ -59,6 +59,7 @@ struct D3d12_pipeline_layout_t : Pipeline_layout_t {
 struct D3d12_pipeline_state_object_t : Pipeline_state_object_t {
   ID3D12PipelineState* pso = NULL;
   ID3D12RootSignature* root_signature;
+  E_topology topology;
 };
 
 struct D3d12_sub_buffer_t_ {
@@ -808,6 +809,7 @@ Pipeline_state_object_t* D3d12_t::create_pipeline_state_object(Allocator_t* allo
   auto rv = allocator->construct<D3d12_pipeline_state_object_t>();
   rv->pso = pso;
   rv->root_signature = pso_desc.pRootSignature;
+  rv->topology = ci.topology;
   return rv;
 }
 
@@ -896,6 +898,7 @@ void D3d12_t::cmd_set_pipeline_state(Pipeline_state_object_t* pso) {
   m_cmd_list->SetGraphicsRootSignature(d3d12_pso->root_signature);
   ID3D12DescriptorHeap* heaps[] = { m_cbv_srv_heap.heap, m_sampler_heap.heap };
   m_cmd_list->SetDescriptorHeaps(static_array_size(heaps), heaps);
+  m_current_pso = d3d12_pso;
 }
 
 void D3d12_t::cmd_set_vertex_buffer(Vertex_buffer_t* vb, int binding) {
@@ -937,12 +940,12 @@ void D3d12_t::cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pi
 }
 
 void D3d12_t::cmd_draw(int vertex_count, int first_vertex) {
-  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  cmd_set_topology_();
   m_cmd_list->DrawInstanced(vertex_count, 1, first_vertex, 0);
 }
 
 void D3d12_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
-  m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  cmd_set_topology_();
   m_cmd_list->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
@@ -984,6 +987,19 @@ void D3d12_t::wait_for_gpu_() {
 
   // Increment the fence value for the current frame.
   ++m_fence_vals[m_frame_no];
+}
+
+void D3d12_t::cmd_set_topology_() {
+  switch(m_current_pso->topology) {
+    case e_topology_triangle:
+      m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      break;
+    case e_topology_line:
+      m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+      break;
+    default:
+      M_unimplemented();
+  }
 }
 
 #if M_compiler_is_clang()

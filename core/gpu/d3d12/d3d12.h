@@ -37,6 +37,8 @@ struct D3d12_render_target_t : Render_target_t {
   D3d12_descriptor_t_ rtv_descriptor;
 };
 
+struct D3d12_pipeline_state_object_t;
+
 class D3d12_t : public Gpu_t {
 public:
   bool init(Window_t* w);
@@ -90,7 +92,10 @@ public:
   ID3D12Fence* m_fence;
   HANDLE m_fence_event;
   U64 m_fence_vals[sc_frame_count] = {};
+
+  const D3d12_pipeline_state_object_t* m_current_pso = NULL;
 private:
   void create_descriptor_heap_(D3d12_descriptor_heap_t_* dh, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptor_count);
   void wait_for_gpu_();
+  void cmd_set_topology_();
 };
