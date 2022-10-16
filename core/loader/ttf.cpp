@@ -7,6 +7,7 @@
 #include "core/loader/ttf.h"
 
 #include "core/file.h"
+#include "core/fixed_array.h"
 #include "core/hash_table.h"
 #include "core/linear_allocator.h"
 #include "core/log.h"
@@ -14,6 +15,8 @@
 #include "core/string.h"
 
 #include <stdio.h>
+
+#include <algorithm>
 
 #define M_on_the_curve_flag_ 1
 
@@ -27,6 +30,10 @@ struct Point_t_ {
   float x = 0;
   float y = 0;
   U8 flag = 0;
+};
+
+struct Line_t_ {
+  V2_t p[2];
 };
 
 struct Head_table_t_ {
@@ -72,7 +79,7 @@ Cstring_t read_tag_(const U8** p) {
   return rv;
 }
 
-Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) : m_points(allocator) {
+Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) : m_lines(allocator) {
 }
 
 bool Ttf_loader_t::init(const Path_t& path) {
@@ -99,7 +106,7 @@ bool Ttf_loader_t::init(const Path_t& path) {
     tables[tag] = table;
   }
 
-  char c = '8';
+  char c = 'a';
   const U8* cmap = cp + tables["cmap"].offset;
   p = cmap;
   U16 version = consume_be_<U16>(&p);
@@ -180,6 +187,10 @@ bool Ttf_loader_t::init(const Path_t& path) {
   S16 y_min = consume_be_<S16>(&p);
   S16 x_max = consume_be_<S16>(&p);
   S16 y_max = consume_be_<S16>(&p);
+  m_x_min = (float)x_min;
+  m_y_min = (float)y_min;
+  m_x_max = (float)x_max;
+  m_y_max = (float)y_max;
   Dynamic_array_t<U16> end_pts_of_contours(&temp_allocator);
   end_pts_of_contours.resize(number_of_contours);
   for (int i = 0; i < number_of_contours; ++i) {
@@ -279,26 +290,65 @@ bool Ttf_loader_t::init(const Path_t& path) {
     const Point_t_* pp = reconstructed_points.m_p;
     for (int j = 0; j < reconstructed_points.len() - 1; ++j) {
       if (pp[j+1].flag & M_on_the_curve_flag_) {
-        m_points.append((V2_t){pp[j].x, pp[j].y});
-        m_points.append((V2_t){pp[j+1].x, pp[j+1].y});
+        Line_t_ l;
+        l.p[0] = (V2_t){pp[j].x, pp[j].y};
+        l.p[1] = (V2_t){pp[j+1].x, pp[j+1].y};
+        m_lines.append(l);
       } else {
         V2_t p0 = (V2_t){pp[j].x, pp[j].y};
         V2_t p1 = (V2_t){pp[j+1].x, pp[j+1].y};
         V2_t p2 = (V2_t){pp[j+2].x, pp[j+2].y};
         int n = 10;
         for (int k = 0; k < n; ++k) {
+          Line_t_ l;
           float t = k*1.f/n;
-          V2_t bezier_p = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
-          m_points.append(bezier_p);
+          l.p[0] = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
           t = (k+1)*1.f/n;
-          bezier_p = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
-          m_points.append(bezier_p);
+          l.p[1] = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
+          m_lines.append(l);
         }
         j += 1; // will be incremented once more
       }
     }
 
     from = to + 1;
+  }
+
+  m_width = x_max - x_min + 1;
+  m_height = y_max - y_min + 1;
+  m_data = (U8*)m_lines.m_allocator->alloc_zero(m_width*m_height);
+
+  std::sort(m_lines.begin(), m_lines.end(), [](const Line_t_ l1, const Line_t_ l2) {
+    float min_y1 = std::min(l1.p[0].y, l1.p[1].y);
+    float min_y2 = std::min(l2.p[0].y, l2.p[1].y);
+    return min_y1 < min_y2;
+  });
+
+  for (int y = y_min; y <= y_max; ++y) {
+    Fixed_array_t<float, 20> x_intersects;
+    for (int i = 0; i < m_lines.len(); ++i) {
+      const Line_t_ l = m_lines[i];
+      float y0 = l.p[0].y;
+      float y1 = l.p[1].y;
+      if (y0 == y1) {
+        if (y0 != y) {
+          continue;
+        }
+        // handle paralell
+      } else {
+        float t = (y - y0)/(y1 - y0);
+        if (t >= 0.0f && t <= 1.0f) {
+          x = l.p[0].x + t*(l.p[1].x - l.p[0].x);
+          x_intersects.append(x);
+        }
+      }
+    }
+    std::sort(x_intersects.begin(), x_intersects.end());
+    for (int i = 0; i < x_intersects.len()/2; ++i) {
+      for (int x = x_intersects[2*i]; x <= x_intersects[2*i + 1]; ++x) {
+        m_data[(y - y_min)*m_width + (x - x_min)] = 255;
+      }
+    }
   }
 
   return true;
