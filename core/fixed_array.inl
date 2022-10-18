@@ -38,6 +38,16 @@ void Fixed_array_t<T, T_capacity>::append(const T& val) {
 }
 
 template <typename T, Sz T_capacity>
+void Fixed_array_t<T, T_capacity>::append_unique(const T& val) {
+  for (int i = 0; i < m_length; ++i) {
+    if (val == m_p[i]) {
+      return;
+    }
+  }
+  append(val);
+}
+
+template <typename T, Sz T_capacity>
 void Fixed_array_t<T, T_capacity>::append_array(const T* array, int len) {
   Sip old_len = m_length;
   resize(m_length + len);

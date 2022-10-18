@@ -279,14 +279,6 @@ bool Ttf_loader_t::init(const Path_t& path) {
       reconstructed_points.append(mid_point);
     }
 
-    for (int j = 0; j < reconstructed_points.len(); ++j) {
-      if (reconstructed_points[j].flag & M_on_the_curve_flag_) {
-        M_logi("1");
-      } else {
-        M_logi("0");
-      }
-    }
-
     const Point_t_* pp = reconstructed_points.m_p;
     for (int j = 0; j < reconstructed_points.len() - 1; ++j) {
       if (pp[j+1].flag & M_on_the_curve_flag_) {
@@ -325,7 +317,11 @@ bool Ttf_loader_t::init(const Path_t& path) {
   });
 
   for (int y = y_min; y <= y_max; ++y) {
-    Fixed_array_t<float, 20> x_intersects;
+    struct Intersect_t_ {
+      float x;
+      Line_t_ l;
+    };
+    Fixed_array_t<Intersect_t_, 20> intersects;
     for (int i = 0; i < m_lines.len(); ++i) {
       const Line_t_ l = m_lines[i];
       float y0 = l.p[0].y;
@@ -335,18 +331,34 @@ bool Ttf_loader_t::init(const Path_t& path) {
           continue;
         }
         // handle paralell
+        M_unimplemented();
       } else {
         float t = (y - y0)/(y1 - y0);
         if (t >= 0.0f && t <= 1.0f) {
-          x = l.p[0].x + t*(l.p[1].x - l.p[0].x);
-          x_intersects.append(x);
+          float x_t = l.p[0].x + t*(l.p[1].x - l.p[0].x);
+          intersects.append((Intersect_t_){x_t, l});
         }
       }
     }
-    std::sort(x_intersects.begin(), x_intersects.end());
-    for (int i = 0; i < x_intersects.len()/2; ++i) {
-      for (int x = x_intersects[2*i]; x <= x_intersects[2*i + 1]; ++x) {
-        m_data[(y - y_min)*m_width + (x - x_min)] = 255;
+    std::sort(intersects.begin(), intersects.end(), [](const Intersect_t_& i1, const Intersect_t_& i2) {
+        return i1.x < i2.x;
+    });
+    for (int i = 0; i < intersects.len() - 1; ++i) {
+      // When two lines cross the scanline at the same point, only keep the point that is equals to std::min(p0, p1)
+      if (intersects[i].x == intersects[i+1].x) {
+        m_data[((y_max - y_min) - (y - y_min))*m_width + ((int)intersects[i].x - x_min)] = 255;
+        if (y != std::min(intersects[i].l.p[0].y, intersects[i].l.p[1].y)) {
+          intersects.remove_at(i);
+          --i;
+        }
+        if (y != std::min(intersects[i+1].l.p[0].y, intersects[i+1].l.p[1].y)) {
+          intersects.remove_at(i+1);
+        }
+      }
+    }
+    for (int i = 0; i < intersects.len()/2; ++i) {
+      for (int x = intersects[2*i].x; x <= intersects[2*i + 1].x; ++x) {
+        m_data[((y_max - y_min) - (y - y_min))*m_width + (x - x_min)] = 255;
       }
     }
   }

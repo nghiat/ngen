@@ -23,6 +23,7 @@ public:
   void remove_at(Sip pos);
   void insert_at(Sip index, const T& val);
   void append(const T& val);
+  void append_unique(const T& val);
   void append_array(const T* array, int len);
   T& operator[](Sz index);
   const T& operator[](Sz index) const;

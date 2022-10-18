@@ -109,7 +109,7 @@ bool Font_window_t::init() {
     Texture_create_info_t ci = {};
     ci.data = ttf.m_data;
     ci.width = ttf.m_width;
-    ci.height = ttf.m_width;
+    ci.height = ttf.m_height;
     ci.format = e_format_r8_uint;
     ci.row_pitch = ci.width;
     ci.row_count = ci.height;

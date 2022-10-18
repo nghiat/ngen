@@ -16,6 +16,7 @@ public:
   void resize(Sip count);
   void insert_at(Sip index, const T& val);
   void append(const T& val);
+  void append_unique(const T& val);
   void append_array(const T* array, int len);
   void remove_range(Sip pos, Sip length);
   void remove_at(Sip pos);
