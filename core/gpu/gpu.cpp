@@ -8,6 +8,7 @@
 
 #include "core/loader/dds.h"
 #include "core/log.h"
+#include "core/window/window.h"
 
 Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds) {
   Texture_create_info_t ci = {};
@@ -123,7 +124,39 @@ void Gpu_t::cmd_draw_index(int index_count, int instance_count, int first_index,
   M_unimplemented();
 }
 
+void Gpu_t::cmd_set_viewport() {
+  Viewport_t viewport = {};
+  viewport.top_left_x = 0.0f;
+  viewport.top_left_y = 0.0f;
+  viewport.width = (float)m_window->m_width;
+  viewport.height = (float)m_window->m_height;
+  viewport.min_depth = 0.0f;
+  viewport.max_depth = 1.0f;
+  cmd_set_viewport(1, &viewport);
+}
+
+void Gpu_t::cmd_set_viewport(int viewport_count, const Viewport_t* viewports) {
+  M_unimplemented();
+}
+
+void Gpu_t::cmd_set_scissor() {
+  Scissor_t scissor = {};
+  scissor.x = 0.0f;
+  scissor.y = 0.0f;
+  scissor.width = (float)m_window->m_width;
+  scissor.height = (float)m_window->m_height;
+  cmd_set_scissor(1, &scissor);
+}
+
+void Gpu_t::cmd_set_scissor(int count, const Scissor_t* scissors) {
+  M_unimplemented();
+}
+
 void Gpu_t::cmd_end() {
+  M_unimplemented();
+}
+
+void Gpu_t::on_resized() {
   M_unimplemented();
 }
 

@@ -29,9 +29,10 @@ public:
   bool init();
   void destroy() override;
   void loop() override;
+  void on_resized() override;
 
   Linear_allocator_t<> m_allocator;
-  Gpu_t* m_gpu;
+  Gpu_t* m_gpu = NULL;
   Render_pass_t* m_render_pass;
   Resources_set_t* m_ub_set;
   Resources_set_t* m_sampler_set;
@@ -168,9 +169,14 @@ bool Font_window_t::init() {
   return true;
 }
 
+void Font_window_t::destroy() {
+}
+
 void Font_window_t::loop() {
   m_gpu->get_back_buffer();
   m_gpu->cmd_begin();
+  m_gpu->cmd_set_viewport();
+  m_gpu->cmd_set_scissor();
   m_gpu->cmd_begin_render_pass(m_render_pass);
   m_gpu->cmd_set_pipeline_state(m_pso);
   m_gpu->cmd_set_vertex_buffer(m_vb, 0);
@@ -182,7 +188,10 @@ void Font_window_t::loop() {
   m_gpu->cmd_end();
 }
 
-void Font_window_t::destroy() {
+void Font_window_t::on_resized() {
+  if (m_gpu) {
+    m_gpu->on_resized();
+  }
 }
 
 int main(int argc, char** argv) {

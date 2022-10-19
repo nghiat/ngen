@@ -679,6 +679,8 @@ void Eins_window_t::loop() {
 
   m_gpu->get_back_buffer();
   m_gpu->cmd_begin();
+  m_gpu->cmd_set_viewport();
+  m_gpu->cmd_set_scissor();
   {
     m_gpu->cmd_begin_render_pass(m_shadow_render_pass);
     m_gpu->cmd_set_pipeline_state(m_shadow_pso);

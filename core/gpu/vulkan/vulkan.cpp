@@ -14,6 +14,7 @@
 #include "core/log.h"
 #include "core/string.h"
 #include "core/utils.h"
+#include "core/window/window.h"
 
 #define M_vk_check(condition) { \
   VkResult vk_result = condition; \
@@ -1055,16 +1056,19 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
-  VkRect2D scissor = {};
-  scissor.offset = { 0, 0 };
-  scissor.extent = { (U32)m_window->m_width, (U32)m_window->m_height };
-
   VkPipelineViewportStateCreateInfo viewport_ci = {};
   viewport_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_ci.viewportCount = 1;
-  viewport_ci.pViewports = &viewport;
   viewport_ci.scissorCount = 1;
-  viewport_ci.pScissors = &scissor;
+
+  VkDynamicState dynamic_states[] = {
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR,
+  };
+  VkPipelineDynamicStateCreateInfo dynamic_state_ci = {};
+  dynamic_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  dynamic_state_ci.dynamicStateCount = static_array_size(dynamic_states);
+  dynamic_state_ci.pDynamicStates = dynamic_states;
 
   VkPipelineRasterizationStateCreateInfo rasterization_ci = {};
   rasterization_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -1129,6 +1133,7 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
   pipeline_ci.pMultisampleState = &multisample_ci;
   pipeline_ci.pDepthStencilState = &depth_stencil_state_ci;
   pipeline_ci.pColorBlendState = &color_blend_state_ci;
+  pipeline_ci.pDynamicState = &dynamic_state_ci;
   pipeline_ci.layout = ((Vulkan_pipeline_layout_t*)ci.pipeline_layout)->pipeline_layout;
   pipeline_ci.renderPass = ((Vulkan_render_pass_t*)ci.render_pass)->render_pass;
   pipeline_ci.subpass = 0;
@@ -1212,6 +1217,36 @@ void Vulkan_t::cmd_draw(int vertex_count, int first_vertex) {
 
 void Vulkan_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
   vkCmdDrawIndexed(get_active_cmd_buffer_(), index_count, instance_count, first_index, vertex_offset, first_index);
+}
+
+void Vulkan_t::cmd_set_viewport(int viewport_count, const Viewport_t* viewports) {
+  Fixed_array_t<VkViewport, 8> vk_viewports;
+  for (int i = 0; i < viewport_count; ++i) {
+    const Viewport_t& viewport = viewports[i];
+    VkViewport vk_viewport;
+    vk_viewport.x = viewport.top_left_x;
+    vk_viewport.y = viewport.top_left_y + (float)viewport.height;
+    vk_viewport.width = (float)viewport.width;
+    vk_viewport.height = -(float)viewport.height;
+    vk_viewport.minDepth = viewport.min_depth;
+    vk_viewport.maxDepth = viewport.max_depth;
+    vk_viewports.append(vk_viewport);
+  }
+  vkCmdSetViewport(get_active_cmd_buffer_(), 0, vk_viewports.len(), vk_viewports.m_p);
+}
+
+void Vulkan_t::cmd_set_scissor(int count, const Scissor_t* scissors) {
+  Fixed_array_t<VkRect2D, 8> vk_scissors;
+  for (int i = 0; i < count; ++i) {
+    const Scissor_t& scissor = scissors[i];
+    VkRect2D vk_scissor;
+    vk_scissor.offset.x = scissor.x;
+    vk_scissor.offset.y = scissor.y;
+    vk_scissor.extent.width = scissor.width;
+    vk_scissor.extent.height = scissor.height;
+    vk_scissors.append(vk_scissor);
+  }
+  vkCmdSetScissor(get_active_cmd_buffer_(), 0, vk_scissors.len(), vk_scissors.m_p);
 }
 
 void Vulkan_t::cmd_end() {

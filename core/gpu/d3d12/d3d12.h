@@ -7,7 +7,6 @@
 #pragma once
 
 #include "core/gpu/gpu.h"
-#include "core/window/window.h"
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -67,10 +66,11 @@ public:
   void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index) override;
   void cmd_draw(int vertex_count, int first_vertex) override;
   void cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) override;
+  void cmd_set_viewport(int viewport_count, const Viewport_t* viewports) override;
+  void cmd_set_scissor(int count, const Scissor_t* scissors) override;
   void cmd_end() override;
 
   Allocator_t* m_allocator;
-  Window_t* m_window = NULL;
 
   static const int sc_frame_count = 2;
   int m_frame_no;

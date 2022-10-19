@@ -12,6 +12,7 @@
 
 class Allocator_t;
 class Dds_loader_t;
+class Window_t;
 
 enum E_shader_stage {
   e_shader_stage_vertex = 1 << 0,
@@ -224,6 +225,22 @@ struct Resource_t {
   };
 };
 
+struct Viewport_t {
+  float top_left_x;
+  float top_left_y;
+  float width;
+  float height;
+  float min_depth;
+  float max_depth;
+};
+
+struct Scissor_t {
+  U32 x;
+  U32 y;
+  U32 width;
+  U32 height;
+};
+
 Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds);
 
 class Gpu_t {
@@ -255,7 +272,15 @@ public:
   virtual void cmd_set_resource(const Resource_t& resource, Pipeline_layout_t* pipeline_layout, Resources_set_t* set, int index);
   virtual void cmd_draw(int vertex_count, int first_vertex);
   virtual void cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance);
+  virtual void cmd_set_viewport();
+  virtual void cmd_set_viewport(int viewport_count, const Viewport_t* viewports);
+  virtual void cmd_set_scissor();
+  virtual void cmd_set_scissor(int count, const Scissor_t* scissors);
   virtual void cmd_end();
 
+  virtual void on_resized();
+
   static int convert_format_to_size_(E_format format);
+
+  Window_t* m_window = NULL;
 };

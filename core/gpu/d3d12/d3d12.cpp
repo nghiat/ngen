@@ -11,6 +11,7 @@
 #include "core/linear_allocator.h"
 #include "core/log.h"
 #include "core/utils.h"
+#include "core/window/window.h"
 
 #include <d3dcompiler.h>
 
@@ -947,6 +948,36 @@ void D3d12_t::cmd_draw(int vertex_count, int first_vertex) {
 void D3d12_t::cmd_draw_index(int index_count, int instance_count, int first_index, int vertex_offset, int first_instance) {
   cmd_set_topology_();
   m_cmd_list->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+void D3d12_t::cmd_set_viewport(int viewport_count, const Viewport_t* viewports) {
+  Fixed_array_t<D3D12_VIEWPORT, 8> d3d12_viewports;
+  for (int i = 0; i < viewport_count; ++i) {
+    const Viewport_t& viewport = viewports[i];
+    D3D12_VIEWPORT d3d12_viewport;
+    d3d12_viewport.TopLeftX = viewport.top_left_x;
+    d3d12_viewport.TopLeftY = viewport.top_left_y;
+    d3d12_viewport.Width = viewport.width;
+    d3d12_viewport.Height = viewport.height;
+    d3d12_viewport.MinDepth = viewport.min_depth;
+    d3d12_viewport.MaxDepth = viewport.max_depth;
+    d3d12_viewports.append(d3d12_viewport);
+  }
+  m_cmd_list->RSSetViewports(d3d12_viewports.len(), d3d12_viewports.m_p);
+}
+
+void D3d12_t::cmd_set_scissor(int count, const Scissor_t* scissors) {
+  Fixed_array_t<D3D12_RECT, 8> rects;
+  for (int i = 0; i < count; ++i) {
+    const Scissor_t& scissor = scissors[i];
+    D3D12_RECT rect;
+    rect.left = scissor.x;
+    rect.top = scissor.y;
+    rect.right = scissor.x + scissor.width;
+    rect.bottom = scissor.y + scissor.height;
+    rects.append(rect);
+  }
+  m_cmd_list->RSSetScissorRects (rects.len(), rects.m_p);
 }
 
 void D3d12_t::cmd_end() {
