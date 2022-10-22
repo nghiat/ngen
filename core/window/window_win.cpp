@@ -65,6 +65,13 @@ static LRESULT CALLBACK wnd_proc_(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_p
   case WM_RBUTTONUP:
     update_mouse_val_(w, l_param, e_mouse_right, msg == WM_MBUTTONDOWN);
     break;
+  case WM_SIZE:
+    if (w_param == 0) {
+      w->m_width = LOWORD(l_param);
+      w->m_height = HIWORD(l_param);
+      w->on_resized();
+    }
+    break;
   case WM_MOUSEMOVE: {
     int x = GET_X_LPARAM(l_param);
     int y = GET_Y_LPARAM(l_param);

@@ -80,8 +80,9 @@ struct Vulkan_render_target_t : Render_target_t {
 
 struct Vulkan_render_pass_t : Render_pass_t {
   VkRenderPass render_pass;
-  VkFramebuffer framebuffers[4] = {};
+  Fixed_array_t<VkFramebuffer, 4> framebuffers;
   Fixed_array_t<VkClearValue, 4> clear_values;
+  Fixed_array_t<VkImageView, 8> attachments;
 };
 
 struct Vulkan_pipeline_layout_t : Pipeline_layout_t {
@@ -357,83 +358,7 @@ bool Vulkan_t::init(Window_t* w) {
     }
   }
 
-  M_scope_exit(m_swapchain_images.destroy());
-  // Select swap chain size
-  VkExtent2D swapchain_extent = { (U32)m_window->m_width, (U32)m_window->m_height };
-  {
-    // // Find m_surface capabilities
-    VkSurfaceCapabilitiesKHR surface_capabilities;
-    M_vk_check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_chosen_device, m_surface, &surface_capabilities));
-    // Find supported m_surface formats
-    U32 format_count;
-    M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(m_chosen_device, m_surface, &format_count, NULL));
-
-    VkSurfaceFormatKHR surface_format = {};
-    {
-      Dynamic_array_t<VkSurfaceFormatKHR> surface_formats(&temp_allocator);
-      M_scope_exit(surface_formats.destroy());
-      surface_formats.resize(format_count);
-      M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(m_chosen_device, m_surface, &format_count, surface_formats.m_p));
-      surface_format = surface_formats[0];
-      for (int i = 0; i < surface_formats.len(); ++i) {
-        if (surface_formats[i].format == VK_FORMAT_R8G8B8A8_UNORM) {
-          surface_format = surface_formats[i];
-          break;
-        }
-      }
-    }
-    m_swapchain_format = surface_format.format;
-
-    // Determine number of images for swap chain
-    U32 image_count = surface_capabilities.minImageCount + 1;
-    if (surface_capabilities.maxImageCount != 0 && image_count > surface_capabilities.maxImageCount) {
-      image_count = surface_capabilities.maxImageCount;
-    }
-
-    // Determine transformation to use (preferring no transform)
-    VkSurfaceTransformFlagBitsKHR surface_transform;
-    if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-      surface_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    } else {
-      surface_transform = surface_capabilities.currentTransform;
-    }
-
-    VkPresentModeKHR present_mode = VK_PRESENT_MODE_MAILBOX_KHR ;
-
-    // Finally, create the swap chain
-    VkSwapchainCreateInfoKHR swapchain_ci = {};
-    swapchain_ci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchain_ci.surface = m_surface;
-    swapchain_ci.minImageCount = image_count;
-    swapchain_ci.imageFormat = surface_format.format;
-    swapchain_ci.imageColorSpace = surface_format.colorSpace;
-    swapchain_ci.imageExtent = swapchain_extent;
-    swapchain_ci.imageArrayLayers = 1;
-    swapchain_ci.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapchain_ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    swapchain_ci.queueFamilyIndexCount = 0;
-    swapchain_ci.pQueueFamilyIndices = NULL;
-    swapchain_ci.preTransform = surface_transform;
-    swapchain_ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchain_ci.presentMode = present_mode;
-    swapchain_ci.clipped = VK_TRUE;
-    swapchain_ci.oldSwapchain = VK_NULL_HANDLE;
-
-    M_vk_check(vkCreateSwapchainKHR(m_device, &swapchain_ci, NULL, &m_swapchain));
-
-    U32 swapchain_image_count = 0;
-    M_vk_check(vkGetSwapchainImagesKHR(m_device, m_swapchain, &swapchain_image_count, NULL));
-
-    m_swapchain_images.resize(swapchain_image_count);
-
-    M_vk_check(vkGetSwapchainImagesKHR(m_device, m_swapchain, &swapchain_image_count, m_swapchain_images.m_p));
-    m_swapchain_image_views.resize(m_swapchain_images.len());
-    {
-      for (int i = 0; i < m_swapchain_images.len(); ++i) {
-        m_swapchain_image_views[i] = create_image_view_(m_swapchain_images[i], VK_IMAGE_VIEW_TYPE_2D, m_swapchain_format, VK_IMAGE_ASPECT_COLOR_BIT);
-      }
-    }
-  }
+  create_swapchain_();
 
   {
     VkDescriptorPoolSize pool_sizes[3];
@@ -454,13 +379,13 @@ bool Vulkan_t::init(Window_t* w) {
   create_buffer_(&m_uniform_buffer, 16*1024*1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   create_buffer_(&m_vertex_buffer, 100*1024*1024, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   create_buffer_(&m_upload_buffer, 100*1024*1024, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-  m_graphics_cmd_buffers.resize(m_swapchain_images.len());
+  m_graphics_cmd_buffers.resize(m_swapchain_image_count);
   {
     VkCommandBufferAllocateInfo cmd_buffer_alloc_info = {};
     cmd_buffer_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     cmd_buffer_alloc_info.commandPool = m_graphics_cmd_pool;
     cmd_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmd_buffer_alloc_info.commandBufferCount = (uint32_t) m_swapchain_images.len();
+    cmd_buffer_alloc_info.commandBufferCount = m_swapchain_image_count;
     M_vk_check_return_false(vkAllocateCommandBuffers(m_device, &cmd_buffer_alloc_info, m_graphics_cmd_buffers.m_p));
 
     cmd_buffer_alloc_info.commandPool = m_transfer_cmd_pool;
@@ -468,11 +393,11 @@ bool Vulkan_t::init(Window_t* w) {
     M_vk_check_return_false(vkAllocateCommandBuffers(m_device, &cmd_buffer_alloc_info, &m_transfer_cmd_buffer));
   }
   {
-    m_fences.resize(m_swapchain_images.len());
+    m_fences.resize(m_swapchain_image_count);
     VkFenceCreateInfo fence_ci = {};
     fence_ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_ci.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    for (int i = 0; i < m_swapchain_images.len(); ++i) {
+    for (int i = 0; i < m_swapchain_image_count; ++i) {
       vkCreateFence(m_device, &fence_ci, NULL, &m_fences[i]);
     }
   }
@@ -743,7 +668,6 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
   color_refs.reserve(ci.render_target_count);
   VkAttachmentReference depth_stencil_ref;
   int depth_stencil_ref_count = 0;
-  Fixed_array_t<VkImageView, 8> attachments;
   for (int i = 0; i < ci.render_target_count; ++i) {
     VkAttachmentDescription desc = {};
     const Render_target_description_t& rt_desc = ci.descs[i];
@@ -772,7 +696,7 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
       rv->clear_values.append(clear_value);
     }
     attachment_descs.append(desc);
-    attachments.append(((Vulkan_render_target_t*)ci.descs[i].render_target)->image_view);
+    rv->attachments.append(((Vulkan_render_target_t*)ci.descs[i].render_target)->image_view);
     rv->rt_descs.append(rt_desc);
   }
   if (ci.use_swapchain_render_target || ci.is_last) {
@@ -846,30 +770,12 @@ Render_pass_t* Vulkan_t::create_render_pass(Allocator_t* allocator, const Render
   rv->should_clear_render_target = ci.should_clear_render_target;
   rv->is_last = ci.is_last;
   if (ci.use_swapchain_render_target || ci.is_last) {
-    attachments.append(m_swapchain_image_views[0]);
-    for (int i = 0; i < m_swapchain_images.len(); ++i) {
-      attachments[attachments.len() - 1] = m_swapchain_image_views[i];
-      VkFramebufferCreateInfo framebuffer_ci = {};
-      framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-      framebuffer_ci.renderPass = render_pass;
-      framebuffer_ci.attachmentCount = attachments.len();
-      framebuffer_ci.pAttachments = attachments.m_p;
-      framebuffer_ci.width = m_window->m_width;
-      framebuffer_ci.height = m_window->m_height;
-      framebuffer_ci.layers = 1;
-      M_vk_check(vkCreateFramebuffer(m_device, &framebuffer_ci, NULL, &rv->framebuffers[i]));
-    }
+    rv->framebuffers.resize(m_swapchain_image_count);
+    rv->attachments.resize(rv->attachments.len() + 1);
   } else {
-    VkFramebufferCreateInfo framebuffer_ci = {};
-    framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer_ci.renderPass = render_pass;
-    framebuffer_ci.attachmentCount = attachments.len();
-    framebuffer_ci.pAttachments = attachments.m_p;
-    framebuffer_ci.width = m_window->m_width;
-    framebuffer_ci.height = m_window->m_height;
-    framebuffer_ci.layers = 1;
-    M_vk_check(vkCreateFramebuffer(m_device, &framebuffer_ci, NULL, &rv->framebuffers[0]));
+    rv->framebuffers.resize(1);
   }
+  create_framebuffers_(rv);
   return rv;
 }
 
@@ -1046,15 +952,6 @@ Pipeline_state_object_t* Vulkan_t::create_pipeline_state_object(Allocator_t* all
       M_unimplemented();
   }
   input_assembly_ci.primitiveRestartEnable = VK_FALSE;
-
-  // Flipped viewport
-  VkViewport viewport = {};
-  viewport.x = 0.0f;
-  viewport.y = m_window->m_height;
-  viewport.width = (float)m_window->m_width;
-  viewport.height = -(float)m_window->m_height;
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
 
   VkPipelineViewportStateCreateInfo viewport_ci = {};
   viewport_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1270,7 +1167,40 @@ void Vulkan_t::cmd_end() {
   present_info.swapchainCount = 1;
   present_info.pSwapchains = &m_swapchain;
   present_info.pImageIndices = &m_next_swapchain_image_idx;
-  M_vk_check(vkQueuePresentKHR(m_present_q, &present_info));
+  VkResult present_result = vkQueuePresentKHR(m_present_q, &present_info);
+  switch (present_result) {
+    case VK_ERROR_OUT_OF_DATE_KHR:
+      break;
+    case VK_SUCCESS:
+      break;
+    default:
+      M_unimplemented();
+  }
+}
+
+void Vulkan_t::on_resized() {
+  vkDeviceWaitIdle(m_device);
+  for (int i = 0; i < m_swapchain_image_count; ++i) {
+    vkDestroyImageView(m_device, m_swapchain_image_views[i], NULL);
+  }
+  vkDestroySwapchainKHR(m_device, m_swapchain, NULL);
+  create_swapchain_();
+
+  vkFreeCommandBuffers(m_device, m_graphics_cmd_pool, m_swapchain_image_count, m_graphics_cmd_buffers.m_p);
+  VkCommandBufferAllocateInfo cmd_buffer_alloc_info = {};
+  cmd_buffer_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  cmd_buffer_alloc_info.commandPool = m_graphics_cmd_pool;
+  cmd_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  cmd_buffer_alloc_info.commandBufferCount = m_swapchain_image_count;
+  M_vk_check(vkAllocateCommandBuffers(m_device, &cmd_buffer_alloc_info, m_graphics_cmd_buffers.m_p));
+}
+
+void Vulkan_t::resize_render_pass(Render_pass_t* render_pass) {
+  auto vk_render_pass = (Vulkan_render_pass_t*)render_pass;
+  for (auto fb : vk_render_pass->framebuffers) {
+    vkDestroyFramebuffer(m_device, fb, NULL);
+  }
+  create_framebuffers_(vk_render_pass);
 }
 
 int Vulkan_t::get_mem_type_idx_(U32 mem_type_bits, VkFlags mem_flags) {
@@ -1373,4 +1303,113 @@ void Vulkan_t::create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, 
 
   M_vk_check_return(vkAllocateMemory(m_device, &alloc_info, nullptr, memory));
   vkBindImageMemory(m_device, *image, *memory, 0);
+}
+
+void Vulkan_t::create_swapchain_() {
+  // Select swap chain size
+  VkExtent2D swapchain_extent = { (U32)m_window->m_width, (U32)m_window->m_height };
+  {
+    // // Find m_surface capabilities
+    VkSurfaceCapabilitiesKHR surface_capabilities;
+    M_vk_check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_chosen_device, m_surface, &surface_capabilities));
+    // Find supported m_surface formats
+    U32 format_count;
+    M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(m_chosen_device, m_surface, &format_count, NULL));
+
+    VkSurfaceFormatKHR surface_format = {};
+    {
+      constexpr int c_max_format_count = 16;
+      M_check(c_max_format_count >= format_count);
+      Fixed_array_t<VkSurfaceFormatKHR, c_max_format_count> surface_formats;
+      surface_formats.resize(format_count);
+      M_vk_check(vkGetPhysicalDeviceSurfaceFormatsKHR(m_chosen_device, m_surface, &format_count, surface_formats.m_p));
+      surface_format = surface_formats[0];
+      for (int i = 0; i < surface_formats.len(); ++i) {
+        if (surface_formats[i].format == VK_FORMAT_R8G8B8A8_UNORM) {
+          surface_format = surface_formats[i];
+          break;
+        }
+      }
+    }
+    m_swapchain_format = surface_format.format;
+
+    // Determine number of images for swap chain
+    U32 image_count = surface_capabilities.minImageCount + 1;
+    if (surface_capabilities.maxImageCount != 0 && image_count > surface_capabilities.maxImageCount) {
+      image_count = surface_capabilities.maxImageCount;
+    }
+
+    // Determine transformation to use (preferring no transform)
+    VkSurfaceTransformFlagBitsKHR surface_transform;
+    if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+      surface_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    } else {
+      surface_transform = surface_capabilities.currentTransform;
+    }
+
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_MAILBOX_KHR ;
+
+    // Finally, create the swap chain
+    VkSwapchainCreateInfoKHR swapchain_ci = {};
+    swapchain_ci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchain_ci.surface = m_surface;
+    swapchain_ci.minImageCount = image_count;
+    swapchain_ci.imageFormat = surface_format.format;
+    swapchain_ci.imageColorSpace = surface_format.colorSpace;
+    swapchain_ci.imageExtent = swapchain_extent;
+    swapchain_ci.imageArrayLayers = 1;
+    swapchain_ci.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchain_ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain_ci.queueFamilyIndexCount = 0;
+    swapchain_ci.pQueueFamilyIndices = NULL;
+    swapchain_ci.preTransform = surface_transform;
+    swapchain_ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchain_ci.presentMode = present_mode;
+    swapchain_ci.clipped = VK_TRUE;
+    swapchain_ci.oldSwapchain = VK_NULL_HANDLE;
+
+    M_vk_check(vkCreateSwapchainKHR(m_device, &swapchain_ci, NULL, &m_swapchain));
+
+    M_vk_check(vkGetSwapchainImagesKHR(m_device, m_swapchain, &m_swapchain_image_count, NULL));
+
+    constexpr int c_max_swapchain_image_count = 8;
+    M_check(m_swapchain_image_count <= c_max_swapchain_image_count);
+    Fixed_array_t<VkImage, c_max_swapchain_image_count> swapchain_images;
+    swapchain_images.resize(m_swapchain_image_count);
+
+    M_vk_check(vkGetSwapchainImagesKHR(m_device, m_swapchain, &m_swapchain_image_count, swapchain_images.m_p));
+    m_swapchain_image_views.resize(m_swapchain_image_count);
+    {
+      for (int i = 0; i < m_swapchain_image_count; ++i) {
+        m_swapchain_image_views[i] = create_image_view_(swapchain_images[i], VK_IMAGE_VIEW_TYPE_2D, m_swapchain_format, VK_IMAGE_ASPECT_COLOR_BIT);
+      }
+    }
+  }
+}
+
+void Vulkan_t::create_framebuffers_(Vulkan_render_pass_t* render_pass) {
+  if (render_pass->framebuffers.len() > 1) {
+    for (int i = 0; i < m_swapchain_image_count; ++i) {
+      render_pass->attachments.last() = m_swapchain_image_views[i];
+      VkFramebufferCreateInfo framebuffer_ci = {};
+      framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+      framebuffer_ci.renderPass = render_pass->render_pass;
+      framebuffer_ci.attachmentCount = render_pass->attachments.len();
+      framebuffer_ci.pAttachments = render_pass->attachments.m_p;
+      framebuffer_ci.width = m_window->m_width;
+      framebuffer_ci.height = m_window->m_height;
+      framebuffer_ci.layers = 1;
+      M_vk_check(vkCreateFramebuffer(m_device, &framebuffer_ci, NULL, &render_pass->framebuffers[i]));
+    }
+  } else {
+    VkFramebufferCreateInfo framebuffer_ci = {};
+    framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_ci.renderPass = render_pass->render_pass;
+    framebuffer_ci.attachmentCount = render_pass->attachments.len();
+    framebuffer_ci.pAttachments = render_pass->attachments.m_p;
+    framebuffer_ci.width = m_window->m_width;
+    framebuffer_ci.height = m_window->m_height;
+    framebuffer_ci.layers = 1;
+    M_vk_check(vkCreateFramebuffer(m_device, &framebuffer_ci, NULL, &render_pass->framebuffers[0]));
+  }
 }

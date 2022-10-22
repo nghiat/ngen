@@ -12,6 +12,7 @@
 #include "core/linear_allocator.h"
 
 struct Vk_sub_buffer_t_;
+struct Vulkan_render_pass_t;
 
 struct Vk_buffer_t_ {
   VkBuffer buffer;
@@ -23,7 +24,7 @@ struct Vk_buffer_t_ {
 
 class Vulkan_t : public Gpu_t {
 public:
-  Vulkan_t() : Gpu_t(), m_vk_allocator("vk_allocator"), m_swapchain_images(&m_vk_allocator), m_swapchain_image_views(&m_vk_allocator), m_graphics_cmd_buffers(&m_vk_allocator), m_fences(&m_vk_allocator) {}
+  Vulkan_t() : Gpu_t(), m_vk_allocator("vk_allocator"), m_swapchain_image_views(&m_vk_allocator), m_graphics_cmd_buffers(&m_vk_allocator), m_fences(&m_vk_allocator) {}
   bool init(Window_t* w);
   void destroy() override;
   Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) override;
@@ -54,6 +55,9 @@ public:
   void cmd_set_scissor(int count, const Scissor_t* scissors) override;
   void cmd_end() override;
 
+  void on_resized() override;
+  void resize_render_pass(Render_pass_t* render_pass) override;
+
   Linear_allocator_t<> m_vk_allocator;
   VkInstance m_instance;
   VkSurfaceKHR m_surface;
@@ -69,10 +73,10 @@ public:
   VkQueue m_transfer_q;
   VkCommandPool m_graphics_cmd_pool;
   VkCommandPool m_transfer_cmd_pool;
+  U32 m_swapchain_image_count;
   VkSwapchainKHR m_swapchain;
   VkFormat m_swapchain_format;
   VkFormat m_depth_format;
-  Dynamic_array_t<VkImage> m_swapchain_images;
   Dynamic_array_t<VkImageView> m_swapchain_image_views;
   VkDescriptorPool m_descriptors_pool;
   Vk_buffer_t_ m_uniform_buffer;
@@ -91,4 +95,6 @@ private:
   void allocate_sub_buffer_(Vk_sub_buffer_t_* sub_buffer, Vk_buffer_t_* buffer, Sip size, int alignment);
   VkCommandBuffer get_active_cmd_buffer_() const;
   void create_image_(VkImage* image, VkDeviceMemory* memory, U32 width, U32 height, VkFormat format, VkImageUsageFlags usage, VkImageCreateFlags flags);
+  void create_swapchain_();
+  void create_framebuffers_(Vulkan_render_pass_t* render_pass);
 };

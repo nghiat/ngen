@@ -160,6 +160,10 @@ void Gpu_t::on_resized() {
   M_unimplemented();
 }
 
+void Gpu_t::resize_render_pass(Render_pass_t* render_pass) {
+  M_unimplemented();
+}
+
 int Gpu_t::convert_format_to_size_(E_format format) {
   switch(format) {
     case e_format_r32g32b32a32_float:

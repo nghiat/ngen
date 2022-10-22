@@ -22,6 +22,7 @@ public:
   void remove_at(Sip pos);
   T& operator[](Sz index);
   const T& operator[](Sz index) const;
+  T& last();
 
 // iterator (for each)
   T* begin();

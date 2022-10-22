@@ -279,6 +279,7 @@ public:
   virtual void cmd_end();
 
   virtual void on_resized();
+  virtual void resize_render_pass(Render_pass_t* render_pass);
 
   static int convert_format_to_size_(E_format format);
 

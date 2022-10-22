@@ -49,6 +49,7 @@ public:
   virtual void on_mouse_move(int x, int y) {}
   virtual void on_key_event(E_key key, bool is_down) {}
   virtual void on_char_event(wchar_t c) {}
+  virtual void on_resized() {}
 
   bool m_key_down[e_key_count] = {};
   bool m_mouse_down[e_mouse_count] = {};

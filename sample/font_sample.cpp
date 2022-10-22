@@ -191,6 +191,7 @@ void Font_window_t::loop() {
 void Font_window_t::on_resized() {
   if (m_gpu) {
     m_gpu->on_resized();
+    m_gpu->resize_render_pass(m_render_pass);
   }
 }
 

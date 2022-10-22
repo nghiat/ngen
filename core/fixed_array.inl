@@ -79,6 +79,11 @@ const T& Fixed_array_t<T, T_capacity>::operator[](Sz index) const {
 }
 
 template <typename T, Sz T_capacity>
+T& Fixed_array_t<T, T_capacity>::last() {
+  return m_p[m_length - 1];
+}
+
+template <typename T, Sz T_capacity>
 T* Fixed_array_t<T, T_capacity>::begin() {
   return &m_p[0];
 }
