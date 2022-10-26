@@ -70,6 +70,9 @@ public:
   void cmd_set_scissor(int count, const Scissor_t* scissors) override;
   void cmd_end() override;
 
+  void on_resized() override;
+  void resize_render_pass(Render_pass_t* render_pass) override {}
+
   Allocator_t* m_allocator;
 
   static const int sc_frame_count = 2;
@@ -96,6 +99,7 @@ public:
   const D3d12_pipeline_state_object_t* m_current_pso = NULL;
 private:
   void create_descriptor_heap_(D3d12_descriptor_heap_t_* dh, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptor_count);
-  void wait_for_gpu_();
+  void wait_for_current_frame_();
+  void wait_for_back_frame_();
   void cmd_set_topology_();
 };

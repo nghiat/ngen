@@ -354,7 +354,7 @@ bool D3d12_t::init(Window_t* w) {
     ++m_fence_vals[m_frame_no];
     m_fence_event = CreateEvent(NULL, FALSE, FALSE, NULL);
     M_check_return_val(m_fence_event, false);
-    wait_for_gpu_();
+    wait_for_current_frame_();
   }
   return true;
 }
@@ -391,7 +391,7 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   placed_texture.Offset = m_texture_subbuffer.offset;
   placed_texture.Footprint = pitched_desc;
   for (int i = 0; i < ci.row_count; ++i) {
-    memcpy(m_texture_subbuffer.cpu_p + i * ci.row_pitch, &ci.data[i * ci.row_pitch], ci.row_pitch);
+    memcpy(m_texture_subbuffer.cpu_p + i * pitched_desc.RowPitch, &ci.data[i * ci.row_pitch], ci.row_pitch);
   }
   D3D12_TEXTURE_COPY_LOCATION src = {};
   src.pResource = m_texture_subbuffer.buffer->buffer;
@@ -407,7 +407,7 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
-  wait_for_gpu_();
+  wait_for_current_frame_();
   return rv;
 }
 
@@ -460,7 +460,7 @@ Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cr
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
-  wait_for_gpu_();
+  wait_for_current_frame_();
   return rv;
 }
 
@@ -820,21 +820,6 @@ void D3d12_t::get_back_buffer() {
 void D3d12_t::cmd_begin() {
   M_dx_check_return_(m_cmd_allocators[m_frame_no]->Reset());
   M_dx_check_return_(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL));
-  D3D12_VIEWPORT viewport = {};
-  viewport.TopLeftX = 0;
-  viewport.TopLeftY = 0;
-  viewport.Width = (float)m_window->m_width;
-  viewport.Height = (float)m_window->m_height;
-  viewport.MinDepth = D3D12_MIN_DEPTH;
-  viewport.MaxDepth = D3D12_MAX_DEPTH;
-
-  D3D12_RECT scissor_rect = {};
-  scissor_rect.left = 0;
-  scissor_rect.top = 0;
-  scissor_rect.right = m_window->m_width;
-  scissor_rect.bottom = m_window->m_height;
-  m_cmd_list->RSSetViewports(1, &viewport);
-  m_cmd_list->RSSetScissorRects(1, &scissor_rect);
 }
 
 void D3d12_t::cmd_begin_render_pass(Render_pass_t* render_pass) {
@@ -984,16 +969,20 @@ void D3d12_t::cmd_end() {
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
   M_dx_check_return_(m_swap_chain->Present(1, 0));
-  // Prepare to render the next frame
-  U64 curr_fence_val = m_fence_vals[m_frame_no];
-  M_dx_check_return_(m_cmd_queue->Signal(m_fence, curr_fence_val));
-  m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
-  // If the next frame is not ready to be rendered yet, wait until it's ready.
-  if (m_fence->GetCompletedValue() < m_fence_vals[m_frame_no]) {
-    M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
-    WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
+  wait_for_back_frame_();
+}
+
+void D3d12_t::on_resized() {
+  wait_for_back_frame_();
+  for (int i = 0; i < sc_frame_count; ++i) {
+    m_swapchain_rts[i].resource->Release();
   }
-  m_fence_vals[m_frame_no] = curr_fence_val + 1;
+  M_dx_check_return_(m_swap_chain->ResizeBuffers(0, m_window->m_width, m_window->m_height, DXGI_FORMAT_UNKNOWN, 0));
+  for (int i = 0; i < sc_frame_count; ++i) {
+      D3d12_render_target_t& rt = m_swapchain_rts[i];
+      M_dx_check_return_(m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&rt.resource)));
+      m_device->CreateRenderTargetView(rt.resource, NULL, rt.rtv_descriptor.cpu_handle);
+  }
 }
 
 void D3d12_t::create_descriptor_heap_(D3d12_descriptor_heap_t_* dh, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, U32 max_descriptor_count) {
@@ -1006,18 +995,27 @@ void D3d12_t::create_descriptor_heap_(D3d12_descriptor_heap_t_* dh, D3D12_DESCRI
   dh->increment_size = m_device->GetDescriptorHandleIncrementSize(type);
 }
 
-void D3d12_t::wait_for_gpu_() {
-  // Wait for pending GPU work to complete.
-
-  // Schedule a Signal command in the queue.
+void D3d12_t::wait_for_current_frame_() {
   M_dx_check_return_(m_cmd_queue->Signal(m_fence, m_fence_vals[m_frame_no]));
 
-  // Wait until the fence has been processed.
-  M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
-  WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
+  if (m_fence->GetCompletedValue() < m_fence_vals[m_frame_no]) {
+    M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+    WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
+  }
 
-  // Increment the fence value for the current frame.
   ++m_fence_vals[m_frame_no];
+}
+
+void D3d12_t::wait_for_back_frame_() {
+  U64 curr_fence_val = m_fence_vals[m_frame_no];
+  M_dx_check_return_(m_cmd_queue->Signal(m_fence, curr_fence_val));
+  m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
+  if (m_fence->GetCompletedValue() < m_fence_vals[m_frame_no]) {
+    M_dx_check_return_(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+    WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
+  }
+  // We share one |m_fence| so the next value have to be greater than the current one even if the next value is for different frame.
+  m_fence_vals[m_frame_no] = curr_fence_val + 1;
 }
 
 void D3d12_t::cmd_set_topology_() {
