@@ -4,11 +4,12 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2022             //
 //----------------------------------------------------------------------------//
 
+#include "core/command_line.h"
 #include "core/core_allocators.h"
 #include "core/core_init.h"
 #include "core/dynamic_array.h"
 #include "core/file.h"
-#include "core/gpu/vulkan/vulkan.h"
+#include "core/gpu/gpu.h"
 #include "core/linear_allocator.h"
 #include "core/loader/ttf.h"
 #include "core/math/mat4.h"
@@ -22,6 +23,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "third_party/stb/stb_truetype.h"
 
+Command_line_t g_cl(g_persistent_allocator);
 class Font_window_t : public Window_t {
 public:
   Font_window_t() : Window_t(M_txt("Font"), 1024, 768), m_allocator("allocator") {}
@@ -52,10 +54,10 @@ bool Font_window_t::init() {
   Window_t::init();
   Linear_allocator_t<> temp_allocator("font_init_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
-  m_gpu = m_allocator.construct<Vulkan_t>();
-  ((Vulkan_t*)m_gpu)->init(this);
   Ttf_loader_t ttf(&temp_allocator);
   ttf.init(g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf")));
+
+  m_gpu = Gpu_t::init(g_persistent_allocator, &g_cl, this);
 
   {
     Render_pass_create_info_t rp_ci = {};
@@ -197,7 +199,8 @@ void Font_window_t::on_resized() {
 
 int main(int argc, char** argv) {
   core_init(M_txt("font_sample.log"));
-
+  g_cl.register_flag(NULL, "--gpu", e_value_type_string);
+  g_cl.parse(argc, argv);
   {
     unsigned char screen[20][79];
     stbtt_fontinfo font;

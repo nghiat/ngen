@@ -6,6 +6,11 @@
 
 #include "core/gpu/gpu.h"
 
+#include "core/command_line.h"
+#if M_os_is_win()
+#include "core/gpu/d3d12/d3d12.h"
+#endif
+#include "core/gpu/vulkan/vulkan.h"
 #include "core/loader/dds.h"
 #include "core/log.h"
 #include "core/window/window.h"
@@ -23,6 +28,22 @@ Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds) {
     M_unimplemented();
   }
   return ci;
+}
+
+Gpu_t* Gpu_t::init(Allocator_t* allocator, const Command_line_t* cl, Window_t* window) {
+  Gpu_t* rv = NULL;
+  if (cl->get_flag_value("--gpu").get_string().equals("dx12")) {
+#if M_os_is_win()
+    auto d3d12_gpu = allocator->construct<D3d12_t>();
+    d3d12_gpu->init(window);
+    rv = d3d12_gpu;
+#endif
+  } else {
+    auto vk_gpu = allocator->construct<Vulkan_t>();
+    vk_gpu->init(window);
+    rv = vk_gpu;
+  }
+  return rv;
 }
 
 Texture_t* Gpu_t::create_texture(Allocator_t* allocator, const Texture_create_info_t& ci) {

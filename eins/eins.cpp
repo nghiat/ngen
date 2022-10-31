@@ -9,10 +9,6 @@
 #include "core/core_init.h"
 #include "core/dynamic_array.h"
 #include "core/fixed_array.h"
-#if M_os_is_win()
-#include "core/gpu/d3d12/d3d12.h"
-#endif
-#include "core/gpu/vulkan/vulkan.h"
 #include "core/linear_allocator.h"
 #include "core/loader/dae.h"
 #include "core/loader/dds.h"
@@ -204,15 +200,7 @@ bool Eins_window_t::init() {
   Linear_allocator_t<> temp_allocator("gpu_init_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
 
-  if (g_cl.get_flag_value("--gpu").get_string().equals("dx12")) {
-#if M_os_is_win()
-    m_gpu = g_persistent_allocator->construct<D3d12_t>();
-    ((D3d12_t*)m_gpu)->init(this);
-#endif
-  } else {
-    m_gpu = g_persistent_allocator->construct<Vulkan_t>();
-    ((Vulkan_t*)m_gpu)->init(this);
-  }
+  m_gpu = Gpu_t::init(g_persistent_allocator, &g_cl, this);
 
   // The light is static for now.
   m_cam.init({200.0f, 200.0f, 200.0f}, {0.0f, 0.0f, 0.0f}, this);
