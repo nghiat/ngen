@@ -24,6 +24,12 @@
 #include "third_party/stb/stb_truetype.h"
 
 Command_line_t g_cl(g_persistent_allocator);
+
+struct Text_cb_t {
+  float width;
+  float height;
+};
+
 class Font_window_t : public Window_t {
 public:
   Font_window_t() : Window_t(M_txt("Font"), 1024, 768), m_allocator("allocator") {}
@@ -44,7 +50,7 @@ public:
   Resource_t m_sampler;
   Texture_t* m_texture;
   Resource_t m_srv;
-  M4_t* m_world_mat;
+  Text_cb_t* m_cb;
   Vertex_buffer_t* m_vb;
   int m_vertex_count = 0;
   Pipeline_state_object_t* m_pso;
@@ -100,8 +106,7 @@ bool Font_window_t::init() {
     ub_ci.alignment = 256;
     m_uniform = m_gpu->create_uniform_buffer(&m_allocator, ub_ci);
     m_gpu->bind_resource_to_set(m_uniform, m_ub_set, 0);
-    m_world_mat = (M4_t*)m_uniform.uniform_buffer->p;
-    *m_world_mat = scale(0.001f, 0.001f, 0.001f);
+    m_cb = (Text_cb_t*)m_uniform.uniform_buffer->p;
   }
   {
     Sampler_create_info_t sampler_ci = {};
@@ -128,7 +133,7 @@ bool Font_window_t::init() {
     Vertex_buffer_create_info_t vb_ci = {};
     vb_ci.size = 1024 * 1024;
     vb_ci.alignment = 256;
-    vb_ci.stride = 2 * sizeof(float);
+    vb_ci.stride = 4 * sizeof(float);
     m_vb = m_gpu->create_vertex_buffer(&m_allocator, vb_ci);
     struct Input_t_ {
       V2_t pos;
@@ -175,6 +180,8 @@ void Font_window_t::destroy() {
 }
 
 void Font_window_t::loop() {
+  m_cb->width = m_width;
+  m_cb->height = m_height;
   m_gpu->get_back_buffer();
   m_gpu->cmd_begin();
   m_gpu->cmd_set_viewport();

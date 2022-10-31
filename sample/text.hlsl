@@ -1,5 +1,6 @@
 cbuffer cb : register(b0, space0) {
-    float4x4 world;
+  float width;
+  float height;
 };
 
 SamplerState g_sampler : register(s0, space1);
@@ -17,7 +18,9 @@ struct PSInput {
 
 PSInput VSMain(VSInput input) {
   PSInput ps_input;
-  ps_input.p = mul(float4(input.pos, 0.0, 1.0), world);
+  float2 xy = float2(input.pos.x/width, input.pos.y/height);
+  xy = 2*xy - float2(1.0, 1.0);
+  ps_input.p = float4(xy, 0.0, 1.0);
   ps_input.uv = input.uv;
   return ps_input;
 }

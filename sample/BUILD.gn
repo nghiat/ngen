@@ -34,6 +34,7 @@ executable("font_sample") {
   ]
 
   deps = [
+    ":shaders_hlsl",
     ":shaders_spirv",
     "//assets",
     "//core",
