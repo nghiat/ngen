@@ -7,24 +7,33 @@
 #pragma once
 
 #include "core/dynamic_array.h"
+#include "core/math/vec2.h"
 #include "core/path.h"
 #include "core/types.h"
 
 struct Allocator_t;
-struct Line_t_;
+
+struct Glyph_t {
+  U8* texture;
+  U16 offset_x;
+  U16 offset_y;
+};
 
 class Ttf_loader_t {
 public:
   Ttf_loader_t(Allocator_t* allocator);
   bool init(const Path_t& path);
+  void get_glyph(Glyph_t* glyph, const char c, int height_in_pixel);
   void destroy();
 
-  Dynamic_array_t<Line_t_> m_lines;
-  float m_x_min;
-  float m_y_min;
-  float m_x_max;
-  float m_y_max;
-  U8* m_data;
-  U16 m_width;
-  U16 m_height;
+  Allocator_t* m_allocator;
+  V2_t m_bottom_left;
+  V2_t m_top_right;
+
+  const U8* m_head_table;
+  const U8* m_cmap_table;
+  const U8* m_loca_table;
+  const U8* m_glyf_table;
+  const U8* m_hhea_table;
+  const U8* m_hmtx_table;
 };

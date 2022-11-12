@@ -113,11 +113,14 @@ bool Font_window_t::init() {
     m_sampler = m_gpu->create_sampler(&m_allocator, sampler_ci);
     m_gpu->bind_resource_to_set(m_sampler, m_sampler_set, 0);
   }
+  int font_size = 20;
   {
+    Glyph_t g;
+    ttf.get_glyph(&g, 'a', font_size);
     Texture_create_info_t ci = {};
-    ci.data = ttf.m_data;
-    ci.width = ttf.m_width;
-    ci.height = ttf.m_height;
+    ci.data = g.texture;
+    ci.width = font_size;
+    ci.height = font_size;
     ci.format = e_format_r8_uint;
     ci.row_pitch = ci.width;
     ci.row_count = ci.height;
@@ -140,12 +143,12 @@ bool Font_window_t::init() {
       V2_t uv;
     };
     Input_t_* vb = (Input_t_*)m_vb->p;
-    vb[0] = {(V2_t){ttf.m_x_min, ttf.m_y_min}, (V2_t){0.0f, 1.0f}};
-    vb[1] = {(V2_t){ttf.m_x_max, ttf.m_y_max}, (V2_t){1.0f, 0.0f}};
-    vb[2] = {(V2_t){ttf.m_x_min, ttf.m_y_max}, (V2_t){0.0f, 0.0f}};
-    vb[3] = {(V2_t){ttf.m_x_max, ttf.m_y_max}, (V2_t){1.0f, 0.0f}};
-    vb[4] = {(V2_t){ttf.m_x_min, ttf.m_y_min}, (V2_t){0.0f, 1.0f}};
-    vb[5] = {(V2_t){ttf.m_x_max, ttf.m_y_min}, (V2_t){1.0f, 1.0f}};
+    vb[0] = {(V2_t){0.f, 0.f}, (V2_t){0.0f, 1.0f}};
+    vb[1] = {(V2_t){(float)font_size, (float)font_size}, (V2_t){1.0f, 0.0f}};
+    vb[2] = {(V2_t){0.f, (float)font_size}, (V2_t){0.0f, 0.0f}};
+    vb[3] = {(V2_t){(float)font_size, (float)font_size}, (V2_t){1.0f, 0.0f}};
+    vb[4] = {(V2_t){0.f, 0.f}, (V2_t){0.0f, 1.0f}};
+    vb[5] = {(V2_t){(float)font_size, 0.f}, (V2_t){1.0f, 1.0f}};
     m_vertex_count = 6;
 
   }
@@ -219,7 +222,8 @@ int main(int argc, char** argv) {
     stbtt_InitFont(&font, (const unsigned char*)buffer.m_p, 0);
 
     scale = stbtt_ScaleForPixelHeight(&font, 15);
-    stbtt_GetFontVMetrics(&font, &ascent, 0, 0);
+    int line_gap;
+    stbtt_GetFontVMetrics(&font, &ascent, 0, &line_gap);
     baseline = (int)(ascent * scale);
 
     int advance, lsb, x0, y0, x1, y1;

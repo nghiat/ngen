@@ -6,6 +6,7 @@
 
 #include "core/loader/ttf.h"
 
+#include "core/allocator.h"
 #include "core/file.h"
 #include "core/fixed_array.h"
 #include "core/hash_table.h"
@@ -36,26 +37,6 @@ struct Line_t_ {
   V2_t p[2];
 };
 
-struct Head_table_t_ {
-  U32 version;
-  U32 font_revision;
-  U32 check_sum_adjustment;
-  U32 magic_number;
-  U16 flags;
-  U16 units_per_em;
-  S64 created;
-  S64 modified;
-  U16 x_min;
-  U16 y_min;
-  U16 x_max;
-  U16 y_max;
-  U16 mac_style;
-  U16 lowest_rec_ppem;
-  S16 font_direction_hint;
-  S16 index_to_loc_format;
-  S16 glyph_data_format;
-};
-
 template <typename T>
 static T read_be_(const U8* p) {
   T rv = 0;
@@ -79,22 +60,20 @@ Cstring_t read_tag_(const U8** p) {
   return rv;
 }
 
-Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) : m_lines(allocator) {
+Ttf_loader_t::Ttf_loader_t(Allocator_t* allocator) : m_allocator(allocator) {
 }
 
 bool Ttf_loader_t::init(const Path_t& path) {
   Linear_allocator_t<> temp_allocator("ttf_allocator");
+  M_scope_exit(temp_allocator.destroy());
   Dynamic_array_t<U8> ttf = File_t::read_whole_file_as_binary(&temp_allocator, path.m_path);
 
   const U8* cp = ttf.m_p;
   const U8* p = ttf.m_p;
   U32 scaler_type = consume_be_<U32>(&p);
   M_check(scaler_type == 0x74727565 || scaler_type == 0x00010000);
-  // offset subtable
-  U16	num_tables = consume_be_<U16>(&p);
-  U16	search_range = consume_be_<U16>(&p);
-  U16	entry_selector = consume_be_<U16>(&p);
-  U16	range_shift = consume_be_<U16>(&p);
+  U16 num_tables = consume_be_<U16>(&p);
+  p += 6;
   Hash_map_t<Cstring_t, Table_t_> tables(&temp_allocator);
   tables.reserve(num_tables);
   for (int i = 0; i < num_tables; ++i) {
@@ -106,56 +85,68 @@ bool Ttf_loader_t::init(const Path_t& path) {
     tables[tag] = table;
   }
 
-  char c = 'a';
-  const U8* cmap = cp + tables["cmap"].offset;
-  p = cmap;
-  U16 version = consume_be_<U16>(&p);
-  int glyph_id = 0;
-  U16 number_subtables = consume_be_<U16>(&p);
-  for (int i = 0; i < number_subtables; ++i) {
-    U16 platform_id = consume_be_<U16>(&p);
-    U16 encoding_id = consume_be_<U16>(&p);
-    U32 subtable_offset = consume_be_<U32>(&p);
+  auto copy_table = [this, &cp, &tables](const char* name) -> U8* {
+    Table_t_ table = tables[name];
+    auto rv = (U8*)m_allocator->alloc(table.length);
+    memcpy(rv, cp + table.offset, table.length);
+    return rv;
+  };
 
-    const U8* table = cmap + subtable_offset;
-    const U8* p2 = table;
-    U16 format = consume_be_<U16>(&p2);
+  m_head_table = copy_table("head");
+  m_cmap_table = copy_table("cmap");
+  m_loca_table = copy_table("loca");
+  m_glyf_table = copy_table("glyf");
+  m_hhea_table = copy_table("hhea");
+  m_hmtx_table = copy_table("hmtx");
+
+  return true;
+}
+
+void Ttf_loader_t::get_glyph(Glyph_t* glyph, const char c, int height_in_pixel) {
+  Linear_allocator_t<> temp_allocator("get_glyph_allocator");
+  M_scope_exit(temp_allocator.destroy());
+  int glyph_id = 0;
+  const U8* cmap = m_cmap_table;
+  cmap += 2;
+  U16 number_subtables = consume_be_<U16>(&cmap);
+  for (int i = 0; i < number_subtables; ++i) {
+    cmap += 4;
+    U32 subtable_offset = consume_be_<U32>(&cmap);
+    const U8* table = m_cmap_table + subtable_offset;
+    U16 format = consume_be_<U16>(&table);
     M_check(format == 4);
-    U16 length = consume_be_<U16>(&p2);
+    U16 length = consume_be_<U16>(&table);
     const U8* end_table = table + length;
-    U16 language = consume_be_<U16>(&p2);
-    U16 seg_count_x2 = consume_be_<U16>(&p2);
+    table += 2;
+    U16 seg_count_x2 = consume_be_<U16>(&table);
     U16 seg_count = seg_count_x2 / 2;
-    U16 table_search_range = consume_be_<U16>(&p2);
-    U16 table_entry_selector = consume_be_<U16>(&p2);
-    U16 table_range_shift = consume_be_<U16>(&p2);
+    table += 6;
     Dynamic_array_t<U16> end_codes(&temp_allocator);
     end_codes.resize(seg_count);
     for (int j = 0; j < seg_count; ++j) {
-      end_codes[j] = consume_be_<U16>(&p2);
+      end_codes[j] = consume_be_<U16>(&table);
     }
     M_check(end_codes.last() == 0xffff);
-    U16 reserved_pad = consume_be_<U16>(&p2);
-    M_check(reserved_pad == 0);
+    table += 2;
     Dynamic_array_t<U16> start_codes(&temp_allocator);
     start_codes.resize(seg_count);
     for (int j = 0; j < seg_count; ++j) {
-      start_codes[j] = consume_be_<U16>(&p2);
+      start_codes[j] = consume_be_<U16>(&table);
     }
     Dynamic_array_t<S16> deltas(&temp_allocator);
     deltas.resize(seg_count);
     for (int j = 0; j < seg_count; ++j) {
-      deltas[j] = consume_be_<S16>(&p2);
+      deltas[j] = consume_be_<U16>(&table);
     }
-    const U8* id_range_offsets_p = p2;
+    const U8* id_range_offsets_p = table;
     Dynamic_array_t<U16> id_range_offsets(&temp_allocator);
     id_range_offsets.resize(seg_count);
     for (int j = 0; j < seg_count; ++j) {
-      id_range_offsets[j] = consume_be_<U16>(&p2);
+      id_range_offsets[j] = consume_be_<U16>(&table);
     }
     Dynamic_array_t<U16> glyph_ids(&temp_allocator);
-    while (p2 != end_table) {
-      glyph_ids.append(consume_be_<U16>(&p2));
+    while (table != end_table) {
+      glyph_ids.append(consume_be_<U16>(&table));
     }
     for (int j = 0; j < end_codes.len(); ++j) {
       if (c <= end_codes[j] && c >= start_codes[j]) {
@@ -172,41 +163,35 @@ bool Ttf_loader_t::init(const Path_t& path) {
     }
   }
 
-  S16 index_to_loc_format = read_be_<S16>(cp + tables["head"].offset + 50);
+  S16 index_to_loc_format = read_be_<S16>(m_head_table + 50);
   U32 glyf_offset = 0;
   if (index_to_loc_format == 0) {
-    glyf_offset = read_be_<U16>(cp + tables["loca"].offset + glyph_id * sizeof(U16));
+    glyf_offset = read_be_<U16>(m_loca_table + glyph_id * sizeof(U16));
   } else {
-    glyf_offset = read_be_<U32>(cp + tables["loca"].offset + glyph_id * sizeof(U32));
+    glyf_offset = read_be_<U32>(m_loca_table + glyph_id * sizeof(U32));
   }
-  const U8* glyf = cp + tables["glyf"].offset + glyf_offset;
-  p = glyf;
-  S16 number_of_contours = consume_be_<S16>(&p);
+  const U8* glyf = m_glyf_table + glyf_offset;
+  S16 number_of_contours = consume_be_<S16>(&glyf);
   M_check_log(number_of_contours >= 0, "Only simple glyph for now");
-  S16 x_min = consume_be_<S16>(&p);
-  S16 y_min = consume_be_<S16>(&p);
-  S16 x_max = consume_be_<S16>(&p);
-  S16 y_max = consume_be_<S16>(&p);
-  m_x_min = (float)x_min;
-  m_y_min = (float)y_min;
-  m_x_max = (float)x_max;
-  m_y_max = (float)y_max;
+  S16 x_min = consume_be_<S16>(&glyf);
+  S16 y_min = consume_be_<S16>(&glyf);
+  S16 x_max = consume_be_<S16>(&glyf);
+  S16 y_max = consume_be_<S16>(&glyf);
   Dynamic_array_t<U16> end_pts_of_contours(&temp_allocator);
   end_pts_of_contours.resize(number_of_contours);
   for (int i = 0; i < number_of_contours; ++i) {
-    end_pts_of_contours[i] = consume_be_<U16>(&p);
+    end_pts_of_contours[i] = consume_be_<U16>(&glyf);
   }
   U16 point_count = end_pts_of_contours.last() + 1;
-  U16 instruction_length = consume_be_<U16>(&p);
-  const U8* instructions = p;
-  const U8* flags = instructions + instruction_length;
+  U16 instruction_length = consume_be_<U16>(&glyf);
+  glyf += instruction_length;
   Dynamic_array_t<Point_t_> ttf_points(&temp_allocator);
   ttf_points.resize(point_count);
   for (int i = 0; i < point_count; ++i) {
-    U8 flag = *(flags++);
+    U8 flag = *(glyf++);
     ttf_points[i].flag = flag;
     if (flag & 8) {
-      U8 repeat_count = *(flags++);
+      U8 repeat_count = *(glyf++);
       for (int j = 1; j <= repeat_count; ++j) {
         ttf_points[i + j].flag = flag;
       }
@@ -214,46 +199,45 @@ bool Ttf_loader_t::init(const Path_t& path) {
     }
   }
 
-  const U8* x_coords = flags;
   S16 x = 0;
   for (int i = 0; i < point_count; ++i) {
     U8 flag = ttf_points[i].flag;
     if (flag & 2) {
       if (flag & 0x10) {
-        x += *x_coords++;
+        x += *glyf++;
       } else {
-        x -= *x_coords++;
+        x -= *glyf++;
       }
     } else {
       if (flag & 0x10) {
         x = ttf_points[i - 1].x;
       } else {
-        x += consume_be_<S16>(&x_coords);
+        x += consume_be_<S16>(&glyf);
       }
     }
     ttf_points[i].x = x;
   }
 
-  const U8* y_coords = x_coords;
   S16 y = 0;
   for (int i = 0; i < point_count; ++i) {
     U8 flag = ttf_points[i].flag;
     if (flag & 4) {
       if (flag & 0x20) {
-        y += *y_coords++;
+        y += *glyf++;
       } else {
-        y -= *y_coords++;
+        y -= *glyf++;
       }
     } else {
       if (flag & 0x20) {
         y = ttf_points[i - 1].y;
       } else {
-        y += consume_be_<S16>(&y_coords);
+        y += consume_be_<S16>(&glyf);
       }
     }
     ttf_points[i].y = y;
   }
   int from = 0;
+  Dynamic_array_t<Line_t_> lines(&temp_allocator);
   for (int i = 0; i < end_pts_of_contours.len(); ++i) {
     int to = end_pts_of_contours[i];
     Dynamic_array_t<Point_t_> reconstructed_points(&temp_allocator);
@@ -285,7 +269,7 @@ bool Ttf_loader_t::init(const Path_t& path) {
         Line_t_ l;
         l.p[0] = (V2_t){pp[j].x, pp[j].y};
         l.p[1] = (V2_t){pp[j+1].x, pp[j+1].y};
-        m_lines.append(l);
+        lines.append(l);
       } else {
         V2_t p0 = (V2_t){pp[j].x, pp[j].y};
         V2_t p1 = (V2_t){pp[j+1].x, pp[j+1].y};
@@ -297,7 +281,7 @@ bool Ttf_loader_t::init(const Path_t& path) {
           l.p[0] = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
           t = (k+1)*1.f/n;
           l.p[1] = p0*(1-t)*(1-t) + p1*2*t*(1-t) + p2*t*t;
-          m_lines.append(l);
+          lines.append(l);
         }
         j += 1; // will be incremented once more
       }
@@ -306,24 +290,48 @@ bool Ttf_loader_t::init(const Path_t& path) {
     from = to + 1;
   }
 
-  m_width = x_max - x_min + 1;
-  m_height = y_max - y_min + 1;
-  m_data = (U8*)m_lines.m_allocator->alloc_zero(m_width*m_height);
+  U16 units_per_em = read_be_<U16>(m_head_table + 18);
+  S16 ascender = read_be_<S16>(m_hhea_table + 4);
+  S16 descender = read_be_<S16>(m_hhea_table + 6);
+  float scale = height_in_pixel * 1.f / (ascender - descender);
+  for (auto& line : lines) {
+    line.p[0].x -= x_min;
+    line.p[0].x *= scale;
+    line.p[0].y -= y_min;
+    line.p[0].y *= scale;
+    line.p[1].x -= x_min;
+    line.p[1].x *= scale;
+    line.p[1].y -= y_min;
+    line.p[1].y *= scale;
+  }
 
-  std::sort(m_lines.begin(), m_lines.end(), [](const Line_t_ l1, const Line_t_ l2) {
+  U16 number_of_h_metrics = read_be_<U16>(m_hhea_table + 34);
+  S16 lsb;
+  U16 aw;
+  if (glyph_id < number_of_h_metrics) {
+    aw = read_be_<U16>(m_hmtx_table + 4*glyph_id);
+    lsb = read_be_<S16>(m_hmtx_table + 4*glyph_id + 2);
+  } else {
+    aw = read_be_<U16>(m_hmtx_table + 4*(number_of_h_metrics - 1));
+    lsb = read_be_<S16>(m_hmtx_table + 4*number_of_h_metrics + 2*(glyph_id - number_of_h_metrics));
+  }
+
+  glyph->texture = (U8*)m_allocator->alloc_zero(height_in_pixel*height_in_pixel);
+
+  std::sort(lines.begin(), lines.end(), [](const Line_t_ l1, const Line_t_ l2) {
     float min_y1 = std::min(l1.p[0].y, l1.p[1].y);
     float min_y2 = std::min(l2.p[0].y, l2.p[1].y);
     return min_y1 < min_y2;
   });
 
-  for (int y = y_min; y <= y_max; ++y) {
+  for (int y = 0; y < height_in_pixel; ++y) {
     struct Intersect_t_ {
       float x;
       Line_t_ l;
     };
     Fixed_array_t<Intersect_t_, 20> intersects;
-    for (int i = 0; i < m_lines.len(); ++i) {
-      const Line_t_ l = m_lines[i];
+    for (int i = 0; i < lines.len(); ++i) {
+      const Line_t_ l = lines[i];
       float y0 = l.p[0].y;
       float y1 = l.p[1].y;
       if (y0 == y1) {
@@ -346,7 +354,7 @@ bool Ttf_loader_t::init(const Path_t& path) {
     for (int i = 0; i < intersects.len() - 1; ++i) {
       // When two lines cross the scanline at the same point, only keep the point that is equals to std::min(p0, p1)
       if (intersects[i].x == intersects[i+1].x) {
-        m_data[((y_max - y_min) - (y - y_min))*m_width + ((int)intersects[i].x - x_min)] = 255;
+        glyph->texture[(height_in_pixel - y)*height_in_pixel + (int)intersects[i].x] = 255;
         if (y != std::min(intersects[i].l.p[0].y, intersects[i].l.p[1].y)) {
           intersects.remove_at(i);
           --i;
@@ -358,10 +366,9 @@ bool Ttf_loader_t::init(const Path_t& path) {
     }
     for (int i = 0; i < intersects.len()/2; ++i) {
       for (int x = intersects[2*i].x; x <= intersects[2*i + 1].x; ++x) {
-        m_data[((y_max - y_min) - (y - y_min))*m_width + (x - x_min)] = 255;
+        glyph->texture[(height_in_pixel - y)*height_in_pixel + x] = 255;
       }
+
     }
   }
-
-  return true;
 }
