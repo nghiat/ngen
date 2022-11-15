@@ -13,12 +13,17 @@
 #include "core/string.h"
 #include "core/value.h"
 
+class Command_line_t;
+extern Command_line_t* g_cl;
+
 class Command_line_t {
 public:
   struct Flag_t_ {
     const char* short_flag;
     const char* long_flag;
   };
+  static void init();
+
   Command_line_t(Allocator_t* allocator);
   void destroy();
   // |short_flag| must only be a digit or a letter.
@@ -34,6 +39,6 @@ public:
   static const U8 sc_max_printable_char = 'z';
   const char* m_short_to_long_flag_map[sc_max_printable_char] = {};
   Hash_map_t<const char*, Value_t> m_flags;
-  Linear_allocator_t<128> m_unnamed_args_allocator;
-  Dynamic_array_t<const char*> m_unnamed_args;
+  Linear_allocator_t<128> m_unnamed_args_allocator{"Command_line_t default flag allocator"};
+  Dynamic_array_t<const char*> m_unnamed_args{&m_unnamed_args_allocator};
 };

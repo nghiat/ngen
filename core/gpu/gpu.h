@@ -246,7 +246,7 @@ Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds);
 
 class Gpu_t {
 public:
-  static Gpu_t* init(Allocator_t* allocator, const Command_line_t* cl, Window_t* window);
+  static Gpu_t* init(Allocator_t* allocator, Window_t* window);
   virtual void destroy() = 0;
   virtual Texture_t* create_texture(Allocator_t* allocator, const Texture_create_info_t& ci);
   virtual Texture_t* create_texture_cube(Allocator_t* allocator, const Texture_create_info_t& ci);

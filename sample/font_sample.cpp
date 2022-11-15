@@ -23,8 +23,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "third_party/stb/stb_truetype.h"
 
-Command_line_t g_cl(g_persistent_allocator);
-
 struct Text_cb_t {
   float width;
   float height;
@@ -60,10 +58,8 @@ bool Font_window_t::init() {
   Window_t::init();
   Linear_allocator_t<> temp_allocator("font_init_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
-  Ttf_loader_t ttf(&temp_allocator);
-  ttf.init(g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf")));
 
-  m_gpu = Gpu_t::init(g_persistent_allocator, &g_cl, this);
+  m_gpu = Gpu_t::init(g_persistent_allocator, this);
 
   {
     Render_pass_create_info_t rp_ci = {};
@@ -113,14 +109,54 @@ bool Font_window_t::init() {
     m_sampler = m_gpu->create_sampler(&m_allocator, sampler_ci);
     m_gpu->bind_resource_to_set(m_sampler, m_sampler_set, 0);
   }
-  int font_size = 20;
+  int font_size = 48;
+  struct Gpu_glyph_t_ {
+    V2_t uv;
+    float offset_x;
+    float offset_y;
+    float width;
+    float height;
+    float uv_width;
+    float uv_height;
+    float advance;
+  };
+  Gpu_glyph_t_ glyphs[256];
+  constexpr int c_atlas_size = 1024;
+  float uv_size = ((float)font_size)/c_atlas_size;
   {
-    Glyph_t g;
-    ttf.get_glyph(&g, 'a', font_size);
+    U8* font_atlas = (U8*)temp_allocator.alloc(c_atlas_size*c_atlas_size);
+    Ttf_loader_t ttf(&temp_allocator);
+    ttf.init(g_exe_dir.join(M_txt("assets/UbuntuMono-Regular.ttf")));
+    int atlas_offset_x = 0;
+    int atlas_offset_y = 0;
+    for (char c = 'a'; c <= 'z'; ++c) {
+      Glyph_t g;
+      ttf.get_glyph(&g, c, font_size);
+      M_scope_exit(temp_allocator.free(g.texture));
+      if (atlas_offset_x + font_size >= c_atlas_size) {
+        atlas_offset_x = 0;
+        atlas_offset_y += font_size;
+      }
+      M_check(atlas_offset_x + font_size < c_atlas_size);
+      M_check(atlas_offset_y + font_size < c_atlas_size);
+      for (int i = 0; i < font_size; ++i) {
+        memcpy(font_atlas + (atlas_offset_y + i)*c_atlas_size + atlas_offset_x, g.texture + i*font_size, font_size);
+      }
+      glyphs[c].uv.x = ((float)atlas_offset_x)/c_atlas_size;
+      glyphs[c].uv.y = ((float)atlas_offset_y + font_size)/c_atlas_size;
+      glyphs[c].offset_x = g.offset_x;
+      glyphs[c].offset_y = g.offset_y;
+      glyphs[c].width = g.width;
+      glyphs[c].height = g.height;
+      glyphs[c].uv_width = ((float)g.width)/c_atlas_size;
+      glyphs[c].uv_height = ((float)g.height)/c_atlas_size;
+      glyphs[c].advance = g.advance;
+      atlas_offset_x += font_size;
+    }
     Texture_create_info_t ci = {};
-    ci.data = g.texture;
-    ci.width = font_size;
-    ci.height = font_size;
+    ci.data = font_atlas;
+    ci.width = c_atlas_size;
+    ci.height = c_atlas_size;
     ci.format = e_format_r8_uint;
     ci.row_pitch = ci.width;
     ci.row_count = ci.height;
@@ -142,14 +178,23 @@ bool Font_window_t::init() {
       V2_t pos;
       V2_t uv;
     };
+    Cstring_t str("thisisasamplesentence");
     Input_t_* vb = (Input_t_*)m_vb->p;
-    vb[0] = {(V2_t){0.f, 0.f}, (V2_t){0.0f, 1.0f}};
-    vb[1] = {(V2_t){(float)font_size, (float)font_size}, (V2_t){1.0f, 0.0f}};
-    vb[2] = {(V2_t){0.f, (float)font_size}, (V2_t){0.0f, 0.0f}};
-    vb[3] = {(V2_t){(float)font_size, (float)font_size}, (V2_t){1.0f, 0.0f}};
-    vb[4] = {(V2_t){0.f, 0.f}, (V2_t){0.0f, 1.0f}};
-    vb[5] = {(V2_t){(float)font_size, 0.f}, (V2_t){1.0f, 1.0f}};
-    m_vertex_count = 6;
+    V2_t line = {200.f, 200.f};
+    for (int i = 0; i < str.m_length; ++i) {
+      const Gpu_glyph_t_& g = glyphs[str.m_p[i]];
+      float left = line.x + g.offset_x;
+      float bottom = line.y + g.offset_y;
+      vb[0] = {(V2_t){left, bottom}, (V2_t){g.uv.x, g.uv.y}};
+      vb[1] = {(V2_t){left + g.width, bottom + g.height}, (V2_t){g.uv.x + g.uv_width, g.uv.y - g.uv_height}};
+      vb[2] = {(V2_t){left, bottom + g.height}, (V2_t){g.uv.x, g.uv.y - g.uv_height}};
+      vb[3] = {(V2_t){left + g.width, bottom + g.height}, (V2_t){g.uv.x + g.uv_width, g.uv.y - g.uv_height}};
+      vb[4] = {(V2_t){left, bottom}, (V2_t){g.uv.x, g.uv.y}};
+      vb[5] = {(V2_t){left + g.width, bottom}, (V2_t){g.uv.x + g.uv_width, g.uv.y}};
+      line.x += g.advance;
+      vb += 6;
+    }
+    m_vertex_count = 6*str.m_length;
 
   }
   {
@@ -209,8 +254,7 @@ void Font_window_t::on_resized() {
 
 int main(int argc, char** argv) {
   core_init(M_txt("font_sample.log"));
-  g_cl.register_flag(NULL, "--gpu", e_value_type_string);
-  g_cl.parse(argc, argv);
+  g_cl->parse(argc, argv);
   {
     unsigned char screen[20][79];
     stbtt_fontinfo font;

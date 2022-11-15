@@ -317,7 +317,11 @@ void Ttf_loader_t::get_glyph(Glyph_t* glyph, const char c, int height_in_pixel) 
   }
 
   glyph->texture = (U8*)m_allocator->alloc_zero(height_in_pixel*height_in_pixel);
-
+  glyph->offset_x = lsb*scale;
+  glyph->offset_y = y_min*scale;
+  glyph->advance = aw*scale;
+  glyph->width = (U16)(x_max - y_min + height_in_pixel - 1)*scale; // round up
+  glyph->height = (U16)(y_max - y_min + height_in_pixel - 1)*scale; // round up
   std::sort(lines.begin(), lines.end(), [](const Line_t_ l1, const Line_t_ l2) {
     float min_y1 = std::min(l1.p[0].y, l1.p[1].y);
     float min_y2 = std::min(l2.p[0].y, l2.p[1].y);

@@ -30,9 +30,9 @@ Texture_create_info_t get_texture_create_info(const Dds_loader_t& dds) {
   return ci;
 }
 
-Gpu_t* Gpu_t::init(Allocator_t* allocator, const Command_line_t* cl, Window_t* window) {
+Gpu_t* Gpu_t::init(Allocator_t* allocator, Window_t* window) {
   Gpu_t* rv = NULL;
-  if (cl->get_flag_value("--gpu").get_string().equals("dx12")) {
+  if (g_cl->get_flag_value("--gpu").get_string().equals("dx12")) {
 #if M_os_is_win()
     auto d3d12_gpu = allocator->construct<D3d12_t>();
     d3d12_gpu->init(window);

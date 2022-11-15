@@ -5,6 +5,8 @@
 //----------------------------------------------------------------------------//
 
 #include "core/command_line.h"
+
+#include "core/core_allocators.h"
 #include "core/dynamic_array.h"
 #include "core/hash_table.h"
 #include "core/linear_allocator.h"
@@ -12,7 +14,16 @@
 
 #include <ctype.h>
 
-Command_line_t::Command_line_t(Allocator_t* allocator) : m_flags(allocator), m_unnamed_args_allocator("Command_line_t default flag allocator"), m_unnamed_args(&m_unnamed_args_allocator) {}
+Command_line_t* g_cl = NULL;
+Command_line_t g_cl_(NULL);
+
+void Command_line_t::init() {
+  g_cl_ = Command_line_t(g_persistent_allocator);
+  g_cl = &g_cl_;
+  g_cl->register_flag(NULL, "--gpu", e_value_type_string);
+}
+
+Command_line_t::Command_line_t(Allocator_t* allocator) : m_flags(allocator) {}
 
 void Command_line_t::destroy() {
   m_flags.destroy();

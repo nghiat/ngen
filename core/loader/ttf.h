@@ -15,8 +15,11 @@ struct Allocator_t;
 
 struct Glyph_t {
   U8* texture;
-  U16 offset_x;
-  U16 offset_y;
+  float offset_x;
+  float offset_y;
+  U16 width;
+  U16 height;
+  float advance;
 };
 
 class Ttf_loader_t {
