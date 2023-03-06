@@ -146,7 +146,7 @@ static VkImageLayout convert_resource_state_to_image_layout_(E_resource_state st
     case e_resource_state_present:
       return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     case e_resource_state_pixel_shader_resource:
-      return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+      return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     default:
       M_unimplemented();
   }
@@ -1318,7 +1318,7 @@ void Vulkan_t::create_swapchain_() {
 
     VkSurfaceFormatKHR surface_format = {};
     {
-      constexpr int c_max_format_count = 16;
+      constexpr int c_max_format_count = 32;
       M_check(c_max_format_count >= format_count);
       Fixed_array_t<VkSurfaceFormatKHR, c_max_format_count> surface_formats;
       surface_formats.resize(format_count);
@@ -1347,7 +1347,7 @@ void Vulkan_t::create_swapchain_() {
       surface_transform = surface_capabilities.currentTransform;
     }
 
-    VkPresentModeKHR present_mode = VK_PRESENT_MODE_MAILBOX_KHR ;
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
     // Finally, create the swap chain
     VkSwapchainCreateInfoKHR swapchain_ci = {};
