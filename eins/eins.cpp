@@ -29,8 +29,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
 
-Command_line_t g_cl(g_persistent_allocator);
-
 struct Per_obj_t_ {
   M4_t world = {};
   M4_t joints[300] = {};
@@ -200,7 +198,7 @@ bool Eins_window_t::init() {
   Linear_allocator_t<> temp_allocator("gpu_init_temp_allocator");
   M_scope_exit(temp_allocator.destroy());
 
-  m_gpu = Gpu_t::init(g_persistent_allocator, &g_cl, this);
+  m_gpu = Gpu_t::init(g_persistent_allocator, this);
 
   // The light is static for now.
   m_cam.init({200.0f, 200.0f, 200.0f}, {0.0f, 0.0f, 0.0f}, this);
@@ -754,8 +752,7 @@ void Eins_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv
 
 int main(int argc, char** argv) {
   core_init(M_txt("eins.log"));
-  g_cl.register_flag(NULL, "--gpu", e_value_type_string);
-  g_cl.parse(argc, argv);
+  g_cl->parse(argc, argv);
   Eins_window_t w(M_txt("eins"), 1024, 768);
   w.init();
   w.os_loop();
