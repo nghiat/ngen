@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.1)
+
+project(ngen)
+set (CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+add_compile_definitions(UNICODE _UNICODE)
+include_directories(${CMAKE_SOURCE_DIR})
+if (MSVC)
+  add_compile_options(/wd4244 /wd4267 /wd4018 /wd4661 /wd4302)
+endif()
+
+add_subdirectory(assets)
+add_subdirectory(core)
+add_subdirectory(eins)
+add_subdirectory(sample)
+add_subdirectory(test)

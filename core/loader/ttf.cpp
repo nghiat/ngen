@@ -267,13 +267,13 @@ void Ttf_loader_t::get_glyph(Glyph_t* glyph, const char c, int height_in_pixel) 
     for (int j = 0; j < reconstructed_points.len() - 1; ++j) {
       if (pp[j+1].flag & M_on_the_curve_flag_) {
         Line_t_ l;
-        l.p[0] = (V2_t){pp[j].x, pp[j].y};
-        l.p[1] = (V2_t){pp[j+1].x, pp[j+1].y};
+        l.p[0] = V2_t{pp[j].x, pp[j].y};
+        l.p[1] = V2_t{pp[j+1].x, pp[j+1].y};
         lines.append(l);
       } else {
-        V2_t p0 = (V2_t){pp[j].x, pp[j].y};
-        V2_t p1 = (V2_t){pp[j+1].x, pp[j+1].y};
-        V2_t p2 = (V2_t){pp[j+2].x, pp[j+2].y};
+        V2_t p0 = V2_t{pp[j].x, pp[j].y};
+        V2_t p1 = V2_t{pp[j+1].x, pp[j+1].y};
+        V2_t p2 = V2_t{pp[j+2].x, pp[j+2].y};
         int n = 10;
         for (int k = 0; k < n; ++k) {
           Line_t_ l;
@@ -348,7 +348,7 @@ void Ttf_loader_t::get_glyph(Glyph_t* glyph, const char c, int height_in_pixel) 
         float t = (y - y0)/(y1 - y0);
         if (t >= 0.0f && t <= 1.0f) {
           float x_t = l.p[0].x + t*(l.p[1].x - l.p[0].x);
-          intersects.append((Intersect_t_){x_t, l});
+          intersects.append(Intersect_t_{x_t, l});
         }
       }
     }

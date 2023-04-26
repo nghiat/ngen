@@ -11,7 +11,7 @@
 #include "core/path.h"
 #include "core/string.h"
 
-struct Allocator_t;
+class Allocator_t;
 
 class Xml_node_t;
 typedef Dynamic_array_t<Xml_node_t*> Xml_nodes_t;

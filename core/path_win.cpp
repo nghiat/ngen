@@ -8,12 +8,10 @@
 
 #include <Windows.h>
 
-template <typename T>
-Path_t_<T> Path_t_<T>::get_absolute_path() const {
-  Path_t_<T> rv;
+template <>
+Path_t_<wchar_t> Path_t_<wchar_t>::get_absolute_path() const {
+  Path_t_<wchar_t> rv;
   GetFullPathName(m_path, M_max_path_len, rv.m_path, NULL);
   rv.update_path_str();
   return rv;
 }
-
-template class Path_t_<wchar_t>;

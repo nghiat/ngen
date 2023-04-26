@@ -125,6 +125,7 @@ public:
   void loop() override;
   void on_mouse_event(E_mouse mouse, int x, int y, bool is_down) override;
   void on_mouse_move(int x, int y) override;
+  void on_resized() override;
 
   Linear_allocator_t<> m_gpu_allocator;
   Render_target_t* m_shadow_depth_stencil;
@@ -180,7 +181,7 @@ public:
   Texture_t* m_cube_texture;
   Resource_t m_cube_srv;
 
-  Gpu_t* m_gpu;
+  Gpu_t* m_gpu = NULL;
   Cam_t m_cam;
   int m_obj_count;
   int m_obj_vertices_counts[10];
@@ -734,6 +735,15 @@ void Eins_window_t::on_mouse_event(E_mouse mouse, int x, int y, bool is_down) {
 
 void Eins_window_t::on_mouse_move(int x, int y) {
   m_cam.mouse_move(x, y);
+}
+
+void Eins_window_t::on_resized() {
+  if (m_gpu) {
+    m_gpu->on_resized();
+    M4_t perspective_m4 = perspective(degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 500.0f);
+    m_shared->proj = perspective_m4;
+    m_shared->light_proj = perspective_m4;
+  }
 }
 
 void Eins_window_t::create_texture_and_srv_(Texture_t** texture, Resource_t* srv, const Path_t& path, Resources_set_t* set, int binding, E_format srv_format) {

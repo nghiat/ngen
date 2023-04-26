@@ -11,7 +11,7 @@
 #include "core/path.h"
 #include "core/types.h"
 
-struct Allocator_t;
+class Allocator_t;
 
 struct Dds_pixel_format_t {
   U32 size;

@@ -27,7 +27,7 @@ enum E_file_from {
   e_file_from_end
 };
 
-struct Allocator_t;
+class Allocator_t;
 struct File_buffer_t;
 
 class File_t {

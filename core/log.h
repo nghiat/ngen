@@ -24,11 +24,7 @@ enum E_log_level_ {
 
 extern bool g_is_log_in_testing;
 
-#if M_is_dev()
 void ng_log_(E_log_level_ level, const char* file, int line, const char* format, ...);
-#else
-#define ng_log_(..)
-#endif
 
 #define M_log_size_ (1024 + M_max_stack_trace_length_)
 

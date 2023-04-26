@@ -11,7 +11,7 @@
 #include "core/math/vec4.h"
 #include "core/types.h"
 
-struct Allocator_t;
+class Allocator_t;
 
 class Obj_loader_t {
 public:

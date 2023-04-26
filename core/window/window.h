@@ -18,7 +18,7 @@
 #include <xcb/xcb_keysyms.h>
 #endif
 
-struct Allocator_t;
+class Allocator_t;
 
 #if M_os_is_win()
 struct Platform_data_t_ {

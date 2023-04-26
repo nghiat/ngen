@@ -80,7 +80,7 @@ void template_mstring_test_() {
   using T = T_char;
   {
     T buffer[100] = {};
-    T_string mstr(buffer, 0);
+    T_string mstr(buffer, 0LL);
     mstr.m_capacity = 100;
     mstr.append(M_c_or_w(T, 'a'));
     M_test(mstr.equals(M_c_or_w(T, "a")));

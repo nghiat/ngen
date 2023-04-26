@@ -189,7 +189,7 @@ bool Free_list_allocator_t::shrink_free_block_(Free_block_t_* block, Free_block_
     return false;
   }
   Free_block_t_* shrunk_block = (Free_block_t_*)((U8*)block + size);
-  *shrunk_block = (Free_block_t_){.size = block_size_after, .next = block->next};
+  *shrunk_block = Free_block_t_{.size = block_size_after, .next = block->next};
   link_separated_blocks_(prior_block, shrunk_block);
   m_used_size += size;
   return true;

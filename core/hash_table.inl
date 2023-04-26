@@ -43,8 +43,8 @@ T_value& M_hash_table_c_::operator[](const T_key& key) {
   }
 
   if (m_bucket_count == 0 || m_count + 1 > m_load_factor * m_bucket_count) {
-    int bucket_count = m_bucket_count;
-    int new_bucket_count = bucket_count * 3 / 2;
+    Sip bucket_count = m_bucket_count;
+    Sip new_bucket_count = bucket_count * 3 / 2;
     if (bucket_count == 0) {
       new_bucket_count = m_initial_bucket_count;
     }

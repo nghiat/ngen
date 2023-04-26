@@ -18,7 +18,7 @@ bool Cam_t::init(const V3_t& eye, const V3_t& target, Window_t* w) {
   m_forward = target - m_eye;
   m_dist = v3_len(m_forward);
   m_forward = v3_normalize(m_forward);
-  m_up = {0.f, 1.f, 0.f};
+  m_up = V3_t{0.f, 1.f, 0.f};
   m_view_mat = look_forward_lh(m_eye, m_forward, m_up);
   return true;
 }
@@ -64,7 +64,7 @@ void Cam_t::mouse_move(int x, int y) {
     M4_t rotate_vert = quat_to_m4(quat_rotate_v3(right, angle_y));
     M4_t rotate_hori = quat_to_m4(quat_rotate_v3(m_up, angle_x));
     M4_t rotate_mat = rotate_hori * rotate_vert;
-    m_forward = v4_normalize(rotate_mat * (V4_t){m_forward.x, m_forward.y, m_forward.z, 1.f});
+    m_forward = v4_normalize(rotate_mat * V4_t{m_forward.x, m_forward.y, m_forward.z, 1.f});
     m_view_mat = look_forward_lh(m_eye, m_forward, m_up);
   }
 
@@ -80,7 +80,7 @@ void Cam_t::mouse_move(int x, int y) {
     M4_t rotate_vert = quat_to_m4(quat_rotate_v3(right, angle_y));
     M4_t rotate_hori = quat_to_m4(quat_rotate_v3(m_up, -angle_x));
     M4_t rotate_mat = rotate_vert * rotate_hori;
-    backward = rotate_mat * (V4_t){backward.x, backward.y, backward.z, 1.f};
+    backward = rotate_mat * V4_t{backward.x, backward.y, backward.z, 1.f};
     full_backward = backward * m_dist;
     m_eye = target + full_backward;
     m_forward = backward * -1.0f;

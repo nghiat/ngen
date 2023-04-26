@@ -8,12 +8,10 @@
 
 #include <stdlib.h>
 
-template <typename T>
-Path_t_<T> Path_t_<T>::get_absolute_path() const {
-  Path_t_<T> rv;
+template <>
+Path_t_<char> Path_t_<char>::get_absolute_path() const {
+  Path_t_<char> rv;
   realpath(m_path, rv.m_path);
   rv.update_path_str();
   return rv;
 }
-
-template class Path_t_<char>;

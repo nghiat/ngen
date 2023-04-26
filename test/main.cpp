@@ -19,17 +19,17 @@ int main(int argc, char** argv) {
   Command_line_t cl(g_persistent_allocator);
   cl.parse(argc, argv);
 
-  Hash_map<const char*, void (*)()> tests(g_persistent_allocator);
-  // M_register_test(bit_stream_test);
-  // M_register_test(command_line_test);
-  // M_register_test(linear_allocator_test);
+  Hash_map_t<const char*, void (*)()> tests(g_persistent_allocator);
+  M_register_test(bit_stream_test);
+  M_register_test(command_line_test);
+  M_register_test(linear_allocator_test);
   // M_register_test(loader_xml_test);
-  // M_register_test(hash_map_test);
+  M_register_test(hash_map_test);
   M_register_test(intrusive_list_test);
   // M_register_test(path_test);
-  // M_register_test(string_test);
-  // M_register_test(string_utils_test);
-  // M_register_test(utils_test);
+  M_register_test(string_test);
+  M_register_test(string_utils_test);
+  M_register_test(utils_test);
   for (auto& test : tests) {
     M_logi("Running test %s", test.key);
     test.value();

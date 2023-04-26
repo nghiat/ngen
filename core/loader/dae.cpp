@@ -37,7 +37,7 @@ M4_t parse_m4_(const char* s, const char** out) {
 
 void update_inv_bind_matrix_(Dynamic_array_t<M4_t>* inv_bind_matrices, Joint_t* joint) {
   for (auto& child : joint->children) {
-    if ((*inv_bind_matrices)[child->mat_idx] == (M4_t){}) {
+    if ((*inv_bind_matrices)[child->mat_idx] == M4_t{}) {
       (*inv_bind_matrices)[child->mat_idx] = (*inv_bind_matrices)[joint->mat_idx];
     }
     update_inv_bind_matrix_(inv_bind_matrices, child);
@@ -75,7 +75,7 @@ void parse_geometry_node_(Linear_allocator_t<>* allocator,
       Vertex_t& vertex = vertices[i];
       vertex = Vertex_t();
       V3_t pos = ((V3_t*)positions.m_p)[i];
-      vertex.position = (V4_t){pos.x, pos.y, pos.z, 1.f};
+      vertex.position = V4_t{pos.x, pos.y, pos.z, 1.f};
       vertex.position = bind_shape_matrix * vertex.position;
       int vcount = strtof(vcount_p, &vcount_p);
       float total_weight = 0.f;
@@ -101,7 +101,7 @@ void parse_geometry_node_(Linear_allocator_t<>* allocator,
       Vertex_t& vertex = vertices[i];
       vertex = Vertex_t();
       V3_t pos = ((V3_t*)positions.m_p)[i];
-      vertex.position = (V4_t){pos.x, pos.y, pos.z, 1.f};
+      vertex.position = V4_t{pos.x, pos.y, pos.z, 1.f};
       vertex.joint_idx[0] = mat_idx;
       vertex.weights[0] = 1.f;
     }

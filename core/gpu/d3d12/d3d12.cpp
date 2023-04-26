@@ -323,23 +323,27 @@ bool D3d12_t::init(Window_t* w) {
   create_descriptor_heap_(&m_cbv_srv_heap, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 20);
   create_descriptor_heap_(&m_sampler_heap, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10);
 
-  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
+  D3D12_HEAP_PROPERTIES heap_props = create_heap_props_(D3D12_HEAP_TYPE_UPLOAD);
+  D3D12_RESOURCE_DESC res_desc = create_resource_desc_(64 * 1024 * 1024);
+  m_device->CreateCommittedResource(&heap_props,
                                     D3D12_HEAP_FLAG_NONE,
-                                    &create_resource_desc_(64 * 1024 * 1024),
+                                    &res_desc,
                                     D3D12_RESOURCE_STATE_GENERIC_READ,
                                     NULL,
                                     IID_PPV_ARGS(&m_uniform_buffer.buffer));
   m_uniform_buffer.buffer->Map(0, NULL, &m_uniform_buffer.cpu_p);
-  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
+  res_desc = create_resource_desc_(128 * 1024 * 1024);
+  m_device->CreateCommittedResource(&heap_props,
                                     D3D12_HEAP_FLAG_NONE,
-                                    &create_resource_desc_(128 * 1024 * 1024),
+                                    &res_desc,
                                     D3D12_RESOURCE_STATE_GENERIC_READ,
                                     NULL,
                                     IID_PPV_ARGS(&m_vertex_buffer.buffer));
   m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
-  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_UPLOAD),
+  res_desc = create_resource_desc_(256 * 1024 * 1024);
+  m_device->CreateCommittedResource(&heap_props,
                                     D3D12_HEAP_FLAG_NONE,
-                                    &create_resource_desc_(256 * 1024 * 1024),
+                                    &res_desc,
                                     D3D12_RESOURCE_STATE_GENERIC_READ,
                                     NULL,
                                     IID_PPV_ARGS(&m_upload_buffer.buffer));
@@ -375,7 +379,8 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   texture_desc.SampleDesc.Quality = 0;
   texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
-  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
+  D3D12_HEAP_PROPERTIES heap_props = create_heap_props_(D3D12_HEAP_TYPE_DEFAULT);
+  m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
 
   U64 upload_buffer_size;
   m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
@@ -404,7 +409,8 @@ Texture_t* D3d12_t::create_texture(Allocator_t* allocator, const Texture_create_
   m_cmd_allocators[m_frame_no]->Reset();
   m_cmd_list->Reset(m_cmd_allocators[m_frame_no], NULL);
   m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+  D3D12_RESOURCE_BARRIER barrier = create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  m_cmd_list->ResourceBarrier(1, &barrier);
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
   wait_for_current_frame_();
@@ -426,7 +432,8 @@ Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cr
   texture_desc.SampleDesc.Quality = 0;
   texture_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
-  m_device->CreateCommittedResource(&create_heap_props_(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
+  D3D12_HEAP_PROPERTIES heap_props = create_heap_props_(D3D12_HEAP_TYPE_DEFAULT);
+  m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &texture_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&rv->texture));
 
   U64 upload_buffer_size;
   m_device->GetCopyableFootprints(&texture_desc, 0, 1, 0, NULL, NULL, NULL, &upload_buffer_size);
@@ -457,7 +464,8 @@ Texture_t* D3d12_t::create_texture_cube(Allocator_t* allocator, const Texture_cr
     dest.SubresourceIndex = i;
     m_cmd_list->CopyTextureRegion(&dest, 0, 0, 0, &src, NULL);
   }
-  m_cmd_list->ResourceBarrier(1, &create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+  D3D12_RESOURCE_BARRIER barrier = create_transition_barrier_(rv->texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  m_cmd_list->ResourceBarrier(1, &barrier);
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
   wait_for_current_frame_();

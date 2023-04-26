@@ -143,12 +143,12 @@ bool Font_window_t::init() {
         memcpy(font_atlas + (atlas_offset_y + i)*c_atlas_size + atlas_offset_x, g.texture + i*font_size, font_size);
       }
       glyphs[c].uv.x = ((float)atlas_offset_x)/c_atlas_size;
-      glyphs[c].uv.y = ((float)atlas_offset_y + font_size)/c_atlas_size;
+      glyphs[c].uv.y = ((float)atlas_offset_y + font_size - 1)/c_atlas_size;
       glyphs[c].offset_x = g.offset_x;
       glyphs[c].offset_y = g.offset_y;
       glyphs[c].width = g.width;
       glyphs[c].height = g.height;
-      glyphs[c].uv_width = ((float)g.width)/c_atlas_size;
+      glyphs[c].uv_width = ((float)g.width - 1)/c_atlas_size;
       glyphs[c].uv_height = ((float)g.height)/c_atlas_size;
       glyphs[c].advance = g.advance;
       atlas_offset_x += font_size;
@@ -178,7 +178,7 @@ bool Font_window_t::init() {
       V2_t pos;
       V2_t uv;
     };
-    Cstring_t str("thisisasamplesentence");
+    Cstring_t str("abcdefghijklmnopqrstuvwxyz");
     Input_t_* vb = (Input_t_*)m_vb->p;
     V2_t line = {200.f, 200.f};
     for (int i = 0; i < str.m_length; ++i) {

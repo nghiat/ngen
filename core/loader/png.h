@@ -10,7 +10,7 @@
 #include "core/path.h"
 #include "core/types.h"
 
-struct Allocator_t;
+class Allocator_t;
 
 // Provide methods to read bits value from a bytes array.
 class Bit_stream_t {

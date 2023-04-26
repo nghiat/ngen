@@ -13,7 +13,7 @@
 #include "core/math/vec4.h"
 #include "core/path.h"
 
-struct Allocator_t;
+class Allocator_t;
 
 struct Joint_t {
   Joint_t(Allocator_t* allocator) : children(allocator) {}
